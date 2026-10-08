@@ -15,7 +15,7 @@
       <div>
         <p class="eyebrow">PAIKALLINEN PROTOTYYPPI</p>
         <h1>Palkka PWA</h1>
-        <p>Syötä tekstikerroksen sisältävä palkkalaskelma-PDF. Tulkinta tehdään selaimessa ja luvut hyväksytään ennen tallennusta.</p>
+        <p>Lisää palkkalaskelma. Selkeästi tunnistetut tiedot tallennetaan automaattisesti ja sovellus pyytää apua vain epäselvissä kohdissa.</p>
       </div>
       <div id="overallLight" class="light neutral">–</div>
     </header>
@@ -27,20 +27,40 @@
       </label>
       <button id="installButton" class="secondary hidden">Asenna sovellus</button>
       <p id="status" class="status">Ei ladattua dokumenttia.</p>
-      <p class="privacy">PDF:n sisältöä ei lähetetä palvelimelle. PDF.js-kirjasto ladataan prototyypissä CDN:stä; varsinainen PDF käsitellään selaimessasi.</p>
+      <p class="privacy">PDF käsitellään selaimessasi. Prototyyppi ei lähetä palkkalaskelmaa omalle palvelimelle.</p>
+    </section>
+
+    <section id="resultSection" class="card hidden">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">TUNNISTETTU</p>
+          <h2>Palkkalaskelma tallennettu</h2>
+        </div>
+        <span id="resultBadge" class="badge good">OK</span>
+      </div>
+      <div id="resultSummary" class="summary-list"></div>
+      <div>
+        <p class="mini-label">Tunnistetut osat</p>
+        <div id="detectedTags" class="tag-list"></div>
+      </div>
+      <div class="actions compact-actions">
+        <button id="editParsedButton" class="secondary">Muokkaa</button>
+      </div>
     </section>
 
     <section id="reviewSection" class="card hidden">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">TARKISTA ENNEN TALLENNUSTA</p>
-          <h2>Poimitut tiedot</h2>
+          <p id="reviewEyebrow" class="eyebrow">TARVITSEN TARKISTUKSEN</p>
+          <h2 id="reviewTitle">Tarkista epäselvä tieto</h2>
         </div>
         <span id="confidenceBadge" class="badge">–</span>
       </div>
+      <p id="reviewIntro" class="muted">Näytän vain kohdat, joita en pystynyt tulkitsemaan riittävän varmasti.</p>
       <div id="reviewGrid" class="review-grid"></div>
       <div class="actions">
-        <button id="saveButton">Hyväksy ja tallenna</button>
+        <button id="saveButton">Tallenna korjaus</button>
+        <button id="showAllButton" class="secondary">Näytä kaikki kentät</button>
         <button id="rawToggle" class="secondary">Näytä poimittu teksti</button>
       </div>
       <pre id="rawText" class="raw hidden"></pre>
@@ -52,7 +72,7 @@
           <p class="eyebrow">TILANNE</p>
           <h2>Dashboard</h2>
         </div>
-        <button id="clearButton" class="danger-text">Tyhjennä paikallinen data</button>
+        <button id="clearButton" class="danger-text">Tyhjennä data</button>
       </div>
       <div id="dashboard" class="metrics"></div>
       <p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>
@@ -71,7 +91,7 @@
 
     <section class="card warning-card">
       <h2>Prototyypin rajaus</h2>
-      <p>Tämä versio lukee tekstipohjaisia PDF:iä. Skannatut kuvapohjaiset PDF:t, verokortit ja verotuspäätökset lisätään myöhemmin. Liikennevalo käyttää verokortin kertymää vain, jos se löytyy erikseen dokumentista — vuosikertymää ei verrata automaattisesti lyhyemmän voimassaoloajan tulorajaan.</p>
+      <p>Tekstipohjaiset palkkalaskelmat ensin. Skannatut PDF:t, verokortit ja verotuspäätökset lisätään myöhemmin. Epävarma tieto kysytään käyttäjältä sen sijaan, että sovellus arvaisi.</p>
     </section>
   </main>
 

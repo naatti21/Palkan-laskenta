@@ -5,13 +5,14 @@ const STORAGE_KEY = "palkka-pwa-proto:v1";
 let currentParsed = null;
 let currentRawText = "";
 let deferredInstallPrompt = null;
+let showingAllFields = false;
 
 const fieldLabels = {
   payPeriodStart: "Palkkakausi alkaa",
   payPeriodEnd: "Palkkakausi päättyy",
   payDate: "Maksupäivä",
-  grossPay: "Brutto / ennakonpid. al. tulo",
-  netPay: "Netto / maksetaan",
+  grossPay: "Brutto",
+  netPay: "Netto",
   ytdTaxableIncome: "Veronalainen YTD",
   taxCardAccumulatedIncome: "Verokortin kertymä",
   withholdingPeriod: "Ennakonpidätys / jakso",
@@ -25,15 +26,14 @@ const fieldLabels = {
   overtime50WeeklyHours: "OT 50 % vko (h)",
   overtime100WeeklyHours: "OT 100 % vko (h)",
   overtimeHours: "OT yhteensä (h)",
-  overtimeCompensation: "OT-korotukset yhteensä (€)",
+  overtimeCompensation: "OT-korotukset (€)",
   sundayHours: "Sunnuntaityö (h)",
   weeklyRestHours: "Viikkovapaa (h)",
   worktimeBankUseHours: "Työaikapankista käyttö (h)",
   worktimeBankAddHours: "Työaikapankin lisäys (h)"
 };
 
-const moneyFields = new Set(["grossPay", "netPay", "ytdTaxableIncome", "taxCardAccumulatedIncome", "withholdingPeriod", "withholdingYtd", "taxLimit", "kta", "pp", "overtimeCompensation"]);
-const percentFields = new Set(["taxRate", "additionalRate"]);
+const requiredFields = ["payDate", "grossPay", "netPay", "ytdTaxableIncome"];
 const dateFields = new Set(["payPeriodStart", "payPeriodEnd", "payDate"]);
 
 const el = id => document.getElementById(id);
@@ -47,14 +47,122 @@ function loadHistory() {
 }
 function saveHistory(records) { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
 
-function renderReview(parsed) {
+function upsertRecord(record) {
+  const history = loadHistory();
+  const duplicate = history.findIndex(r => r.payDate === record.payDate && r.grossPay === record.grossPay && r.netPay === record.netPay);
+  if (duplicate >= 0) history[duplicate] = record; else history.push(record);
+  saveHistory(history);
+}
+
+function parsedRecord(parsed) {
+  const record = plainRecord(parsed);
+  record.savedAt = new Date().toISOString();
+  return record;
+}
+
+function problemKeys(parsed) {
+  const keys = new Set();
+  for (const key of requiredFields) {
+    const meta = parsed.fields[key];
+    if (!meta || meta.value == null || meta.confidence < .95) keys.add(key);
+  }
+
+  for (const [key, meta] of Object.entries(parsed.fields)) {
+    if (meta.value != null && meta.confidence > 0 && meta.confidence < .9) keys.add(key);
+  }
+
+  for (const warning of parsed.warnings) {
+    if (/Nettopalkka/.test(warning)) ["grossPay", "netPay"].forEach(k => keys.add(k));
+    if (/Tuloraja löytyi/.test(warning)) ["taxCardAccumulatedIncome", "taxLimit", "ytdTaxableIncome"].forEach(k => keys.add(k));
+    if (/Ylityötunteja/.test(warning)) ["overtime100DailyHours", "overtime50WeeklyHours", "overtime100WeeklyHours", "overtimeHours"].forEach(k => keys.add(k));
+    if (/Verokortin kertymä/.test(warning)) ["taxCardAccumulatedIncome", "taxLimit"].forEach(k => keys.add(k));
+  }
+
+  if (parsed.documentType !== "payslip" && !keys.size) requiredFields.forEach(k => keys.add(k));
+  return [...keys];
+}
+
+function canAutoAccept(parsed) {
+  if (parsed.documentType !== "payslip" || parsed.warnings.length) return false;
+  return requiredFields.every(key => {
+    const meta = parsed.fields[key];
+    return meta?.value != null && meta.confidence >= .95;
+  });
+}
+
+function fieldDisplay(key, value) {
+  if (dateFields.has(key)) return fmtDate(value);
+  if (["grossPay", "netPay", "ytdTaxableIncome", "taxCardAccumulatedIncome", "withholdingPeriod", "withholdingYtd", "taxLimit", "kta", "pp", "overtimeCompensation"].includes(key)) return fmtMoney(value);
+  if (["taxRate", "additionalRate"].includes(key)) return value == null ? "–" : `${fmtNumber(value)} %`;
+  return value == null ? "–" : fmtNumber(value);
+}
+
+function detectedCategories(record) {
+  const tags = [];
+  if ((record.overtimeHours ?? 0) > 0) tags.push(`✓ Ylityö ${fmtNumber(record.overtimeHours)} h`);
+  if ((record.sundayHours ?? 0) > 0) tags.push(`✓ Sunnuntai ${fmtNumber(record.sundayHours)} h`);
+  if ((record.weeklyRestHours ?? 0) > 0) tags.push(`✓ Viikkovapaa ${fmtNumber(record.weeklyRestHours)} h`);
+  if ((record.worktimeBankUseHours ?? 0) !== 0 || (record.worktimeBankAddHours ?? 0) !== 0) tags.push("✓ Työaikapankki");
+  if (!tags.length) tags.push("✓ Peruspalkka");
+  return tags;
+}
+
+function renderSuccess(record) {
+  el("reviewSection").classList.add("hidden");
+  el("resultSection").classList.remove("hidden");
+  el("resultBadge").textContent = "Tallennettu";
+
+  const summary = el("resultSummary");
+  summary.innerHTML = "";
+  const rows = [
+    ["Maksupäivä", fmtDate(record.payDate)],
+    ["Brutto", fmtMoney(record.grossPay)],
+    ["Netto", fmtMoney(record.netPay)],
+    ["YTD", fmtMoney(record.ytdTaxableIncome)]
+  ];
+  for (const [label, value] of rows) {
+    const row = document.createElement("div");
+    row.className = "summary-row";
+    row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+    summary.append(row);
+  }
+
+  const tags = el("detectedTags");
+  tags.innerHTML = "";
+  for (const label of detectedCategories(record)) {
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = label;
+    tags.append(tag);
+  }
+}
+
+function renderReview(parsed, keys = null) {
+  el("resultSection").classList.add("hidden");
   el("reviewSection").classList.remove("hidden");
   el("confidenceBadge").textContent = `${Math.round(parsed.overallConfidence * 100)} % ydinkentistä`;
+
+  const isPartial = Array.isArray(keys) && keys.length > 0;
+  el("reviewEyebrow").textContent = isPartial ? "TARVITSEN TARKISTUKSEN" : "MUOKKAUS";
+  el("reviewTitle").textContent = isPartial ? "Tarkista vain nämä kohdat" : "Muokkaa tietoja";
+  el("reviewIntro").textContent = isPartial
+    ? "Muu tieto näyttää riittävän varmalta. Korjaa vain alla näkyvät kohdat."
+    : "Kaikki tunnistetut kentät ovat muokattavissa.";
+  el("showAllButton").classList.toggle("hidden", !isPartial);
+
+  const visible = isPartial ? new Set(keys) : new Set(Object.keys(fieldLabels));
   const grid = el("reviewGrid");
   grid.innerHTML = "";
 
+  if (parsed.warnings.length) {
+    const warning = document.createElement("div");
+    warning.className = "inline-warning";
+    warning.innerHTML = `<strong>Tarkista:</strong> ${parsed.warnings.join(" ")}`;
+    grid.append(warning);
+  }
+
   for (const [key, meta] of Object.entries(parsed.fields)) {
-    if (!(key in fieldLabels)) continue;
+    if (!(key in fieldLabels) || !visible.has(key)) continue;
     const wrapper = document.createElement("label");
     wrapper.className = `review-field ${meta.confidence && meta.confidence < .9 ? "uncertain" : ""}`;
     const title = document.createElement("span");
@@ -65,28 +173,23 @@ function renderReview(parsed) {
     input.type = dateFields.has(key) ? "date" : "text";
     input.value = meta.value ?? "";
     if (!dateFields.has(key)) input.inputMode = "decimal";
-    const hint = document.createElement("small");
-    hint.textContent = meta.source ? `${Math.round(meta.confidence * 100)} % · ${meta.source}` : "Ei tunnistettu";
-    wrapper.append(title, input, hint);
+    wrapper.append(title, input);
+    if (meta.value == null || meta.confidence < .9) {
+      const hint = document.createElement("small");
+      hint.textContent = meta.source ? `${Math.round(meta.confidence * 100)} % · ${meta.source}` : "Ei tunnistettu";
+      wrapper.append(hint);
+    }
     grid.append(wrapper);
-  }
-
-  if (parsed.warnings.length) {
-    const warning = document.createElement("div");
-    warning.className = "inline-warning";
-    warning.innerHTML = `<strong>Tarkista:</strong> ${parsed.warnings.join(" ")}`;
-    grid.prepend(warning);
   }
 }
 
 function collectEditedRecord() {
-  const record = plainRecord(currentParsed);
+  const record = parsedRecord(currentParsed);
   for (const input of document.querySelectorAll("#reviewGrid input[data-key]")) {
     const key = input.dataset.key;
     if (dateFields.has(key)) record[key] = input.value || null;
     else record[key] = input.value.trim() === "" ? null : Number(input.value.replace(/\s/g, "").replace(",", "."));
   }
-  record.savedAt = new Date().toISOString();
   return record;
 }
 
@@ -116,13 +219,13 @@ function renderDashboard() {
 
   const status = taxStatus(latest);
   overall.className = `light ${status.light}`;
-  overall.textContent = status.light === "green" ? "●" : status.light === "yellow" ? "●" : status.light === "red" ? "●" : "–";
+  overall.textContent = status.light === "neutral" ? "–" : "●";
 
   const remaining = latest.taxLimit != null && latest.taxCardAccumulatedIncome != null ? latest.taxLimit - latest.taxCardAccumulatedIncome : null;
   const metrics = [
     ["Viimeisin maksupäivä", fmtDate(latest.payDate)],
-    ["Viimeisin brutto", fmtMoney(latest.grossPay)],
-    ["Viimeisin netto", fmtMoney(latest.netPay)],
+    ["Brutto", fmtMoney(latest.grossPay)],
+    ["Netto", fmtMoney(latest.netPay)],
     ["Veronalainen YTD", fmtMoney(latest.ytdTaxableIncome)],
     ["Verokortin kertymä", fmtMoney(latest.taxCardAccumulatedIncome)],
     ["Tuloraja", fmtMoney(latest.taxLimit)],
@@ -135,7 +238,7 @@ function renderDashboard() {
     box.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
     dash.append(box);
   }
-  el("dashboardNote").textContent = status.text + ". Tulorajan vertailu käyttää verokortin omaa kertymää, ei koko vuoden YTD-tuloa.";
+  el("dashboardNote").textContent = `${status.text}. Tulorajaa verrataan verokortin omaan kertymään.`;
   renderHistory(history);
 }
 
@@ -155,14 +258,27 @@ el("pdfInput").addEventListener("change", async event => {
   const file = event.target.files?.[0];
   if (!file) return;
   el("status").textContent = "Luetaan PDF:ää…";
+  el("resultSection").classList.add("hidden");
+  el("reviewSection").classList.add("hidden");
   try {
     currentRawText = await extractPdfText(file);
     currentParsed = parsePayslip(currentRawText);
-    renderReview(currentParsed);
     el("rawText").textContent = currentRawText;
-    el("status").textContent = currentParsed.documentType === "payslip"
-      ? "Palkkalaskelma tunnistettu. Tarkista luvut ennen tallennusta."
-      : "Dokumenttia ei tunnistettu riittävän varmasti.";
+    showingAllFields = false;
+
+    if (canAutoAccept(currentParsed)) {
+      const record = parsedRecord(currentParsed);
+      upsertRecord(record);
+      renderSuccess(record);
+      renderDashboard();
+      el("status").textContent = "Tunnistus onnistui ja palkkalaskelma tallennettiin automaattisesti.";
+    } else {
+      const keys = problemKeys(currentParsed);
+      renderReview(currentParsed, keys);
+      el("status").textContent = currentParsed.documentType === "payslip"
+        ? "Tulkinnassa on epävarma kohta. Tarkista vain pyydetyt tiedot."
+        : "Dokumenttia ei tunnistettu riittävän varmasti. Täydennä puuttuvat ydintiedot.";
+    }
   } catch (err) {
     console.error(err);
     el("status").textContent = `PDF:n luku epäonnistui: ${err.message}`;
@@ -172,18 +288,30 @@ el("pdfInput").addEventListener("change", async event => {
 el("saveButton").addEventListener("click", () => {
   if (!currentParsed) return;
   const record = collectEditedRecord();
-  const history = loadHistory();
-  const duplicate = history.findIndex(r => r.payDate === record.payDate && r.grossPay === record.grossPay && r.netPay === record.netPay);
-  if (duplicate >= 0) history[duplicate] = record; else history.push(record);
-  saveHistory(history);
-  el("status").textContent = "Tallennettu paikallisesti laitteelle.";
+  upsertRecord(record);
+  renderSuccess(record);
   renderDashboard();
+  el("status").textContent = "Korjaus tallennettu.";
+});
+
+el("editParsedButton").addEventListener("click", () => {
+  if (!currentParsed) return;
+  showingAllFields = true;
+  renderReview(currentParsed, null);
+});
+
+el("showAllButton").addEventListener("click", () => {
+  if (!currentParsed) return;
+  showingAllFields = true;
+  renderReview(currentParsed, null);
 });
 
 el("rawToggle").addEventListener("click", () => el("rawText").classList.toggle("hidden"));
 el("clearButton").addEventListener("click", () => {
   if (confirm("Poistetaanko kaikki tämän prototyypin paikallisesti tallentamat palkkatiedot?")) {
     localStorage.removeItem(STORAGE_KEY);
+    el("resultSection").classList.add("hidden");
+    el("reviewSection").classList.add("hidden");
     renderDashboard();
   }
 });
