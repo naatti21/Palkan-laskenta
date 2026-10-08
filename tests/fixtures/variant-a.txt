@@ -1,0 +1,24 @@
+PALKKALASKELMA/PALKKATODISTUS
+Palkkakausi 14.9.2026 - 27.9.2026
+Maksupäivä 9.10.2026
+Maksetaan 1 831,61
+20040 Ylityö 100 % vrk 5,03 25,07 126,10
+20050 Ylityö 50 % vko 8,00 25,07 100,28
+20060 Ylityö 100 % vko 8,00 25,07 200,56
+20110 Sunnuntaityö 10,55 25,07 264,49
+20120 Viikkovapaakorvaus 10,55 25,07 264,49
+20511 Työaikapankista käyttö 3,98 19,44 77,37
+20512 Työaikapankin lisäys -11,20 19,44 -217,71
+90000 Ennakonpidätys 18 077,71 -1 044,16
+Kertymä palkkakaudelta
+Ennakonpid. al. tul 3 212,79
+Ennakonpidätys -1 044,16
+Kertymä vuoden alusta
+Ennakonpid. al. tul 73 881,95
+Ennakonpidätys -22 058,48
+Kertymä edelliseltä vuodelta
+Ennakonpid.al. tulo 78 829,16
+Perusprosentti (0 - 40 000,00€) 32,5%
+Lisäprosentti 47,0%
+KTA 25,07
+PP 19,44
