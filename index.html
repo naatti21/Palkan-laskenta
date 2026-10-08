@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="Paikallinen palkkalaskelman PDF-tulkinnan PWA-prototyyppi" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./styles.css" />
+  <title>Palkka PWA — prototyyppi</title>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">PAIKALLINEN PROTOTYYPPI</p>
+        <h1>Palkka PWA</h1>
+        <p>Syötä tekstikerroksen sisältävä palkkalaskelma-PDF. Tulkinta tehdään selaimessa ja luvut hyväksytään ennen tallennusta.</p>
+      </div>
+      <div id="overallLight" class="light neutral">–</div>
+    </header>
+
+    <section class="card upload-card">
+      <label class="file-button">
+        <input id="pdfInput" type="file" accept="application/pdf" />
+        <span>Valitse palkkalaskelma PDF</span>
+      </label>
+      <button id="installButton" class="secondary hidden">Asenna sovellus</button>
+      <p id="status" class="status">Ei ladattua dokumenttia.</p>
+      <p class="privacy">PDF:n sisältöä ei lähetetä palvelimelle. PDF.js-kirjasto ladataan prototyypissä CDN:stä; varsinainen PDF käsitellään selaimessasi.</p>
+    </section>
+
+    <section id="reviewSection" class="card hidden">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">TARKISTA ENNEN TALLENNUSTA</p>
+          <h2>Poimitut tiedot</h2>
+        </div>
+        <span id="confidenceBadge" class="badge">–</span>
+      </div>
+      <div id="reviewGrid" class="review-grid"></div>
+      <div class="actions">
+        <button id="saveButton">Hyväksy ja tallenna</button>
+        <button id="rawToggle" class="secondary">Näytä poimittu teksti</button>
+      </div>
+      <pre id="rawText" class="raw hidden"></pre>
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">TILANNE</p>
+          <h2>Dashboard</h2>
+        </div>
+        <button id="clearButton" class="danger-text">Tyhjennä paikallinen data</button>
+      </div>
+      <div id="dashboard" class="metrics"></div>
+      <p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">HISTORIA</p>
+          <h2>Tallennetut laskelmat</h2>
+        </div>
+        <button id="exportButton" class="secondary">Vie JSON</button>
+      </div>
+      <div id="history"></div>
+    </section>
+
+    <section class="card warning-card">
+      <h2>Prototyypin rajaus</h2>
+      <p>Tämä versio lukee tekstipohjaisia PDF:iä. Skannatut kuvapohjaiset PDF:t, verokortit ja verotuspäätökset lisätään myöhemmin. Liikennevalo käyttää verokortin kertymää vain, jos se löytyy erikseen dokumentista — vuosikertymää ei verrata automaattisesti lyhyemmän voimassaoloajan tulorajaan.</p>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
