@@ -65,6 +65,7 @@
           <span class="badge bad">Ei tallennettu</span>
         </div>
         <p class="muted">Palkkapäivää, bruttoa, nettoa ja vuoden kertymää ei löytynyt riittävän varmasti. En tallenna dokumenttia enkä arvaa puuttuvia tietoja.</p>
+        <p class="learning-note">Jos tämä on palkkalaskelma, voit vahvistaa sen kerran. Sovellus muistaa vain rakenteen tunnisteet paikallisesti ja yrittää tunnistaa samanlaisen pohjan jatkossa.</p>
         <div class="actions">
           <button id="chooseAnotherButton">Valitse toinen PDF</button>
           <button id="manualEntryButton" class="secondary">Tämä on palkkalaskelma – täytä käsin</button>
@@ -141,7 +142,7 @@
           </div>
         </div>
         <p>Sovellus ei tarvitse eikä tallenna palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Palkkalaskelmasta säilytetään vain seurannan kannalta tarpeelliset palkka-, aika-, verokortti- ja palkkarivitiedot.</p>
-        <p class="muted">Alkuperäistä PDF-tiedostoa eikä PDF:stä poimittua raakatekstiä tallenneta historiaan tai varmuuskopioon. Pidämme rakenteen tarkoituksella kevyenä ja paikallisena, jotta yksityisyys säilyy hyvänä ja tuotteen kustannukset voidaan pitää matalina.</p>
+        <p class="muted">Alkuperäistä PDF-tiedostoa eikä PDF:stä poimittua raakatekstiä tallenneta historiaan tai varmuuskopioon. Jos korjaat uudenlaista palkkalaskelmaa, sovellus voi tallentaa vain neutraaleja rakennetunnisteita (esim. kenttäotsikoita) tunnistuksen parantamiseksi. Pidämme rakenteen tarkoituksella kevyenä ja paikallisena, jotta yksityisyys säilyy hyvänä ja tuotteen kustannukset voidaan pitää matalina.</p>
       </section>
 
       <section class="card">
@@ -155,9 +156,11 @@
           <div class="summary-row"><span>Sisältö</span><strong id="recordCount">0 palkkalaskelmaa paikallisesti</strong></div>
           <div class="summary-row"><span>Historia</span><strong id="recordYears">Ei vielä historiaa</strong></div>
           <div class="summary-row"><span>Tallennus</span><strong>IndexedDB</strong></div>
+          <div class="summary-row"><span>Opitut rakenteet</span><strong id="learnedProfileCount">Ei vielä opittuja rakenteita</strong></div>
         </div>
         <div class="actions">
           <button id="installButton" class="secondary hidden">Asenna sovellus</button>
+          <button id="clearLearnedButton" class="secondary">Nollaa opitut rakenteet</button>
           <button id="clearButton" class="danger">Poista kaikki paikallinen data</button>
         </div>
       </section>

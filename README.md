@@ -1,8 +1,8 @@
-# Palkka PWA — v0.3 testiversio
+# Palkka PWA — v0.3.1 testiversio
 
 Tämän version tavoite on tehdä prototyypin pohjasta sellainen, että sitä voidaan testata eri vuosien ja eri PDF-toimittajien oikeilla palkkalaskelmilla ilman että käyttöliittymä muuttuu raskaaksi.
 
-## Mitä v0.3 muuttaa
+## Mitä v0.3.1 sisältää
 
 - tallennus siirtyy `localStorage`-tallennuksesta IndexedDB:hen
 - vanha prototyypin localStorage-historia migroidaan automaattisesti ensimmäisellä käynnistyksellä
@@ -19,10 +19,16 @@ Tämän version tavoite on tehdä prototyypin pohjasta sellainen, että sitä vo
 - parseri säilyttää palkkarivejä rakenteisesti: koodi, nimike, määrä, yksikköhinta, summa ja normalisoitu kategoria
 - myös tuntematon palkkarivi säilytetään eikä sitä pudoteta pois
 - käyttäjän tekemä korjaus säilyttää parserin alkuperäisen arvon rinnalla
+- vanha taulukkomainen palkkaerittelyformaatti tunnistetaan omana `legacy-table-fi-v1`-profiilinaan
+- vanhat ja nykyiset palkkalajikoodit normalisoidaan samoihin kategorioihin (esim. OT, sunnuntai, viikkovapaa)
+- uusi rakenne voidaan vahvistaa käyttäjän korjauksella; sovellus tallentaa vain neutraalit rakennetunnisteet paikallisesti
+- aiemmin vahvistettu rakenne voidaan tunnistaa myöhemmin palkkalaskelmaksi, vaikka parseri ei vielä saisi kaikkia arvoja irti
+- opitut rakenteet voi nollata erikseen ilman palkkahistorian poistamista
+- opitut, tunnisteettomat rakenneprofiilit kulkevat mukana JSON-varmuuskopiossa
 
 ## Tietosuojaperiaate
 
-Palkkalaskelma luetaan selaimen muistissa. Pysyvään tietomalliin ei tallenneta palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Myöskään alkuperäistä PDF:ää, tiedostonimeä tai koko poimittua raakatekstiä ei tallenneta palkkahistoriaan tai varmuuskopioon.
+Palkkalaskelma luetaan selaimen muistissa. Pysyvään tietomalliin ei tallenneta palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Myöskään alkuperäistä PDF:ää, tiedostonimeä tai koko poimittua raakatekstiä ei tallenneta palkkahistoriaan tai varmuuskopioon. Paikallinen oppiminen tallentaa vain ennalta rajattuja neutraaleja rakenneotsikoita, kuten `palkkakausi`, `maksupvm` tai `kauden tiedot`; henkilö-, työnantaja- tai tilitietoja ei käytetä oppimisprofiilin tunnisteena.
 
 Repositorioon ei pidä commitoida oikeita palkkalaskelmia. Oikeista dokumenteista tehdään vain tunnisteettomat testifixturet, jotka sisältävät parserin kannalta tarpeelliset rivit.
 
@@ -43,7 +49,7 @@ Sormenjälki lasketaan parserin normalisoiduista palkka-arvoista ja palkkariveis
 
 ## Varmuuskopio
 
-Data-välilehden **Vie varmuuskopio** luo JSON-tiedoston. **Palauta varmuuskopio** yhdistää tiedot nykyiseen historiaan ja välttää samojen palkkojen tuplaamisen.
+Data-välilehden **Vie varmuuskopio** luo JSON-tiedoston. **Palauta varmuuskopio** yhdistää tiedot nykyiseen historiaan, välttää samojen palkkojen tuplaamisen ja palauttaa myös tunnisteettomat opitut rakenneprofiilit.
 
 Tässä versiossa varmuuskopio on vielä käyttäjän itse vietävä tiedosto. Arkkitehtuuri on tarkoituksella sellainen, että myöhemmin voidaan lisätä vapaaehtoinen käyttäjän omaan pilveen (esim. Google Driven appData-alueelle) tehtävä varmuuskopio ilman keskitettyä palkkatietokantaa.
 
@@ -82,6 +88,7 @@ Repossa oleva `.github/workflows/pages.yml` ajaa parseri- ja tietomallitestit No
 - PDF:ssä pitää vielä olla tekstikerros; OCR:ää ei ole
 - PDF.js ladataan edelleen cdnjs-palvelusta, joten täysin ensimmäinen käyttö ei ole täysin offline
 - palkkarivien automaattinen kategorisointi on tarkoituksella varovainen; tunnistamaton rivi säilytetään kategoriassa `unknown`
+- paikallinen oppiminen tunnistaa rakenteen, mutta ei vielä rakenna täysin uusia kenttäpoimintasääntöjä itsenäisesti; epävarmat arvot kysytään edelleen käyttäjältä
 - palkkapäiväennusteita tai pyhäpäiväsiirtojen ennustemoottoria ei vielä generoida; oikean palkkalaskelman ilmoittama maksupäivä on lähdetotuus
 - Google Drive -autobackup ei ole vielä tässä paketissa
 

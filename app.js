@@ -6,6 +6,7 @@ import {
   makeBackup,
   makeRecordFromParsed,
   parseBackup,
+  parseBackupLearnedProfiles,
   paymentState
 } from "./model.js";
 import {
@@ -13,7 +14,9 @@ import {
   getAllRecords,
   mergeManyRecords,
   migrateLegacyLocalStorage,
-  upsertRecord
+  upsertRecord,
+  getSetting,
+  setSetting
 } from "./storage.js";
 
 let currentParsed = null;
@@ -22,6 +25,9 @@ let currentFingerprint = "";
 let currentRecord = null;
 let deferredInstallPrompt = null;
 let selectedYear = null;
+let currentLearnedProfile = null;
+let currentReviewWasManualConfirmation = false;
+const LEARNED_PROFILES_KEY = "learnedLayoutProfiles:v1";
 
 const fieldLabels = {
   payPeriodStart: "Palkkakausi alkaa",
@@ -88,6 +94,100 @@ function safeFingerprintPayload(parsed) {
     amount: line.amount ?? null
   }));
   return JSON.stringify({ values, payLines });
+}
+
+function normalizedSignals(signals) {
+  return [...new Set((signals || []).filter(value => typeof value === "string" && value.length <= 80))].sort();
+}
+
+function profileId(signals) {
+  return normalizedSignals(signals).join("|");
+}
+
+function profileSimilarity(a, b) {
+  const A = new Set(normalizedSignals(a));
+  const B = new Set(normalizedSignals(b));
+  if (A.size < 3 || B.size < 3) return 0;
+  const intersection = [...A].filter(value => B.has(value)).length;
+  const union = new Set([...A, ...B]).size;
+  return union ? intersection / union : 0;
+}
+
+async function getLearnedProfiles() {
+  const value = await getSetting(LEARNED_PROFILES_KEY);
+  return Array.isArray(value) ? value : [];
+}
+
+async function setLearnedProfiles(profiles) {
+  const safe = (profiles || []).slice(0, 100).map(profile => ({
+    id: String(profile.id || profileId(profile.signals)).slice(0, 120),
+    signals: normalizedSignals(profile.signals).slice(0, 30),
+    confirmations: Math.max(1, Math.min(999, Number(profile.confirmations) || 1)),
+    sourceProfile: String(profile.sourceProfile || "learned-local").slice(0, 80),
+    firstSeenAt: profile.firstSeenAt || null,
+    lastSeenAt: profile.lastSeenAt || null
+  })).filter(profile => profile.signals.length >= 3);
+  await setSetting(LEARNED_PROFILES_KEY, safe);
+  return safe;
+}
+
+async function findLearnedProfile(signals) {
+  const profiles = await getLearnedProfiles();
+  let best = null;
+  let bestScore = 0;
+  for (const profile of profiles) {
+    const score = profileSimilarity(signals, profile.signals);
+    if (score > bestScore) { best = profile; bestScore = score; }
+  }
+  return bestScore >= 0.8 ? { ...best, score: bestScore } : null;
+}
+
+async function rememberCurrentStructure() {
+  const signals = normalizedSignals(currentParsed?.structureSignals);
+  if (signals.length < 3) return null;
+  const profiles = await getLearnedProfiles();
+  const now = new Date().toISOString();
+  const existingIndex = profiles.findIndex(profile => profileSimilarity(signals, profile.signals) >= 0.8);
+  let profile;
+  if (existingIndex >= 0) {
+    profile = {
+      ...profiles[existingIndex],
+      signals: [...new Set([...(profiles[existingIndex].signals || []), ...signals])].sort(),
+      confirmations: (profiles[existingIndex].confirmations || 1) + 1,
+      lastSeenAt: now
+    };
+    profiles[existingIndex] = profile;
+  } else {
+    profile = {
+      id: profileId(signals).slice(0, 120),
+      signals,
+      confirmations: 1,
+      sourceProfile: currentParsed?.sourceProfile || "learned-local",
+      firstSeenAt: now,
+      lastSeenAt: now
+    };
+    profiles.push(profile);
+  }
+  await setLearnedProfiles(profiles);
+  return profile;
+}
+
+async function mergeLearnedProfiles(incoming) {
+  const profiles = await getLearnedProfiles();
+  for (const item of incoming || []) {
+    const signals = normalizedSignals(item.signals);
+    if (signals.length < 3) continue;
+    const i = profiles.findIndex(profile => profileSimilarity(signals, profile.signals) >= 0.8);
+    if (i >= 0) {
+      profiles[i] = {
+        ...profiles[i],
+        signals: [...new Set([...(profiles[i].signals || []), ...signals])].sort(),
+        confirmations: Math.max(profiles[i].confirmations || 1, item.confirmations || 1),
+        lastSeenAt: profiles[i].lastSeenAt || item.lastSeenAt || null
+      };
+    } else profiles.push(item);
+  }
+  return setLearnedProfiles(profiles);
 }
 
 function refreshRecordNotices(record) {
@@ -226,11 +326,17 @@ function renderReview(parsed, keys = null, manual = false) {
   const isPartial = Array.isArray(keys) && keys.length > 0;
   el("reviewEyebrow").textContent = manual ? "KÄSIN TÄYTTÖ" : isPartial ? "TARVITSEN TARKISTUKSEN" : "MUOKKAUS";
   el("reviewTitle").textContent = manual ? "Täytä palkkalaskelman ydintiedot" : isPartial ? "Tarkista vain nämä kohdat" : "Muokkaa tietoja";
-  el("reviewIntro").textContent = manual
-    ? "Täytä vähintään maksupäivä, brutto, netto ja vuoden veronalainen kertymä. Muita kenttiä voi lisätä tarvittaessa."
-    : isPartial
-      ? "Palkkalaskelma tunnistettiin, mutta nämä kohdat tarvitsevat varmistuksen. Muita tietoja ei tarvitse käydä läpi."
-      : "Muuta vain sitä, mikä on väärin. Käyttäjän korjaus säilytetään parserin alkuperäisen arvon rinnalla.";
+  if (manual && currentParsed?.structureSignals?.length >= 3) {
+    el("reviewIntro").textContent = "Tämä palkkalaskelman rakenne on uusi. Täytä ydintiedot kerran. Sovellus muistaa vain rakenteen tunnisteet tällä laitteella — ei nimeä, työnantajaa, henkilötunnusta tai PDF:n raakatekstiä. Epävarmat arvot kysytään jatkossakin.";
+  } else if (currentLearnedProfile && isPartial) {
+    el("reviewIntro").textContent = "Tunnistan tämän aiemmin vahvistetuksi rakenteeksi, mutta nämä arvot jäivät epävarmoiksi. Tarkista vain näkyvät kohdat.";
+  } else {
+    el("reviewIntro").textContent = manual
+      ? "Täytä vähintään maksupäivä, brutto, netto ja vuoden veronalainen kertymä. Muita kenttiä voi lisätä tarvittaessa."
+      : isPartial
+        ? "Palkkalaskelma tunnistettiin, mutta nämä kohdat tarvitsevat varmistuksen. Korjaus auttaa muistamaan tämän rakenteen paikallisesti. Muita tietoja ei tarvitse käydä läpi."
+        : "Muuta vain sitä, mikä on väärin. Käyttäjän korjaus säilytetään parserin alkuperäisen arvon rinnalla.";
+  }
   el("showAllButton").classList.toggle("hidden", !isPartial && !manual);
 
   const visible = isPartial || manual ? new Set(keys || requiredFields) : new Set(Object.keys(fieldLabels));
@@ -340,6 +446,7 @@ async function renderAll() {
   renderDashboard(records);
   renderHistory(records);
   renderDataSummary(records);
+  await renderLearnedProfileSummary();
 }
 
 function renderDashboard(records) {
@@ -418,19 +525,36 @@ function renderDataSummary(records) {
   el("recordYears").textContent = years.length ? `Vuodet ${Math.min(...years)}–${Math.max(...years)}` : "Ei vielä historiaa";
 }
 
+async function renderLearnedProfileSummary() {
+  const profiles = await getLearnedProfiles();
+  if (el("learnedProfileCount")) el("learnedProfileCount").textContent = profiles.length ? `${profiles.length} rakennetta` : "Ei vielä opittuja rakenteita";
+}
+
 async function processPdf(file) {
   el("status").textContent = "Luetaan PDF:ää…";
   el("resultSection").classList.add("hidden");
   el("reviewSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
   currentRecord = null;
+  currentLearnedProfile = null;
+  currentReviewWasManualConfirmation = false;
 
   currentRawText = await extractPdfText(file);
   currentParsed = parsePayslip(currentRawText);
+  currentLearnedProfile = await findLearnedProfile(currentParsed.structureSignals);
   currentFingerprint = await sha256(safeFingerprintPayload(currentParsed));
   el("rawText").textContent = currentRawText;
 
   if (currentParsed.documentType !== "payslip") {
+    if (currentLearnedProfile) {
+      currentParsed.documentType = "payslip";
+      currentParsed.sourceProfile = `learned-local:${currentLearnedProfile.id}`;
+      currentReviewWasManualConfirmation = true;
+      renderReview(currentParsed, problemKeys(currentParsed), true);
+      el("reviewTitle").textContent = "Tunnistan rakenteen – tarkista puuttuvat tiedot";
+      el("status").textContent = "Tämä rakenne on vahvistettu aiemmin palkkalaskelmaksi tällä laitteella.";
+      return;
+    }
     renderUnknown();
     return;
   }
@@ -476,9 +600,15 @@ el("saveButton").addEventListener("click", async () => {
   }
 
   const result = await upsertRecord(record);
+  let learned = null;
+  if (currentReviewWasManualConfirmation || Object.keys(record.corrections || {}).length > 0) {
+    learned = await rememberCurrentStructure();
+  }
   renderSuccess(result.record, result.mergedDuplicate);
   await renderAll();
-  el("status").textContent = "Korjaus tallennettu.";
+  el("status").textContent = learned
+    ? "Korjaus tallennettu. Tämän palkkalaskelman rakenne muistetaan paikallisesti seuraavaa kertaa varten."
+    : "Korjaus tallennettu.";
 });
 
 el("editParsedButton").addEventListener("click", () => {
@@ -494,11 +624,10 @@ el("showAllButton").addEventListener("click", () => {
 el("rawToggle").addEventListener("click", () => el("rawText").classList.toggle("hidden"));
 el("chooseAnotherButton").addEventListener("click", () => el("pdfInput").click());
 el("manualEntryButton").addEventListener("click", () => {
-  currentParsed = makeManualParsed();
-  currentFingerprint = "";
+  if (!currentParsed) currentParsed = makeManualParsed();
+  currentParsed.documentType = "payslip";
+  currentReviewWasManualConfirmation = true;
   currentRecord = null;
-  currentRawText = "";
-  el("rawText").textContent = "";
   renderReview(currentParsed, requiredFields, true);
 });
 
@@ -515,7 +644,8 @@ for (const id of ["dashboardYear", "historyYear"]) {
 
 el("exportButton").addEventListener("click", async () => {
   const records = await getAllRecords();
-  const backup = makeBackup(records);
+  const learnedProfiles = await getLearnedProfiles();
+  const backup = makeBackup(records, { learnedProfiles });
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -532,9 +662,11 @@ el("backupInput").addEventListener("change", async event => {
   try {
     const payload = JSON.parse(await file.text());
     const records = parseBackup(payload);
+    const learnedProfiles = parseBackupLearnedProfiles(payload);
     const result = await mergeManyRecords(records);
+    if (learnedProfiles.length) await mergeLearnedProfiles(learnedProfiles);
     await renderAll();
-    el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa.`;
+    el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa${learnedProfiles.length ? `, ${learnedProfiles.length} opittua rakennetta` : ""}.`;
   } catch (err) {
     el("backupStatus").textContent = `Palautus epäonnistui: ${err.message}`;
   } finally {
@@ -542,16 +674,25 @@ el("backupInput").addEventListener("change", async event => {
   }
 });
 
+el("clearLearnedButton")?.addEventListener("click", async () => {
+  if (!confirm("Nollataanko tällä laitteella opitut palkkalaskelmarakenteet? Palkkahistoriaa ei poisteta.")) return;
+  await setLearnedProfiles([]);
+  currentLearnedProfile = null;
+  await renderLearnedProfileSummary();
+  el("backupStatus").textContent = "Opitut rakenteet nollattu. Palkkahistoria säilyi ennallaan.";
+});
+
 el("clearButton").addEventListener("click", async () => {
   if (!confirm("Poistetaanko kaikki tämän laitteen paikallisesti tallentamat palkkatiedot? Tätä ei voi perua ilman varmuuskopiota.")) return;
   await clearAllRecords();
+  await setLearnedProfiles([]);
   currentRecord = null;
   currentParsed = null;
   el("resultSection").classList.add("hidden");
   el("reviewSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
   await renderAll();
-  el("backupStatus").textContent = "Paikallinen palkkahistoria poistettu.";
+  el("backupStatus").textContent = "Paikallinen palkkahistoria ja opitut rakenteet poistettu.";
 });
 
 window.addEventListener("beforeinstallprompt", event => {

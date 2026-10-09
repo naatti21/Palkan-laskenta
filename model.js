@@ -1,5 +1,13 @@
 export const RECORD_SCHEMA_VERSION = 1;
-export const BACKUP_SCHEMA_VERSION = 1;
+export const BACKUP_SCHEMA_VERSION = 2;
+
+const LEARNED_SIGNAL_ALLOWLIST = new Set([
+  "title:palkkalaskelma", "title:palkkaerittely",
+  "label:palkkakausi", "label:maksupaiva",
+  "section:kauden-tiedot", "section:vuoden-tiedot",
+  "label:ver-al-ans", "label:ennakonpidatys", "label:tuloraja",
+  "section:erittely"
+]);
 
 export const VALUE_KEYS = [
   "payPeriodStart", "payPeriodEnd", "payDate",
@@ -69,6 +77,25 @@ function safeNotices(notices) {
     message: safeText(notice?.message, 400) || "",
     fields: Array.isArray(notice?.fields) ? notice.fields.filter(key => VALUE_KEYS.includes(key)).slice(0, 20) : []
   }));
+}
+
+
+function safeLearnedProfiles(profiles) {
+  if (!Array.isArray(profiles)) return [];
+  return profiles.slice(0, 100).map(profile => {
+    const signals = Array.isArray(profile?.signals)
+      ? [...new Set(profile.signals.filter(value => typeof value === "string" && LEARNED_SIGNAL_ALLOWLIST.has(value)))].sort().slice(0, 30)
+      : [];
+    if (signals.length < 3) return null;
+    return {
+      id: safeText(profile?.id, 120) || signals.join("|"),
+      signals,
+      confirmations: Math.max(1, Math.min(999, Number(profile?.confirmations) || 1)),
+      sourceProfile: safeText(profile?.sourceProfile, 80) || "learned-local",
+      firstSeenAt: safeText(profile?.firstSeenAt, 40) || null,
+      lastSeenAt: safeText(profile?.lastSeenAt, 40) || null
+    };
+  }).filter(Boolean);
 }
 
 function safeCorrections(corrections) {
@@ -289,13 +316,14 @@ export function migrateLegacyRecord(input) {
   };
 }
 
-export function makeBackup(records) {
+export function makeBackup(records, options = {}) {
   return {
     app: "Palkka PWA",
     backupSchemaVersion: BACKUP_SCHEMA_VERSION,
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
     exportedAt: nowIso(),
-    privacy: "Backup contains structured salary data only. Original PDFs, filenames and raw extracted text are not included.",
+    privacy: "Backup contains structured salary data and non-identifying learned layout signals only. Original PDFs, filenames and raw extracted text are not included.",
+    learnedProfiles: safeLearnedProfiles(options.learnedProfiles),
     records: records.map(record => migrateLegacyRecord(record)).filter(Boolean)
   };
 }
@@ -305,4 +333,10 @@ export function parseBackup(payload) {
   const records = Array.isArray(payload) ? payload : payload.records;
   if (!Array.isArray(records)) throw new Error("Varmuuskopiosta ei löytynyt palkkatietoja.");
   return records.map(migrateLegacyRecord).filter(Boolean);
+}
+
+
+export function parseBackupLearnedProfiles(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
+  return safeLearnedProfiles(payload.learnedProfiles);
 }
