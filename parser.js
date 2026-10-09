@@ -384,7 +384,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.3.1",
+    parserVersion: "0.3.2",
     sourceProfile,
     fields,
     payLines,
@@ -413,6 +413,20 @@ export function validate(fields) {
       level: "notice", code: "tax-card-accumulation-missing",
       message: "Tuloraja löytyi, mutta verokortin omaa kertymää ei löytynyt. Tulorajaa ei verrata koko vuoden YTD-tuloon.",
       fields: ["taxCardAccumulatedIncome", "taxLimit", "ytdTaxableIncome"]
+    });
+  }
+
+  if (
+    v("taxCardAccumulatedIncome") != null &&
+    v("grossPay") != null &&
+    v("ytdTaxableIncome") != null &&
+    v("ytdTaxableIncome") > v("grossPay") * 2 &&
+    v("taxCardAccumulatedIncome") < v("grossPay") * 0.5
+  ) {
+    notices.push({
+      level: "blocking", code: "tax-card-accumulation-suspiciously-low",
+      message: "Verokortin kertymäksi löytyi poikkeuksellisen pieni arvo suhteessa tämän jakson palkkaan. Tarkista kertymä ennen kuin sitä käytetään tulorajan seurantaan.",
+      fields: ["taxCardAccumulatedIncome"]
     });
   }
 
