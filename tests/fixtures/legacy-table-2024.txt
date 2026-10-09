@@ -1,0 +1,39 @@
+1 / 1 K 4 PALKKAERITTELY
+Yritys Oy Yksikkö Palkkakausi
+PL 1 05.08.2024 -
+00000 Kaupunki 67 Tuotanto 18.08.2024
+Henkilötunnus Maksupvm
+XXXXXX-XXXX 00000 23.08.2024 2024/17
+Pankkitili
+FIXX XXXX XXXX XXXX XX 1901,75
+Palkkaustiedot Loma-kta TKP ATP KTA PARY TVR
+26,59 18,31 18,06 22,78 A 8
+TTP TKO HKO % PP Ylityöh/v Pakkipist.
+16,22 15,00 18,65 83,46 443,00
+Verotustiedot Perus/lisä% Tuloraja/vv Pidätystapa Työs.alk/lop Tehtävänimike Yksikkö
+31,5/43,0 36725,71 Henkilökohtai 15.05.2017- Tehtävä 67
+Erittely Tun./Päiv.T./P.palk Määrä A-hinta e
+1100 Sunnuntaityö aikat 10,80 22,78 246,02
+1220 YT vrk 100 % aikat 5,63 22,78 128,32
+1230 YT vko 50 % aikat 8,00 22,78 91,12
+1240 YT vko 100 % aikat 8,00 22,78 182,24
+1600 Viikkovapaakorvaus 10,80 22,78 246,02
+3040 Palkkiotyö TKP 96,36 18,31 1764,48
+4020 Iltavuorolisä 26,82 1,32 35,41
+4200 Työajan jousto +/- -2,73 18,31 -50,05
+4600 Palkkiopalkkalisä 96,36 4,55 438,47
+5351 TAS-vp ja korvaus 8,00 22,78 182,24
+8000 Ennakonpidätys -1028,25
+8100 Eläkevakuutusmaksu 7,15 -233,40
+8200 Työttömyysvakuutus 0,79 -25,79
+8400 Ay-jäsenmaksu -32,64
+8800 Sairauskassa 1,30 -42,44
+9050 TAS-korvaus säästö 74,74 1,44 107,26
+Kumul. ansio 6605,98
+Kumul. enn.pid. 2080,89
+Kauden tiedot Ver.al.ans Rahapalkka Enn.pid Väh.yht. Korvaukset Maksetaan
+3264,27 3264,27 -1028,25 -334,27 1901,75
+Vuoden Ver.al.ans Rahapalkka Luont.edut Enn.pid. Eläke/tvm Ay-maksut
+al.tiedot 44880,27 44880,27 800,00 -11266,72 -3626,99 -456,81
+Päivärahat Km-korvaus Pid.TAS-vp Tas-ansio Ed.v.ansio Ed.v.vero
+31,99 107,26 72440,34 -20332,18
