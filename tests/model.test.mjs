@@ -6,6 +6,7 @@ import {
   makeRecordFromParsed,
   migrateLegacyRecord,
   parseBackup,
+  parseBackupLearnedProfiles,
   paymentState
 } from "../model.js";
 import { parsePayslip } from "../parser.js";
@@ -84,4 +85,22 @@ test("nykyisen skeeman tuonnissa ylimääräinen henkilötietorakenne pudotetaan
   assert.equal(json.includes("EI SAA SÄILYÄ"), false);
   assert.equal("personal" in record, false);
   assert.equal("rawText" in record, false);
+});
+
+
+test("varmuuskopio voi sisältää vain tunnisteettomat opitut rakenneprofiilit", async () => {
+  const text = await readFile(new URL("./fixtures/variant-a.txt", import.meta.url), "utf8");
+  const record = makeRecordFromParsed(parsePayslip(text), "abc");
+  const learnedProfiles = [{
+    id: "layout-1",
+    signals: ["title:palkkalaskelma", "label:palkkakausi", "label:maksupaiva", "name:EI-SAA-TALLENTUA"],
+    confirmations: 2,
+    sourceProfile: "generic-text-pdf"
+  }];
+  const backup = makeBackup([record], { learnedProfiles });
+  const restored = parseBackupLearnedProfiles(backup);
+  assert.equal(restored.length, 1);
+  assert.deepEqual(restored[0].signals, ["label:maksupaiva", "label:palkkakausi", "title:palkkalaskelma"]);
+  assert.equal(JSON.stringify(backup).includes("rawText"), false);
+  assert.equal(JSON.stringify(backup).includes("EI-SAA-TALLENTUA"), false);
 });

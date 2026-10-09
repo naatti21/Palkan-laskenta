@@ -78,5 +78,47 @@ test("ylityörivin prosenttiluku jää osaksi nimikettä eikä määräksi", asy
   assert.equal(line.quantity, 5.03);
   assert.equal(line.unitPrice, 25.07);
   assert.equal(line.amount, 126.10);
-  assert.equal(line.category, "overtime_100");
+  assert.equal(line.category, "overtime_100_daily");
+});
+
+test("legacy-taulukkopohja 2024 tunnistuu palkkalaskelmaksi", async () => {
+  const text = await readFile(new URL("./fixtures/legacy-table-2024.txt", import.meta.url), "utf8");
+  const parsed = parsePayslip(text);
+  const record = plainRecord(parsed);
+  assert.equal(parsed.documentType, "payslip");
+  assert.equal(parsed.sourceProfile, "legacy-table-fi-v1");
+  assert.equal(record.payPeriodStart, "2024-08-05");
+  assert.equal(record.payPeriodEnd, "2024-08-18");
+  assert.equal(record.payDate, "2024-08-23");
+  assert.equal(record.grossPay, 3264.27);
+  assert.equal(record.netPay, 1901.75);
+  assert.equal(record.ytdTaxableIncome, 44880.27);
+  assert.equal(record.previousYearTaxableIncome, 72440.34);
+  assert.equal(record.withholdingPeriod, -1028.25);
+  assert.equal(record.withholdingYtd, -11266.72);
+  assert.equal(record.taxRate, 31.5);
+  assert.equal(record.additionalRate, 43);
+  assert.equal(record.taxLimit, 36725.71);
+  assert.equal(record.kta, 22.78);
+  assert.equal(record.pp, 18.65);
+  assert.equal(record.overtime100DailyHours, 5.63);
+  assert.equal(record.overtime50WeeklyHours, 8);
+  assert.equal(record.overtime100WeeklyHours, 8);
+  assert.equal(record.overtimeHours, 21.63);
+  assert.equal(record.overtimeCompensation, 401.68);
+  assert.equal(record.sundayHours, 10.8);
+  assert.equal(record.weeklyRestHours, 10.8);
+  assert.equal(record.taxCardAccumulatedIncome, null);
+});
+
+test("legacy-palkkarivit normalisoituvat kategorioihin", async () => {
+  const text = await readFile(new URL("./fixtures/legacy-table-2024.txt", import.meta.url), "utf8");
+  const parsed = parsePayslip(text);
+  const byCode = Object.fromEntries(parsed.payLines.map(line => [line.code, line]));
+  assert.equal(byCode["1220"].category, "overtime_100_daily");
+  assert.equal(byCode["1230"].category, "overtime_50_weekly");
+  assert.equal(byCode["1240"].category, "overtime_100_weekly");
+  assert.equal(byCode["1100"].category, "sunday");
+  assert.equal(byCode["4200"].category, "worktime_flex");
+  assert.equal(byCode["4600"].category, "incentive");
 });
