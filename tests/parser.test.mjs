@@ -122,3 +122,37 @@ test("legacy-palkkarivit normalisoituvat kategorioihin", async () => {
   assert.equal(byCode["4200"].category, "worktime_flex");
   assert.equal(byCode["4600"].category, "incentive");
 });
+
+
+test("epäuskottavan pieni verokortin kertymä vaatii tarkistuksen", () => {
+  const text = `PALKKALASKELMA/PALKKATODISTUS
+Palkkakausi 4.8.2025 - 17.8.2025
+Maksupäivä 22.8.2025
+Maksetaan 1 952,12
+90000 Ennakonpidätys 14,00 -900,00
+Ennakonpid. al. tul 3 237,89
+Ennakonpid. al. tul 53 124,25
+Perusprosentti (0 - 35 000,00€) 30,0%
+Lisäprosentti 45,0%`;
+  const parsed = parsePayslip(text);
+  assert.equal(parsed.documentType, "payslip");
+  assert.equal(plainRecord(parsed).taxCardAccumulatedIncome, 14);
+  const notice = parsed.notices.find(item => item.code === "tax-card-accumulation-suspiciously-low");
+  assert.ok(notice);
+  assert.equal(notice.level, "blocking");
+  assert.deepEqual(notice.fields, ["taxCardAccumulatedIncome"]);
+});
+
+test("pieni verokortin kertymä ei yksin laukaise estoa vuoden ensimmäisellä palkalla", () => {
+  const text = `PALKKALASKELMA/PALKKATODISTUS
+Palkkakausi 1.1.2026 - 4.1.2026
+Maksupäivä 9.1.2026
+Maksetaan 80,00
+90000 Ennakonpidätys 100,00 -20,00
+Ennakonpid. al. tul 100,00
+Ennakonpid. al. tul 100,00
+Perusprosentti (0 - 35 000,00€) 20,0%
+Lisäprosentti 40,0%`;
+  const parsed = parsePayslip(text);
+  assert.equal(parsed.notices.some(item => item.code === "tax-card-accumulation-suspiciously-low"), false);
+});
