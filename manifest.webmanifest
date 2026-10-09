@@ -1,9 +1,9 @@
 {
-  "name": "Palkka PWA prototyyppi",
+  "name": "Palkka",
   "short_name": "Palkka",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0b1020",
   "theme_color": "#111827",
-  "description": "Paikallinen palkkalaskelmien PDF-tulkinnan prototyyppi"
+  "description": "Kevyt, paikallinen ja yksityinen palkkalaskelmien seuranta"
 }

@@ -4,94 +4,168 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
-  <meta name="description" content="Paikallinen palkkalaskelman PDF-tulkinnan PWA-prototyyppi" />
+  <meta name="description" content="Paikallinen ja yksityinen palkkalaskelmien seuranta" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="stylesheet" href="./styles.css" />
-  <title>Palkka PWA — prototyyppi</title>
+  <title>Palkka PWA</title>
 </head>
 <body>
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">PAIKALLINEN PROTOTYYPPI</p>
-        <h1>Palkka PWA</h1>
-        <p>Lisää palkkalaskelma. Selkeästi tunnistetut tiedot tallennetaan automaattisesti ja sovellus pyytää apua vain epäselvissä kohdissa.</p>
+        <p class="eyebrow">PAIKALLINEN PALKANSEURANTA</p>
+        <h1>Palkka</h1>
+        <p>Palkkalaskelma sisään. Sovellus muistaa, seuraa ja huomaa muutokset puolestasi.</p>
       </div>
       <div id="overallLight" class="light neutral">–</div>
     </header>
 
-    <section class="card upload-card">
-      <label class="file-button">
-        <input id="pdfInput" type="file" accept="application/pdf" />
-        <span>Valitse palkkalaskelma PDF</span>
-      </label>
-      <button id="installButton" class="secondary hidden">Asenna sovellus</button>
-      <p id="status" class="status">Ei ladattua dokumenttia.</p>
-      <p class="privacy">PDF käsitellään selaimessasi. Prototyyppi ei lähetä palkkalaskelmaa omalle palvelimelle.</p>
-    </section>
+    <nav class="tabs" aria-label="Päänavigaatio">
+      <button class="tab active" data-view-target="tracking">Seuranta</button>
+      <button class="tab" data-view-target="history">Historia</button>
+      <button class="tab" data-view-target="data">Data</button>
+    </nav>
 
-    <section id="resultSection" class="card hidden">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">TUNNISTETTU</p>
-          <h2>Palkkalaskelma tallennettu</h2>
+    <section data-view="tracking">
+      <section class="card upload-card">
+        <label class="file-button">
+          <input id="pdfInput" type="file" accept="application/pdf" />
+          <span>Valitse palkkalaskelma PDF</span>
+        </label>
+        <p id="status" class="status">Ei ladattua dokumenttia.</p>
+        <p class="privacy">PDF luetaan selaimessasi. Alkuperäistä PDF:ää tai siitä poimittua raakatekstiä ei tallenneta palkkahistoriaan.</p>
+      </section>
+
+      <section id="resultSection" class="card hidden">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TUNNISTETTU</p>
+            <h2 id="resultTitle">Palkkalaskelma tallennettu</h2>
+          </div>
+          <span id="resultBadge" class="badge good">Tallennettu</span>
         </div>
-        <span id="resultBadge" class="badge good">OK</span>
-      </div>
-      <div id="resultSummary" class="summary-list"></div>
-      <div>
-        <p class="mini-label">Tunnistetut osat</p>
-        <div id="detectedTags" class="tag-list"></div>
-      </div>
-      <div class="actions compact-actions">
-        <button id="editParsedButton" class="secondary">Muokkaa</button>
-      </div>
-    </section>
-
-    <section id="reviewSection" class="card hidden">
-      <div class="section-heading">
+        <p id="resultSubtitle" class="muted">Tunnistus onnistui varmasti.</p>
+        <div id="resultSummary" class="summary-list"></div>
         <div>
-          <p id="reviewEyebrow" class="eyebrow">TARVITSEN TARKISTUKSEN</p>
-          <h2 id="reviewTitle">Tarkista epäselvä tieto</h2>
+          <p class="mini-label">Tunnistetut osat</p>
+          <div id="detectedTags" class="tag-list"></div>
         </div>
-        <span id="confidenceBadge" class="badge">–</span>
-      </div>
-      <p id="reviewIntro" class="muted">Näytän vain kohdat, joita en pystynyt tulkitsemaan riittävän varmasti.</p>
-      <div id="reviewGrid" class="review-grid"></div>
-      <div class="actions">
-        <button id="saveButton">Tallenna korjaus</button>
-        <button id="showAllButton" class="secondary">Näytä kaikki kentät</button>
-        <button id="rawToggle" class="secondary">Näytä poimittu teksti</button>
-      </div>
-      <pre id="rawText" class="raw hidden"></pre>
+        <div id="resultNotices" class="notice-box hidden"></div>
+        <div class="actions compact-actions">
+          <button id="editParsedButton" class="secondary">Muokkaa</button>
+        </div>
+      </section>
+
+      <section id="unknownSection" class="card error-card hidden">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">EI TUNNISTETTU</p>
+            <h2>Tämä ei vaikuta palkkalaskelmalta</h2>
+          </div>
+          <span class="badge bad">Ei tallennettu</span>
+        </div>
+        <p class="muted">Palkkapäivää, bruttoa, nettoa ja vuoden kertymää ei löytynyt riittävän varmasti. En tallenna dokumenttia enkä arvaa puuttuvia tietoja.</p>
+        <div class="actions">
+          <button id="chooseAnotherButton">Valitse toinen PDF</button>
+          <button id="manualEntryButton" class="secondary">Tämä on palkkalaskelma – täytä käsin</button>
+        </div>
+      </section>
+
+      <section id="reviewSection" class="card hidden">
+        <div class="section-heading">
+          <div>
+            <p id="reviewEyebrow" class="eyebrow">TARVITSEN TARKISTUKSEN</p>
+            <h2 id="reviewTitle">Tarkista epäselvä tieto</h2>
+          </div>
+          <span class="badge warn">Tarkistus</span>
+        </div>
+        <p id="reviewIntro" class="muted">Näytän vain kohdat, joita en pystynyt tulkitsemaan riittävän varmasti.</p>
+        <div id="reviewGrid" class="review-grid"></div>
+        <div class="actions">
+          <button id="saveButton">Tallenna</button>
+          <button id="showAllButton" class="secondary">Näytä kaikki kentät</button>
+          <button id="rawToggle" class="secondary">Näytä poimittu teksti</button>
+        </div>
+        <pre id="rawText" class="raw hidden"></pre>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TILANNE</p>
+            <h2>Vuoden seuranta</h2>
+          </div>
+          <select id="dashboardYear" class="year-select" aria-label="Seurantavuosi"></select>
+        </div>
+        <div id="dashboard" class="metrics"></div>
+        <p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>
+      </section>
     </section>
 
-    <section class="card">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">TILANNE</p>
-          <h2>Dashboard</h2>
+    <section data-view="history" class="hidden">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">HISTORIA</p>
+            <h2>Tallennetut laskelmat</h2>
+          </div>
+          <select id="historyYear" class="year-select" aria-label="Historiavuosi"></select>
         </div>
-        <button id="clearButton" class="danger-text">Tyhjennä data</button>
-      </div>
-      <div id="dashboard" class="metrics"></div>
-      <p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>
+        <p class="muted">Vanhoja palkkalaskelmia voi lisätä normaalisti. Ne järjestetään maksupäivän perusteella oikealle vuodelle.</p>
+        <div id="history"></div>
+      </section>
     </section>
 
-    <section class="card">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">HISTORIA</p>
-          <h2>Tallennetut laskelmat</h2>
+    <section data-view="data" class="hidden">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">VARMUUSKOPIO</p>
+            <h2>Puhelimen vaihto ja palautus</h2>
+          </div>
         </div>
-        <button id="exportButton" class="secondary">Vie JSON</button>
-      </div>
-      <div id="history"></div>
-    </section>
+        <p>Tietosi ovat ensisijaisesti tällä laitteella. Tee varmuuskopio ennen puhelimen vaihtoa ja säilytä tiedosto paikassa, johon pääset myös uudella laitteella.</p>
+        <div class="actions">
+          <button id="exportButton">Vie varmuuskopio</button>
+          <button id="importButton" class="secondary">Palauta varmuuskopio</button>
+          <input id="backupInput" class="hidden" type="file" accept="application/json,.json" />
+        </div>
+        <p id="backupStatus" class="muted">Automaattinen käyttäjän omaan pilveen tehtävä varmuuskopiointi voidaan lisätä myöhemmin ilman, että palkkadata tarvitsee keskitettyä palvelintamme.</p>
+      </section>
 
-    <section class="card warning-card">
-      <h2>Prototyypin rajaus</h2>
-      <p>Tekstipohjaiset palkkalaskelmat ensin. Skannatut PDF:t, verokortit ja verotuspäätökset lisätään myöhemmin. Epävarma tieto kysytään käyttäjältä sen sijaan, että sovellus arvaisi.</p>
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TIETOSUOJA</p>
+            <h2>Vain seurannan tarvitsema data</h2>
+          </div>
+        </div>
+        <p>Sovellus ei tarvitse eikä tallenna palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Palkkalaskelmasta säilytetään vain seurannan kannalta tarpeelliset palkka-, aika-, verokortti- ja palkkarivitiedot.</p>
+        <p class="muted">Alkuperäistä PDF-tiedostoa eikä PDF:stä poimittua raakatekstiä tallenneta historiaan tai varmuuskopioon. Pidämme rakenteen tarkoituksella kevyenä ja paikallisena, jotta yksityisyys säilyy hyvänä ja tuotteen kustannukset voidaan pitää matalina.</p>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">PAIKALLINEN DATA</p>
+            <h2>Tämän laitteen tallennus</h2>
+          </div>
+        </div>
+        <div class="summary-list">
+          <div class="summary-row"><span>Sisältö</span><strong id="recordCount">0 palkkalaskelmaa paikallisesti</strong></div>
+          <div class="summary-row"><span>Historia</span><strong id="recordYears">Ei vielä historiaa</strong></div>
+          <div class="summary-row"><span>Tallennus</span><strong>IndexedDB</strong></div>
+        </div>
+        <div class="actions">
+          <button id="installButton" class="secondary hidden">Asenna sovellus</button>
+          <button id="clearButton" class="danger">Poista kaikki paikallinen data</button>
+        </div>
+      </section>
+
+      <section class="card quiet-card">
+        <h2>Tekninen rajaus tässä versiossa</h2>
+        <p class="muted">Tekstikerroksen sisältävät PDF:t ensin. Skannattuja kuvapohjaisia PDF:iä ei vielä OCR-lueta. Tuntemattomat palkkarivit säilytetään rakenteisina, jotta niitä voidaan luokitella myöhemmin ilman alkuperäisen PDF:n säilyttämistä.</p>
+      </section>
     </section>
   </main>
 

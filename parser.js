@@ -71,6 +71,86 @@ function field(value, confidence, source) {
   return { value, confidence: value == null ? 0 : confidence, source };
 }
 
+function normalizePayLineCategory(label) {
+  const s = String(label || "").toLocaleLowerCase("fi-FI");
+  if (/ylityö/.test(s) && /50/.test(s)) return "overtime_50";
+  if (/ylityö/.test(s) && /100/.test(s)) return "overtime_100";
+  if (/sunnuntai/.test(s)) return "sunday";
+  if (/viikkovapaa|viikkolepo/.test(s)) return "weekly_rest";
+  if (/työaikapank/.test(s) && /käytt/.test(s)) return "worktime_bank_use";
+  if (/työaikapank/.test(s) && /lisä|siirto|pankkiin/.test(s)) return "worktime_bank_add";
+  if (/palkkiotyö|urakka/.test(s)) return "piecework";
+  if (/palkkio|bonus|tulos/.test(s)) return "incentive";
+  if (/iltalisä|ilta/.test(s)) return "evening";
+  if (/yölisä|\byö\b/.test(s)) return "night";
+  if (/lomaraha/.test(s)) return "holiday_bonus";
+  if (/lomapalk/.test(s)) return "holiday_pay";
+  if (/ennakonpidätys/.test(s)) return "withholding";
+  if (/tyel|eläke/.test(s)) return "pension";
+  if (/työttömyys/.test(s)) return "unemployment_insurance";
+  if (/liitto|jäsenmaks/.test(s)) return "union_fee";
+  if (/sairaus/.test(s)) return "sickness_fund";
+  return "unknown";
+}
+
+function parsePayLines(text) {
+  const lines = [];
+  const numberToken = String.raw`-?\d+(?:[ \u00A0]\d{3})*(?:,\d+)?`;
+  const rowRegex = new RegExp(`^(\\d{4,6})\\s+(.+?)\\s+(${numberToken})(?:\\s+(${numberToken}))?(?:\\s+(${numberToken}))?$`);
+
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim();
+    const m = line.match(rowRegex);
+    if (!m) continue;
+
+    const code = m[1];
+    const label = m[2].trim();
+    const numbers = [m[3], m[4], m[5]].filter(Boolean).map(fiNumber).filter(v => v != null);
+    if (!label || !numbers.length) continue;
+
+    const category = normalizePayLineCategory(label);
+    let quantity = null;
+    let unitPrice = null;
+    let amount = null;
+
+    if (code === "90000" || category === "withholding") {
+      amount = numbers.at(-1) ?? null;
+    } else if (numbers.length >= 3) {
+      quantity = numbers[0];
+      unitPrice = numbers[numbers.length - 2];
+      amount = numbers.at(-1);
+    } else if (numbers.length === 2) {
+      quantity = numbers[0];
+      amount = numbers[1];
+    } else {
+      amount = numbers[0];
+    }
+
+    lines.push({
+      code,
+      label,
+      category,
+      quantity,
+      unitType: quantity == null ? null : "unit",
+      unitPrice,
+      amount
+    });
+  }
+  return lines;
+}
+
+function documentSignals(text) {
+  const signals = [
+    /palkkalaskelma|palkkatodistus/i,
+    /palkkakausi/i,
+    /maksupäivä/i,
+    /maksetaan/i,
+    /ennakonpid/i,
+    /tuloraja|perusprosentti|prosentti1/i
+  ];
+  return signals.filter(re => re.test(text)).length;
+}
+
 export function parsePayslip(inputText) {
   const text = cleanText(inputText);
 
@@ -131,6 +211,10 @@ export function parsePayslip(inputText) {
     .filter(v => v != null)
     .reduce((a, b) => a + b, 0);
 
+  const cashPay = matchOne(text, [
+    new RegExp(`(?:Rahapalkka|Käteispalkka)\\s+(${MONEY_RE})`, "i")
+  ], fiNumber);
+
   const fields = {
     payPeriodStart: field(period?.start ?? null, 0.99, "Palkkakausi"),
     payPeriodEnd: field(period?.end ?? null, 0.99, "Palkkakausi"),
@@ -155,39 +239,81 @@ export function parsePayslip(inputText) {
     sundayHours: field(sundayHours, 0.99, "20110"),
     weeklyRestHours: field(weeklyRestHours, 0.99, "20120"),
     worktimeBankUseHours: field(bankUseHours, 0.99, "20511"),
-    worktimeBankAddHours: field(bankAddHours, 0.99, "20512")
+    worktimeBankAddHours: field(bankAddHours, 0.99, "20512"),
+    cashPay: field(cashPay, 0.85, "Rahapalkka"),
+    taxableBenefits: field(null, 0, "Ei vielä parseroitua lähdettä"),
+    taxExemptBenefits: field(null, 0, "Ei vielä parseroitua lähdettä"),
+    preTaxSalaryAdjustment: field(null, 0, "Ei vielä parseroitua lähdettä")
   };
 
   const required = ["payDate", "grossPay", "netPay", "ytdTaxableIncome"];
   const requiredFound = required.filter(k => fields[k].value != null).length;
   const overallConfidence = requiredFound / required.length;
+  const signals = documentSignals(text);
+  const documentType = requiredFound >= 3 || (signals >= 3 && requiredFound >= 2) ? "payslip" : "unknown";
+  const notices = validate(fields);
 
   return {
-    documentType: requiredFound >= 3 ? "payslip" : "unknown",
-    parserVersion: "0.1.0",
+    documentType,
+    parserVersion: "0.3.0",
+    sourceProfile: "generic-text-pdf",
     fields,
+    payLines: parsePayLines(text),
     overallConfidence,
-    warnings: validate(fields)
+    signals,
+    notices,
+    warnings: notices.map(n => n.message)
   };
 }
 
 export function validate(fields) {
-  const warnings = [];
+  const notices = [];
   const v = k => fields[k]?.value;
 
   if (v("grossPay") != null && v("netPay") != null && v("netPay") > v("grossPay")) {
-    warnings.push("Nettopalkka on bruttopalkkaa suurempi — tarkista tulkinta.");
+    notices.push({
+      level: "blocking",
+      code: "net-greater-than-gross",
+      message: "Nettopalkka on bruttopalkkaa suurempi — tarkista tulkinta.",
+      fields: ["grossPay", "netPay"]
+    });
   }
+
   if (v("taxLimit") != null && v("ytdTaxableIncome") != null && v("taxCardAccumulatedIncome") == null) {
-    warnings.push("Tuloraja löytyi, mutta verokortin omaa kertymää ei löytynyt. Älä vertaa tulorajaa suoraan koko vuoden YTD-tuloon.");
+    notices.push({
+      level: "notice",
+      code: "tax-card-accumulation-missing",
+      message: "Tuloraja löytyi, mutta verokortin omaa kertymää ei löytynyt. Tulorajaa ei verrata koko vuoden YTD-tuloon.",
+      fields: ["taxCardAccumulatedIncome", "taxLimit", "ytdTaxableIncome"]
+    });
   }
-  if (v("overtimeHours") != null && v("overtimeHours") > 80) {
-    warnings.push("Ylityötunteja löytyi yli 80 h yhdeltä jaksolta — tarkista kentät.");
+
+  if (v("overtimeHours") != null && v("overtimeHours") > 100) {
+    notices.push({
+      level: "blocking",
+      code: "overtime-unusually-high",
+      message: "Ylityötunteja löytyi yli 100 h yhdeltä jaksolta — tarkista tulkinta.",
+      fields: ["overtime100DailyHours", "overtime50WeeklyHours", "overtime100WeeklyHours", "overtimeHours"]
+    });
+  } else if (v("overtimeHours") != null && v("overtimeHours") > 80) {
+    notices.push({
+      level: "notice",
+      code: "overtime-high",
+      message: "Ylityötunteja löytyi yli 80 h yhdeltä jaksolta. Arvo tallennettiin, mutta se kannattaa huomioida poikkeavana jaksona.",
+      fields: ["overtimeHours"]
+    });
   }
+
   if (v("taxCardAccumulatedIncome") != null && v("taxLimit") != null && v("taxCardAccumulatedIncome") > v("taxLimit") * 1.5) {
-    warnings.push("Verokortin kertymä on selvästi tulorajaa suurempi — tarkista verokortin voimassaolo ja tulkinta.");
+    notices.push({
+      level: "notice",
+      code: "tax-card-accumulation-high",
+      message: "Verokortin kertymä on selvästi tulorajaa suurempi. Tämä voi liittyä verokortin vaihtumiseen tai palkkalaskelman esitystapaan.",
+      fields: ["taxCardAccumulatedIncome", "taxLimit"]
+    });
   }
-  return warnings;
+
+  return notices;
 }
 
 export function plainRecord(parsed) {
@@ -195,7 +321,8 @@ export function plainRecord(parsed) {
     documentType: parsed.documentType,
     parserVersion: parsed.parserVersion,
     overallConfidence: parsed.overallConfidence,
-    warnings: parsed.warnings
+    warnings: parsed.notices?.map(n => n.message) ?? parsed.warnings ?? [],
+    payLines: parsed.payLines ?? []
   };
   for (const [key, meta] of Object.entries(parsed.fields)) out[key] = meta.value;
   return out;

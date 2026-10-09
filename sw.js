@@ -1,5 +1,8 @@
-const CACHE = "palkka-pwa-v2";
-const APP_SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./parser.js", "./pdf-reader.js", "./manifest.webmanifest"];
+const CACHE = "palkka-pwa-v3";
+const APP_SHELL = [
+  "./", "./index.html", "./styles.css", "./app.js", "./parser.js",
+  "./model.js", "./storage.js", "./pdf-reader.js", "./manifest.webmanifest"
+];
 
 self.addEventListener("install", event => {
   self.skipWaiting();

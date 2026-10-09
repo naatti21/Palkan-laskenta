@@ -1,110 +1,92 @@
-# Palkka PWA — prototyyppi 0.1
+# Palkka PWA — v0.3 testiversio
 
-Tämän prototyypin tavoite on todistaa yksi asia luotettavasti:
+Tämän version tavoite on tehdä prototyypin pohjasta sellainen, että sitä voidaan testata eri vuosien ja eri PDF-toimittajien oikeilla palkkalaskelmilla ilman että käyttöliittymä muuttuu raskaaksi.
 
-**eri näköiset PDF-palkkalaskelmat -> sama normalisoitu tietomalli -> käyttäjän tarkistus -> paikallinen seuranta.**
+## Mitä v0.3 muuttaa
 
-## Mitä 0.1 tekee
+- tallennus siirtyy `localStorage`-tallennuksesta IndexedDB:hen
+- vanha prototyypin localStorage-historia migroidaan automaattisesti ensimmäisellä käynnistyksellä
+- tietueilla on versionumero, jotta tulevat datamigraatiot voidaan tehdä hallitusti
+- varma palkkalaskelma tallentuu automaattisesti myös silloin, kun siinä on pelkkä huomautus
+- vain oikeasti estävä ristiriita tai puuttuva ydinkenttä pyytää käyttäjän tarkistusta
+- muu dokumentti näytetään selvästi "ei palkkalaskelma" -tapauksena eikä neljän tyhjän kentän lomakkeena
+- tuleva maksupäivä hyväksytään normaalina vahvistettuna tulevana palkkana
+- vanhat palkkalaskelmat järjestetään maksupäivän perusteella oikealle vuodelle
+- Historia on omalla välilehdellään ja vuosittain suodatettavissa
+- Data-välilehdellä ovat varmuuskopio, palautus, paikallisen datan poisto ja lyhyt tietosuojakuvaus
+- JSON-varmuuskopio on versioitu ja sisältää vain rakenteisen datan, ei PDF:ää tai poimittua raakatekstiä
+- samaksi palkaksi tunnistettu tuonti yhdistetään eikä siitä tehdä tuplaa
+- parseri säilyttää palkkarivejä rakenteisesti: koodi, nimike, määrä, yksikköhinta, summa ja normalisoitu kategoria
+- myös tuntematon palkkarivi säilytetään eikä sitä pudoteta pois
+- käyttäjän tekemä korjaus säilyttää parserin alkuperäisen arvon rinnalla
 
-- lukee selaimessa tekstikerroksen sisältävän PDF:n Mozilla PDF.js:llä
-- tunnistaa palkkakauden ja maksupäivän
-- poimii bruton, neton, YTD-tulon ja verokortin oman kertymän
-- poimii perus-/lisäprosentin ja tulorajan
-- poimii KTA:n, PP:n, OT-rivit, sunnuntaityön, viikkovapaan ja työaikapankkirivit
-- näyttää kaikki poimitut arvot muokattavina ennen tallennusta
-- tallentaa hyväksytyt laskelmat vain selaimen localStorageen
-- näyttää yksinkertaisen liikennevalon
-- vie tallennetut tiedot JSON-varmuuskopioksi
-- sisältää automaattitestit kahdelle eri PDF-rakenteelle
+## Tietosuojaperiaate
 
-## Tärkeä suoja vääristymiä vastaan
+Palkkalaskelma luetaan selaimen muistissa. Pysyvään tietomalliin ei tallenneta palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Myöskään alkuperäistä PDF:ää, tiedostonimeä tai koko poimittua raakatekstiä ei tallenneta palkkahistoriaan tai varmuuskopioon.
 
-Palkkalaskelman `Kertymä vuoden alusta` ei ole automaattisesti sama asia kuin nykyisen verokortin tulorajaan kuuluva kertymä.
+Repositorioon ei pidä commitoida oikeita palkkalaskelmia. Oikeista dokumenteista tehdään vain tunnisteettomat testifixturet, jotka sisältävät parserin kannalta tarpeelliset rivit.
 
-Prototyyppi poimii erikseen:
+## Datarakenne
 
-- `ytdTaxableIncome` = koko vuoden veronalainen kertymä
-- `taxCardAccumulatedIncome` = palkkalaskelman verokortin/pidätyksen kertymä, jos se on löydettävissä
-- `taxLimit` = verokortin tuloraja
+IndexedDB sisältää kanonisia palkkatietueita. Yksi tietue sisältää:
 
-Liikennevalo vertaa tulorajaa **vain `taxCardAccumulatedIncome`-kenttään**. Jos sitä ei löydy, appi ei tee vaarallista oletusta.
+- maksupäivän ja palkkakauden
+- bruton/neton ja kertymät
+- verokortin palkkalaskelmalla näkyvät tiedot
+- KTA/PP:n ja työaikatiedot, jos ne löytyvät
+- rakenteiset palkkarivit
+- parseriversion ja kenttien tunnistusmetadatan
+- käyttäjän tekemät korjaukset
+- normalisoidusta, tunnisteettomasta palkkadatasta lasketun SHA-256-sormenjäljen duplikaattien tunnistukseen
 
-## Testidata
+Sormenjälki lasketaan parserin normalisoiduista palkka-arvoista ja palkkariveistä, ei PDF-tiedostosta, tiedostonimestä tai raakatekstistä.
 
-Repositorioon ei tarvitse tallentaa oikeita palkkalaskelma-PDF:iä tai henkilötietoja. `tests/fixtures/` sisältää vain parserille tarpeelliset, tunnisteettomat tekstirivit kahdesta testirakenteesta.
+## Varmuuskopio
 
-Odotettu yhteinen tulos sisältää muun muassa:
+Data-välilehden **Vie varmuuskopio** luo JSON-tiedoston. **Palauta varmuuskopio** yhdistää tiedot nykyiseen historiaan ja välttää samojen palkkojen tuplaamisen.
 
-- maksupäivä 9.10.2026
-- brutto 3 212,79 €
-- netto 1 831,61 €
-- YTD 73 881,95 €
-- verokortin kertymä 18 077,71 €
-- tuloraja 40 000 €
-- perusprosentti 32,5 %
-- lisäprosentti 47 %
-- OT yhteensä 21,03 h
-- KTA 25,07 €
+Tässä versiossa varmuuskopio on vielä käyttäjän itse vietävä tiedosto. Arkkitehtuuri on tarkoituksella sellainen, että myöhemmin voidaan lisätä vapaaehtoinen käyttäjän omaan pilveen (esim. Google Driven appData-alueelle) tehtävä varmuuskopio ilman keskitettyä palkkatietokantaa.
+
+## Testaus oikeilla PDF:illä
+
+Seuraava testikierros tehdään pienellä mutta edustavalla korpuksella. Hyvä ensimmäinen aineisto on noin 3–5 PDF:ää jokaista selvästi erilaista toimittajaa tai ulkoasua kohden. Mukaan kannattaa ottaa mahdollisuuksien mukaan normaali palkka, ylityöpainotteinen palkka, loma-/bonusjakso, verokortin vaihdoksen ympäristö ja vuodenvaihde.
+
+Kun uusi PDF-rakenne löytyy, sitä ei kovakoodata uudeksi koko tietomalliksi. Lisätään vain tunnistus-/adapterisääntö, joka tuottaa saman kanonisen palkkadatan.
 
 ## Paikallinen ajo
 
-Älä avaa `index.html`:ää suoraan `file://`-osoitteella, koska service worker ja moduulit tarvitsevat HTTP-palvelimen.
-
-Pythonilla:
+Älä avaa `index.html`:ää suoraan `file://`-osoitteella. Käynnistä esimerkiksi:
 
 ```bash
 python -m http.server 8080
 ```
 
-Sitten avaa:
+ja avaa:
 
 ```text
 http://localhost:8080
 ```
 
-Parseritestit:
+Testit:
 
 ```bash
-node --test tests/parser.test.mjs
+node --test tests/*.test.mjs
 ```
 
 ## GitHub Pages
 
-1. Luo uusi repository.
-2. Kopioi tämän paketin tiedostot repositoryn juureen.
-3. Puske `main`-haaraan.
-4. GitHubissa: **Settings -> Pages -> Source: GitHub Actions**.
-5. `.github/workflows/pages.yml` ajaa parseritestit ja julkaisee sivun vain, jos testit menevät läpi.
+Repossa oleva `.github/workflows/pages.yml` ajaa parseri- ja tietomallitestit Node 22:lla ennen GitHub Pages -julkaisua.
 
-## PWA-asennus
+## Tunnetut rajat
 
-Android/Chromium näyttää yleensä asennuskehotteen, kun sivu täyttää PWA-ehdot.
-
-iOS/iPadOS: Safarissa käytä **Jaa -> Lisää Koti-valikkoon**.
-
-Huom: prototyypissä ei vielä ole omia sovellusikoneita. Se ei estä parserin tai käyttöliittymän testaamista, mutta ikonit kannattaa lisätä ennen oikeaa julkaisua.
-
-## Tietosuoja
-
-- palkka-PDF luetaan selaimen muistissa
-- prototyyppi ei lähetä PDF:ää omalle palvelimelle
-- palkkahistoria on localStoragessa samalla laitteella
-- käyttäjä voi tyhjentää datan yhdellä painikkeella
-- oikeita PDF:iä ei pidä commitoida julkiseen GitHub-repoon
-
-PDF.js ladataan tässä ensimmäisessä versiossa cdnjs-palvelusta. Varsinaiseen julkaisuversioon kirjasto kannattaa bundlata mukaan, jotta PWA ei tarvitse ulkopuolista CDN:ää ja riippuvuus voidaan lukita.
-
-## Seuraavat vaiheet — ei vielä 0.1:ssä
-
-1. Aja molemmat oikeat PDF:t selaimessa ja vertaa tuloksia testifixtureen.
-2. Korjaa PDF:n tekstikerroksen mahdolliset järjestyserot.
-3. Lisää verokortin PDF-parseri omaksi adapteriksi.
-4. Lisää verotuspäätös/veroehdotus omaksi adapteriksi.
-5. Lisää geneerinen kenttäalias-rekisteri eri työnantajien termeille.
-6. Lisää OCR vasta kun kuvapohjainen PDF oikeasti vaatii sitä.
-7. Siirrä localStoragesta IndexedDB:hen ennen suurempaa käyttöä.
-8. Lisää salattu varmuuskopiointi vasta myöhemmin.
+- PDF:ssä pitää vielä olla tekstikerros; OCR:ää ei ole
+- PDF.js ladataan edelleen cdnjs-palvelusta, joten täysin ensimmäinen käyttö ei ole täysin offline
+- palkkarivien automaattinen kategorisointi on tarkoituksella varovainen; tunnistamaton rivi säilytetään kategoriassa `unknown`
+- palkkapäiväennusteita tai pyhäpäiväsiirtojen ennustemoottoria ei vielä generoida; oikean palkkalaskelman ilmoittama maksupäivä on lähdetotuus
+- Google Drive -autobackup ei ole vielä tässä paketissa
 
 ## Arkkitehtuuriperiaate
 
-PDF-pohjia ei kovakoodata sovelluksen tietomalliksi. Eri dokumenttipohjat ovat vain sisääntulo-adaptereita, jotka tuottavat saman kanonisen palkkarivin.
+**Yksi kanoninen datamalli, monta sisääntulomuotoa.**
+
+PDF-pohjia ei rakenneta sovelluksen pysyväksi tietomalliksi. Parserin tehtävä on muuntaa eri lähteiden palkkalaskelmat samaan rakenteeseen. Käyttöliittymän tehtävä on näyttää vähän; datakerroksen tehtävä on säilyttää tarpeeksi tulevaa historia- ja palkkakehitysanalyysiä varten.
