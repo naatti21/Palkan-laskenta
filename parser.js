@@ -118,6 +118,20 @@ function inferUnlabeledTaxablePair(values) {
   return { grossPay: sorted[0], ytdTaxableIncome: sorted[1] };
 }
 
+function inlineTaxableTriple(text, labelPattern) {
+  for (const line of text.split("\n")) {
+    const values = allNumbersAfterLabel(line, labelPattern);
+    if (values.length === 3) {
+      return {
+        grossPay: values[0],
+        ytdTaxableIncome: values[1],
+        previousYearTaxableIncome: values[2]
+      };
+    }
+  }
+  return null;
+}
+
 function moneyInNearbySection(text, sectionPattern, labelPattern, maxChars = 900) {
   const sectionStart = text.search(sectionPattern);
   if (sectionStart < 0) return null;
@@ -386,7 +400,9 @@ function parseGeneric(text, payLines) {
   const netPay = uniqueNetPayCandidates[0] ?? null;
   const netPayConflict = uniqueNetPayCandidates.length > 1;
 
-  const taxable = allNumbersAfterLabel(text, /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i);
+  const taxableLabel = /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i;
+  const taxable = allNumbersAfterLabel(text, taxableLabel);
+  const inlineTaxable = inlineTaxableTriple(text, taxableLabel);
   const periodSectionTaxable = moneyInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
   const yearSectionTaxable = moneyInNearbySection(text, /Vuoden\s+tiedot/i, /Ver\.al\.ans/i);
   const periodCumulativeCandidates = sectionMoneyCandidates(
@@ -436,15 +452,18 @@ function parseGeneric(text, payLines) {
   const grossPay = periodSectionTaxable
     ?? periodCumulativeTaxable
     ?? explicitGrossPay
+    ?? inlineTaxable?.grossPay
     ?? inferredUnlabeled.grossPay
     ?? null;
   const ytdTaxable = yearSectionTaxable
     ?? yearCumulativeTaxable
     ?? explicitYtdTaxable
+    ?? inlineTaxable?.ytdTaxableIncome
     ?? inferredUnlabeled.ytdTaxableIncome
     ?? null;
   const previousYearTaxable = explicitPreviousYearTaxable
     ?? previousYearCumulativeTaxable
+    ?? inlineTaxable?.previousYearTaxableIncome
     ?? null;
 
   const withholdingNegatives = [...text.matchAll(new RegExp(`Ennakonpidätys\\s+(-\\s*\\d[\\d\\s\\u00A0]*,\\d{2})`, "gi"))]
@@ -578,7 +597,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.4",
+    parserVersion: "0.4.5",
     sourceProfile,
     fields,
     payLines,
