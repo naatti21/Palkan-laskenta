@@ -79,6 +79,25 @@ function safeNotices(notices) {
   }));
 }
 
+function safeLearnedMappings(mappings) {
+  if (!Array.isArray(mappings)) return [];
+  return mappings.slice(0, 30).map(mapping => {
+    if (!VALUE_KEYS.includes(mapping?.field)) return null;
+    const selectors = Array.isArray(mapping?.selectors)
+      ? [...new Set(mapping.selectors
+          .filter(value => typeof value === "string" && /^[a-f0-9]{64}$/i.test(value))
+          .map(value => value.toLowerCase()))].slice(0, 12)
+      : [];
+    if (!selectors.length) return null;
+    return {
+      field: mapping.field,
+      selectors,
+      confirmations: Math.max(1, Math.min(999, Number(mapping?.confirmations) || 1)),
+      learnedAt: safeText(mapping?.learnedAt, 40) || null
+    };
+  }).filter(Boolean);
+}
+
 
 function safeLearnedProfiles(profiles) {
   if (!Array.isArray(profiles)) return [];
@@ -93,6 +112,7 @@ function safeLearnedProfiles(profiles) {
       observations: Math.max(0, Math.min(9999, Number(profile?.observations) || 0)),
       confirmations: Math.max(0, Math.min(999, Number(profile?.confirmations) || 0)),
       autoParses: Math.max(0, Math.min(9999, Number(profile?.autoParses) || 0)),
+      mappings: safeLearnedMappings(profile?.mappings),
       sourceProfile: safeText(profile?.sourceProfile, 80) || "learned-local",
       firstSeenAt: safeText(profile?.firstSeenAt, 40) || null,
       lastSeenAt: safeText(profile?.lastSeenAt, 40) || null
