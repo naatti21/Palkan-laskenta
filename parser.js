@@ -231,16 +231,16 @@ function detectSourceProfile(text) {
 export function structureSignals(inputText) {
   const text = cleanText(inputText);
   const rules = [
-    ["title:palkkalaskelma", /palkkalaskelma|palkkatodistus/i],
+    ["title:palkkalaskelma", /palkkalaskelma|palkkatodistus|palkanmaksun\s+yhteenveto/i],
     ["title:palkkaerittely", /palkkaerittely/i],
-    ["label:palkkakausi", /palkkakausi/i],
-    ["label:maksupaiva", /maksupäivä|maksupvm/i],
-    ["section:kauden-tiedot", /kauden tiedot/i],
-    ["section:vuoden-tiedot", /vuoden[\s\S]{0,40}(?:al\.tiedot|vuoden alusta)/i],
-    ["label:ver-al-ans", /ver\.al\.ans|ennakonpid[^\n]{0,20}al\.\s*tul/i],
+    ["label:palkkakausi", /palkkakausi|(?:^|\n)\s*jakso\b/im],
+    ["label:maksupaiva", /maksupäivä|maksupvm|palkanmaksupäivä/i],
+    ["section:kauden-tiedot", /kauden tiedot|veronalainen\s+(?:ansio|palkka)\s*\/\s*kausi/i],
+    ["section:vuoden-tiedot", /vuoden[\s\S]{0,40}(?:al\.tiedot|vuoden alusta)|vuositulo\s+tähän\s+asti/i],
+    ["label:ver-al-ans", /ver\.al\.ans|ennakonpid[^\n]{0,20}al\.\s*tul|veronalainen\s+(?:ansio|palkka)/i],
     ["label:ennakonpidatys", /ennakonpid/i],
-    ["label:tuloraja", /tuloraja/i],
-    ["section:erittely", /\berittely\b/i]
+    ["label:tuloraja", /tuloraja|vuosituloraja/i],
+    ["section:erittely", /\berittely\b|palkan\s+osat/i]
   ];
   return rules.filter(([, re]) => re.test(text)).map(([key]) => key);
 }
@@ -279,8 +279,15 @@ function parseLegacyTable(text, lines, payLines) {
   const otDaily = firstLine(payLines, "overtime_100_daily")?.quantity ?? null;
   const ot50Weekly = firstLine(payLines, "overtime_50_weekly")?.quantity ?? null;
   const ot100Weekly = firstLine(payLines, "overtime_100_weekly")?.quantity ?? null;
-  const overtimeHours = sumLineValues(payLines, ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"], "quantity") || null;
-  const overtimeCompensation = sumLineValues(payLines, ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"], "amount") || null;
+  const overtimeCategories = ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"];
+  const overtimeLines = payLines.filter(line => overtimeCategories.includes(line.category));
+  const hasParsedEarningsLines = payLines.some(line => !["withholding", "pension", "unemployment_insurance", "union_fee", "sickness_fund"].includes(line.category));
+  const overtimeHours = overtimeLines.length
+    ? sumLineValues(payLines, overtimeCategories, "quantity")
+    : hasParsedEarningsLines ? 0 : null;
+  const overtimeCompensation = overtimeLines.length
+    ? sumLineValues(payLines, overtimeCategories, "amount")
+    : hasParsedEarningsLines ? 0 : null;
 
   return {
     payPeriodStart: field(periodDates[0] ?? null, 0.98, "Palkkakausi / legacy-taulukko"),
@@ -316,15 +323,31 @@ function parseLegacyTable(text, lines, payLines) {
 
 function parseGeneric(text, payLines) {
   const period = matchOne(text, [
-    /Palkkakausi(?:\s+\d{4}\/\d+)?\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4})/i
+    /Palkkakausi(?:\s+\d{4}\/\d+)?\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4})/i,
+    /(?:^|\n)\s*Jakso\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4})/im
   ], (start, m) => ({ start: isoDate(start), end: isoDate(m[2]) }));
 
-  const payDate = matchOne(text, [/Maksupäivä\s+(\d{1,2}\.\d{1,2}\.\d{4})/i], isoDate);
-  const netPay = matchOne(text, [new RegExp(`Maksetaan\\s+(${MONEY_RE})`, "i")], fiNumber);
+  const payDate = matchOne(text, [
+    /(?:Maksupäivä|Palkanmaksupäivä|Maksupvm)\s+(\d{1,2}\.\d{1,2}\.\d{4})/i
+  ], isoDate);
+  const netPay = matchOne(text, [
+    new RegExp(`(?:^|\\n)\\s*(?:Maksetaan|Käteen\\s+maksettava|Nettopalkka|Netto)\\s+(${MONEY_RE})`, "im")
+  ], fiNumber);
+
   const taxable = allNumbersAfterLabel(text, /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i);
-  const grossPay = taxable[0] ?? null;
-  const ytdTaxable = taxable[1] ?? null;
-  const previousYearTaxable = taxable[2] ?? null;
+  const explicitGrossPay = matchOne(text, [
+    new RegExp(`(?:Veronalainen\\s+(?:palkka|ansio)(?:\\s*\\/\\s*kausi|\\s+palkkakaudelta)?|Kauden\\s+veronalainen\\s+(?:palkka|ansio))\\s+(${MONEY_RE})`, "i")
+  ], fiNumber);
+  const explicitYtdTaxable = matchOne(text, [
+    new RegExp(`(?:Vuositulo\\s+tähän\\s+asti|Veronalainen\\s+(?:YTD|vuoden\\s+alusta)|Vuoden\\s+veronalainen\\s+(?:tulo|ansio))\\s+(${MONEY_RE})`, "i")
+  ], fiNumber);
+  const explicitPreviousYearTaxable = matchOne(text, [
+    new RegExp(`(?:Edellisen\\s+vuoden\\s+veronalainen\\s+(?:tulo|ansio)|Veronalainen\\s+edellinen\\s+vuosi)\\s+(${MONEY_RE})`, "i")
+  ], fiNumber);
+
+  const grossPay = explicitGrossPay ?? taxable[0] ?? null;
+  const ytdTaxable = explicitYtdTaxable ?? taxable[1] ?? null;
+  const previousYearTaxable = explicitPreviousYearTaxable ?? taxable[2] ?? null;
 
   const withholdingNegatives = [...text.matchAll(new RegExp(`Ennakonpidätys\\s+(-\\s*\\d[\\d\\s\\u00A0]*,\\d{2})`, "gi"))]
     .map(match => fiNumber(match[1]))
@@ -335,15 +358,21 @@ function parseGeneric(text, payLines) {
   const withholdingYtd = sectionMoney(text, /Kertymä\s+vuoden alusta/i, /Ennakonpidätys/i)
     ?? withholdingNegatives[1]
     ?? null;
-  const taxCardAccumulatedIncome = taxCardAccumulationFromWithholdingRows(text, grossPay, ytdTaxable);
+  const explicitTaxCardAccumulation = matchOne(text, [
+    new RegExp(`(?:Nykyisen\\s+)?Verokortin\\s+kertymä\\s+(${MONEY_RE})`, "i")
+  ], fiNumber);
+  const taxCardAccumulatedIncome = explicitTaxCardAccumulation
+    ?? taxCardAccumulationFromWithholdingRows(text, grossPay, ytdTaxable);
 
   const taxRate = matchOne(text, [
     /Perusprosentti\s*\(\s*0\s*-\s*[\d\s]+,\d{2}\s*€?\s*\)\s*(\d+(?:,\d+)?)\s*%/i,
-    /Prosentti1\s+(\d+(?:,\d+)?)\s*%/i
+    /Prosentti1\s+(\d+(?:,\d+)?)\s*%/i,
+    /Pidätysprosentti\s+(\d+(?:,\d+)?)\s*%/i
   ], fiNumber);
   const taxLimit = matchOne(text, [
     new RegExp(`Perusprosentti\\s*\\(\\s*0\\s*-\\s*(${MONEY_RE})\\s*€?\\s*\\)`, "i"),
-    new RegExp(`Tuloraja\\s+(${MONEY_RE})`, "i")
+    new RegExp(`Tuloraja\\s+(${MONEY_RE})`, "i"),
+    new RegExp(`Vuosituloraja\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
   const additionalRate = matchOne(text, [
     /Lisäprosentti\s+(\d+(?:,\d+)?)\s*%/i,
@@ -356,20 +385,27 @@ function parseGeneric(text, payLines) {
   const otDaily = firstLine(payLines, "overtime_100_daily")?.quantity ?? codeUnits(text, "20040", "Ylityö\\s+100\\s*%\\s*vrk");
   const ot50Weekly = firstLine(payLines, "overtime_50_weekly")?.quantity ?? codeUnits(text, "20050", "Ylityö\\s+50\\s*%\\s*vko");
   const ot100Weekly = firstLine(payLines, "overtime_100_weekly")?.quantity ?? codeUnits(text, "20060", "Ylityö\\s+100\\s*%\\s*vko");
-  const overtimeHours = sumLineValues(payLines, ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"], "quantity") || null;
-  const overtimeCompensation = sumLineValues(payLines, ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"], "amount") || null;
+  const overtimeCategories = ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"];
+  const overtimeLines = payLines.filter(line => overtimeCategories.includes(line.category));
+  const hasParsedEarningsLines = payLines.some(line => !["withholding", "pension", "unemployment_insurance", "union_fee", "sickness_fund"].includes(line.category));
+  const overtimeHours = overtimeLines.length
+    ? sumLineValues(payLines, overtimeCategories, "quantity")
+    : hasParsedEarningsLines ? 0 : null;
+  const overtimeCompensation = overtimeLines.length
+    ? sumLineValues(payLines, overtimeCategories, "amount")
+    : hasParsedEarningsLines ? 0 : null;
 
   const cashPay = matchOne(text, [new RegExp(`(?:Rahapalkka|Käteispalkka)\\s+(${MONEY_RE})`, "i")], fiNumber);
 
   return {
     payPeriodStart: field(period?.start ?? null, 0.99, "Palkkakausi"),
     payPeriodEnd: field(period?.end ?? null, 0.99, "Palkkakausi"),
-    payDate: field(payDate, 0.99, "Maksupäivä"),
-    grossPay: field(grossPay, 0.97, "Ennakonpid. al. tul / palkkakausi"),
-    netPay: field(netPay, 0.99, "Maksetaan"),
-    ytdTaxableIncome: field(ytdTaxable, 0.96, "Ennakonpid. al. tul / vuoden alusta"),
-    previousYearTaxableIncome: field(previousYearTaxable, 0.85, "Ennakonpid. al. tulo / edellinen vuosi"),
-    taxCardAccumulatedIncome: field(taxCardAccumulatedIncome, 0.97, "90000 Ennakonpidätys / kertymä"),
+    payDate: field(payDate, 0.99, "Maksupäivä / palkanmaksupäivä"),
+    grossPay: field(grossPay, 0.97, "Veronalainen ansio / palkkakausi"),
+    netPay: field(netPay, 0.99, "Maksetaan / netto"),
+    ytdTaxableIncome: field(ytdTaxable, 0.96, "Veronalainen ansio / vuoden alusta"),
+    previousYearTaxableIncome: field(previousYearTaxable, 0.85, "Veronalainen ansio / edellinen vuosi"),
+    taxCardAccumulatedIncome: field(taxCardAccumulatedIncome, 0.97, "Verokortin kertymä / 90000 Ennakonpidätys"),
     withholdingPeriod: field(withholdingPeriod, 0.95, "Ennakonpidätys / palkkakausi"),
     withholdingYtd: field(withholdingYtd, 0.90, "Ennakonpidätys / vuoden alusta"),
     taxRate: field(taxRate, 0.98, "Perusprosentti / Prosentti1"),
@@ -395,12 +431,12 @@ function parseGeneric(text, payLines) {
 
 function documentSignals(text) {
   const signals = [
-    /palkkalaskelma|palkkatodistus|palkkaerittely/i,
-    /palkkakausi/i,
-    /maksupäivä|maksupvm/i,
-    /maksetaan|kauden tiedot/i,
-    /ennakonpid/i,
-    /tuloraja|perusprosentti|prosentti1|perus\/lisä%/i
+    /palkkalaskelma|palkkatodistus|palkkaerittely|palkanmaksun\s+yhteenveto/i,
+    /palkkakausi|(?:^|\n)\s*jakso\b/im,
+    /maksupäivä|maksupvm|palkanmaksupäivä/i,
+    /maksetaan|käteen\s+maksettava|nettopalkka|kauden tiedot/i,
+    /ennakonpid|veronalainen\s+(?:ansio|palkka)|vuositulo\s+tähän\s+asti/i,
+    /tuloraja|vuosituloraja|perusprosentti|pidätysprosentti|prosentti1|perus\/lisä%/i
   ];
   return signals.filter(re => re.test(text)).length;
 }
@@ -423,7 +459,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.3.3",
+    parserVersion: "0.4.0",
     sourceProfile,
     fields,
     payLines,
