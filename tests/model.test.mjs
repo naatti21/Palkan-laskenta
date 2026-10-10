@@ -7,7 +7,10 @@ import {
   migrateLegacyRecord,
   parseBackup,
   parseBackupLearnedProfiles,
-  paymentState
+  paymentState,
+  classifyRecordRelation,
+  findRecordConflict,
+  payEventKeyFromValues
 } from "../model.js";
 import { parsePayslip } from "../parser.js";
 import { readFile } from "node:fs/promises";
@@ -103,4 +106,112 @@ test("varmuuskopio voi sisältää vain tunnisteettomat opitut rakenneprofiilit"
   assert.deepEqual(restored[0].signals, ["label:maksupaiva", "label:palkkakausi", "title:palkkalaskelma"]);
   assert.equal(JSON.stringify(backup).includes("rawText"), false);
   assert.equal(JSON.stringify(backup).includes("EI-SAA-TALLENTUA"), false);
+});
+
+
+test("sama palkkakausi ja maksupäivä muodostavat saman palkkatapahtuman eri netosta huolimatta", () => {
+  const base = {
+    payDate: "2026-08-28",
+    payPeriodStart: "2026-08-03",
+    payPeriodEnd: "2026-08-16",
+    grossPay: 4698.11,
+    netPay: 2678.39,
+    ytdTaxableIncome: 63832.82,
+    withholdingPeriod: -1526.89
+  };
+  const changed = { ...base, netPay: 2728.39, withholdingPeriod: -1476.89 };
+
+  assert.equal(payEventKeyFromValues(base), payEventKeyFromValues(changed));
+
+  const a = migrateLegacyRecord(base);
+  const b = migrateLegacyRecord(changed);
+  const relation = classifyRecordRelation(a, b);
+
+  assert.equal(relation.type, "same_event_conflict");
+  assert.deepEqual(relation.differences.map(item => item.key).sort(), ["netPay", "withholdingPeriod"]);
+});
+
+test("sama brutto/netto/YTD ei peitä muuta saman palkkatapahtuman ristiriitaa", () => {
+  const base = migrateLegacyRecord({
+    payDate: "2026-08-28",
+    payPeriodStart: "2026-08-03",
+    payPeriodEnd: "2026-08-16",
+    grossPay: 4698.11,
+    netPay: 2678.39,
+    ytdTaxableIncome: 63832.82,
+    withholdingPeriod: -1526.89
+  });
+  const changed = migrateLegacyRecord({
+    payDate: "2026-08-28",
+    payPeriodStart: "2026-08-03",
+    payPeriodEnd: "2026-08-16",
+    grossPay: 4698.11,
+    netPay: 2678.39,
+    ytdTaxableIncome: 63832.82,
+    withholdingPeriod: -1500.00
+  });
+
+  assert.equal(base.duplicateKey, changed.duplicateKey);
+  const relation = classifyRecordRelation(base, changed);
+  assert.equal(relation.type, "same_event_conflict");
+  assert.deepEqual(relation.differences.map(item => item.key), ["withholdingPeriod"]);
+});
+
+test("täsmälleen sama palkkatapahtuma luokitellaan duplikaatiksi eikä ristiriidaksi", () => {
+  const base = migrateLegacyRecord({
+    payDate: "2026-08-28",
+    payPeriodStart: "2026-08-03",
+    payPeriodEnd: "2026-08-16",
+    grossPay: 4698.11,
+    netPay: 2678.39,
+    ytdTaxableIncome: 63832.82,
+    withholdingPeriod: -1526.89
+  });
+  const copy = migrateLegacyRecord(JSON.parse(JSON.stringify(base)));
+
+  const relation = classifyRecordRelation(base, copy);
+  assert.equal(relation.type, "exact_duplicate");
+  assert.equal(findRecordConflict([base], copy), null);
+});
+
+test("ristiriitahaku ei vertaa muokattavaa tietuetta itseensä", () => {
+  const base = migrateLegacyRecord({
+    recordSchemaVersion: 1,
+    id: "same-id",
+    values: {
+      payDate: "2026-08-28",
+      payPeriodStart: "2026-08-03",
+      payPeriodEnd: "2026-08-16",
+      grossPay: 4698.11,
+      netPay: 2678.39,
+      ytdTaxableIncome: 63832.82,
+      withholdingPeriod: -1526.89
+    }
+  });
+  const edited = migrateLegacyRecord({
+    ...base,
+    values: { ...base.values, netPay: 2728.39 }
+  });
+
+  assert.equal(findRecordConflict([base], edited), null);
+});
+
+test("rakenneprofiilin havainto- ja automaattitulkintalaskurit säilyvät backupissa", async () => {
+  const text = await readFile(new URL("./fixtures/variant-a.txt", import.meta.url), "utf8");
+  const record = makeRecordFromParsed(parsePayslip(text), "abc");
+  const backup = makeBackup([record], {
+    learnedProfiles: [{
+      id: "layout-counts",
+      signals: ["title:palkkalaskelma", "label:palkkakausi", "label:maksupaiva"],
+      observations: 5,
+      confirmations: 1,
+      autoParses: 4,
+      sourceProfile: "generic-text-pdf"
+    }]
+  });
+
+  const [profile] = parseBackupLearnedProfiles(backup);
+  assert.equal(profile.observations, 5);
+  assert.equal(profile.confirmations, 1);
+  assert.equal(profile.autoParses, 4);
 });
