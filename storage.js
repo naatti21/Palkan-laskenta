@@ -65,6 +65,12 @@ async function getByDuplicateKey(duplicateKey) {
   return record ? migrateLegacyRecord(record) : null;
 }
 
+async function getByFingerprint(fingerprint) {
+  if (!fingerprint) return null;
+  const records = await getAllRecords();
+  return records.find(record => (record.fingerprints || []).includes(fingerprint)) || null;
+}
+
 async function getById(id) {
   if (!id) return null;
   const db = await openDb();
@@ -87,7 +93,7 @@ export async function replaceRecord(existingId, record) {
     id: existing.id,
     createdAt: existing.createdAt || incoming.createdAt,
     updatedAt: new Date().toISOString(),
-    fingerprints: [...new Set([...(existing.fingerprints || []), ...(incoming.fingerprints || [])].filter(Boolean))]
+    fingerprints: [...new Set([...(incoming.fingerprints || [])].filter(Boolean))]
   });
 
   const db = await openDb();
@@ -101,7 +107,8 @@ export async function upsertRecord(record) {
   const incoming = migrateLegacyRecord(record);
   if (!incoming) throw new Error("Tallennettava palkkatieto ei ole kelvollinen.");
 
-  const duplicate = await getByDuplicateKey(incoming.duplicateKey);
+  const fingerprint = incoming.fingerprints?.[0] || "";
+  const duplicate = await getByFingerprint(fingerprint) || await getByDuplicateKey(incoming.duplicateKey);
   const merged = duplicate ? mergeRecords(duplicate, incoming) : incoming;
 
   if (duplicate && merged.id !== duplicate.id) merged.id = duplicate.id;
@@ -111,6 +118,32 @@ export async function upsertRecord(record) {
   tx.objectStore(RECORD_STORE).put(merged);
   await transactionDone(tx);
   return { record: merged, mergedDuplicate: Boolean(duplicate) };
+}
+
+export async function saveRecordSeparately(record) {
+  const incoming = migrateLegacyRecord(record);
+  if (!incoming) throw new Error("Tallennettava palkkatieto ei ole kelvollinen.");
+
+  const fingerprint = incoming.fingerprints?.[0] || "";
+  const suffix = fingerprint ? fingerprint.slice(0, 12) : Date.now().toString(36);
+  let id = `${incoming.id || "payslip"}__variant_${suffix}`;
+
+  const db = await openDb();
+  let counter = 1;
+  while (await getById(id)) {
+    id = `${incoming.id || "payslip"}__variant_${suffix}_${counter++}`;
+  }
+
+  const separate = migrateLegacyRecord({
+    ...incoming,
+    id,
+    updatedAt: new Date().toISOString()
+  });
+
+  const tx = db.transaction(RECORD_STORE, "readwrite");
+  tx.objectStore(RECORD_STORE).put(separate);
+  await transactionDone(tx);
+  return separate;
 }
 
 export async function mergeManyRecords(records) {
