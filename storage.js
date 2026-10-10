@@ -65,6 +65,38 @@ async function getByDuplicateKey(duplicateKey) {
   return record ? migrateLegacyRecord(record) : null;
 }
 
+async function getById(id) {
+  if (!id) return null;
+  const db = await openDb();
+  const tx = db.transaction(RECORD_STORE, "readonly");
+  const done = transactionDone(tx);
+  const record = await requestToPromise(tx.objectStore(RECORD_STORE).get(id));
+  await done;
+  return record ? migrateLegacyRecord(record) : null;
+}
+
+export async function replaceRecord(existingId, record) {
+  const incoming = migrateLegacyRecord(record);
+  if (!incoming) throw new Error("Korvaava palkkatieto ei ole kelvollinen.");
+
+  const existing = await getById(existingId);
+  if (!existing) throw new Error("Korvattavaa palkkalaskelmaa ei löytynyt.");
+
+  const replacement = migrateLegacyRecord({
+    ...incoming,
+    id: existing.id,
+    createdAt: existing.createdAt || incoming.createdAt,
+    updatedAt: new Date().toISOString(),
+    fingerprints: [...new Set([...(existing.fingerprints || []), ...(incoming.fingerprints || [])].filter(Boolean))]
+  });
+
+  const db = await openDb();
+  const tx = db.transaction(RECORD_STORE, "readwrite");
+  tx.objectStore(RECORD_STORE).put(replacement);
+  await transactionDone(tx);
+  return replacement;
+}
+
 export async function upsertRecord(record) {
   const incoming = migrateLegacyRecord(record);
   if (!incoming) throw new Error("Tallennettava palkkatieto ei ole kelvollinen.");
