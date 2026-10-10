@@ -7,7 +7,8 @@ import {
   makeRecordFromParsed,
   parseBackup,
   parseBackupLearnedProfiles,
-  paymentState
+  paymentState,
+  findRecordConflict
 } from "./model.js";
 import {
   clearAllRecords,
@@ -15,6 +16,8 @@ import {
   mergeManyRecords,
   migrateLegacyLocalStorage,
   upsertRecord,
+  replaceRecord,
+  saveRecordSeparately,
   getSetting,
   setSetting
 } from "./storage.js";
@@ -27,6 +30,9 @@ let deferredInstallPrompt = null;
 let selectedYear = null;
 let currentLearnedProfile = null;
 let currentReviewWasManualConfirmation = false;
+let currentPendingRecord = null;
+let currentConflict = null;
+let currentPendingWasAutoParsed = false;
 const LEARNED_PROFILES_KEY = "learnedLayoutProfiles:v1";
 
 const fieldLabels = {
@@ -62,6 +68,14 @@ const moneyFields = new Set([
   "withholdingPeriod", "withholdingYtd", "taxLimit", "kta", "pp", "overtimeCompensation"
 ]);
 const percentFields = new Set(["taxRate", "additionalRate"]);
+
+function fmtFieldValue(key, value) {
+  if (value == null || value === "") return "–";
+  if (dateFields.has(key)) return fmtDate(value);
+  if (moneyFields.has(key)) return fmtMoney(value);
+  if (percentFields.has(key)) return `${fmtNumber(value)} %`;
+  return fmtNumber(value);
+}
 
 const el = id => document.getElementById(id);
 const fmtMoney = n => n == null ? "–" : new Intl.NumberFormat("fi-FI", { style: "currency", currency: "EUR" }).format(n);
@@ -122,7 +136,9 @@ async function setLearnedProfiles(profiles) {
   const safe = (profiles || []).slice(0, 100).map(profile => ({
     id: String(profile.id || profileId(profile.signals)).slice(0, 120),
     signals: normalizedSignals(profile.signals).slice(0, 30),
-    confirmations: Math.max(1, Math.min(999, Number(profile.confirmations) || 1)),
+    observations: Math.max(0, Math.min(9999, Number(profile.observations) || 0)),
+    confirmations: Math.max(0, Math.min(999, Number(profile.confirmations) || 0)),
+    autoParses: Math.max(0, Math.min(9999, Number(profile.autoParses) || 0)),
     sourceProfile: String(profile.sourceProfile || "learned-local").slice(0, 80),
     firstSeenAt: profile.firstSeenAt || null,
     lastSeenAt: profile.lastSeenAt || null
@@ -139,10 +155,12 @@ async function findLearnedProfile(signals) {
     const score = profileSimilarity(signals, profile.signals);
     if (score > bestScore) { best = profile; bestScore = score; }
   }
-  return bestScore >= 0.8 ? { ...best, score: bestScore } : null;
+  if (bestScore < 0.8 || !best) return null;
+  const trusted = (best.confirmations || 0) > 0 || (best.autoParses || 0) >= 2;
+  return { ...best, score: bestScore, trusted };
 }
 
-async function rememberCurrentStructure() {
+async function rememberCurrentStructure({ confirmed = false, autoParsed = false } = {}) {
   const signals = normalizedSignals(currentParsed?.structureSignals);
   if (signals.length < 3) return null;
   const profiles = await getLearnedProfiles();
@@ -150,10 +168,13 @@ async function rememberCurrentStructure() {
   const existingIndex = profiles.findIndex(profile => profileSimilarity(signals, profile.signals) >= 0.8);
   let profile;
   if (existingIndex >= 0) {
+    const previous = profiles[existingIndex];
     profile = {
-      ...profiles[existingIndex],
-      signals: [...new Set([...(profiles[existingIndex].signals || []), ...signals])].sort(),
-      confirmations: (profiles[existingIndex].confirmations || 1) + 1,
+      ...previous,
+      signals: [...new Set([...(previous.signals || []), ...signals])].sort(),
+      observations: Math.max(previous.observations || 0, previous.confirmations || 0) + 1,
+      confirmations: (previous.confirmations || 0) + (confirmed ? 1 : 0),
+      autoParses: (previous.autoParses || 0) + (autoParsed ? 1 : 0),
       lastSeenAt: now
     };
     profiles[existingIndex] = profile;
@@ -161,7 +182,9 @@ async function rememberCurrentStructure() {
     profile = {
       id: profileId(signals).slice(0, 120),
       signals,
-      confirmations: 1,
+      observations: 1,
+      confirmations: confirmed ? 1 : 0,
+      autoParses: autoParsed ? 1 : 0,
       sourceProfile: currentParsed?.sourceProfile || "learned-local",
       firstSeenAt: now,
       lastSeenAt: now
@@ -182,7 +205,9 @@ async function mergeLearnedProfiles(incoming) {
       profiles[i] = {
         ...profiles[i],
         signals: [...new Set([...(profiles[i].signals || []), ...signals])].sort(),
-        confirmations: Math.max(profiles[i].confirmations || 1, item.confirmations || 1),
+        observations: Math.max(profiles[i].observations || 0, item.observations || 0),
+        confirmations: Math.max(profiles[i].confirmations || 0, item.confirmations || 0),
+        autoParses: Math.max(profiles[i].autoParses || 0, item.autoParses || 0),
         lastSeenAt: profiles[i].lastSeenAt || item.lastSeenAt || null
       };
     } else profiles.push(item);
@@ -261,8 +286,12 @@ function renderRecordNotices(record) {
 
 function renderSuccess(record, mergedDuplicate = false) {
   currentRecord = record;
+  currentPendingRecord = null;
+  currentConflict = null;
+  currentPendingWasAutoParsed = false;
   el("reviewSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
+  el("conflictSection")?.classList.add("hidden");
   el("resultSection").classList.remove("hidden");
   el("resultBadge").textContent = mergedDuplicate ? "Päivitetty" : "Tallennettu";
 
@@ -307,6 +336,7 @@ function renderSuccess(record, mergedDuplicate = false) {
 function renderUnknown() {
   el("resultSection").classList.add("hidden");
   el("reviewSection").classList.add("hidden");
+  el("conflictSection")?.classList.add("hidden");
   el("unknownSection").classList.remove("hidden");
   el("status").textContent = "Dokumenttia ei tallennettu.";
 }
@@ -321,6 +351,7 @@ function currentInputValue(key, parsed) {
 function renderReview(parsed, keys = null, manual = false) {
   el("resultSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
+  el("conflictSection")?.classList.add("hidden");
   el("reviewSection").classList.remove("hidden");
 
   const isPartial = Array.isArray(keys) && keys.length > 0;
@@ -527,7 +558,50 @@ function renderDataSummary(records) {
 
 async function renderLearnedProfileSummary() {
   const profiles = await getLearnedProfiles();
-  if (el("learnedProfileCount")) el("learnedProfileCount").textContent = profiles.length ? `${profiles.length} rakennetta` : "Ei vielä opittuja rakenteita";
+  const observations = profiles.reduce((sum, profile) => sum + Math.max(profile.observations || 0, profile.confirmations || 0), 0);
+  if (el("learnedProfileCount")) {
+    el("learnedProfileCount").textContent = profiles.length
+      ? `${profiles.length} rakennetta · ${observations} havaintoa`
+      : "Ei vielä tunnistettuja rakenteita";
+  }
+}
+
+function renderConflict(record, conflict) {
+  currentPendingRecord = record;
+  currentConflict = conflict;
+  el("resultSection").classList.add("hidden");
+  el("reviewSection").classList.add("hidden");
+  el("unknownSection").classList.add("hidden");
+  el("conflictSection").classList.remove("hidden");
+
+  const host = el("conflictSummary");
+  host.innerHTML = "";
+
+  const identityRows = [
+    ["Maksupäivä", fmtFieldValue("payDate", record.values?.payDate)],
+    ["Palkkakausi", `${fmtFieldValue("payPeriodStart", record.values?.payPeriodStart)} – ${fmtFieldValue("payPeriodEnd", record.values?.payPeriodEnd)}`]
+  ];
+  for (const [label, value] of identityRows) {
+    const row = document.createElement("div");
+    row.className = "summary-row";
+    row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+    host.append(row);
+  }
+
+  for (const difference of (conflict.differences || []).slice(0, 8)) {
+    const row = document.createElement("div");
+    row.className = "summary-row";
+    const label = fieldLabels[difference.key] || difference.key;
+    row.innerHTML = `<span>${label}</span><strong>${fmtFieldValue(difference.key, difference.before)} → ${fmtFieldValue(difference.key, difference.after)}</strong>`;
+    host.append(row);
+  }
+
+  el("status").textContent = "Samalle palkka-ajalle löytyi eri luvut. Mitään ei yhdistetty automaattisesti.";
+}
+
+async function conflictForRecord(record) {
+  const records = await getAllRecords();
+  return findRecordConflict(records, record);
 }
 
 async function processPdf(file) {
@@ -538,6 +612,10 @@ async function processPdf(file) {
   currentRecord = null;
   currentLearnedProfile = null;
   currentReviewWasManualConfirmation = false;
+  currentPendingRecord = null;
+  currentConflict = null;
+  currentPendingWasAutoParsed = false;
+  el("conflictSection")?.classList.add("hidden");
 
   currentRawText = await extractPdfText(file);
   currentParsed = parsePayslip(currentRawText);
@@ -546,7 +624,7 @@ async function processPdf(file) {
   el("rawText").textContent = currentRawText;
 
   if (currentParsed.documentType !== "payslip") {
-    if (currentLearnedProfile) {
+    if (currentLearnedProfile?.trusted) {
       currentParsed.documentType = "payslip";
       currentParsed.sourceProfile = `learned-local:${currentLearnedProfile.id}`;
       currentReviewWasManualConfirmation = true;
@@ -561,7 +639,15 @@ async function processPdf(file) {
 
   if (canAutoAccept(currentParsed)) {
     const record = makeRecordFromParsed(currentParsed, currentFingerprint);
+    const conflict = await conflictForRecord(record);
+    if (conflict) {
+      currentPendingWasAutoParsed = true;
+      renderConflict(record, conflict);
+      return;
+    }
+
     const result = await upsertRecord(record);
+    await rememberCurrentStructure({ autoParsed: true });
     renderSuccess(result.record, result.mergedDuplicate);
     await renderAll();
     el("status").textContent = result.mergedDuplicate
@@ -599,16 +685,55 @@ el("saveButton").addEventListener("click", async () => {
     return;
   }
 
-  const result = await upsertRecord(record);
-  let learned = null;
-  if (currentReviewWasManualConfirmation || Object.keys(record.corrections || {}).length > 0) {
-    learned = await rememberCurrentStructure();
+  const conflict = await conflictForRecord(record);
+  if (conflict) {
+    currentPendingWasAutoParsed = false;
+    renderConflict(record, conflict);
+    return;
   }
+
+  const result = await upsertRecord(record);
+  const confirmed = currentReviewWasManualConfirmation || Object.keys(record.corrections || {}).length > 0;
+  const learned = await rememberCurrentStructure({ confirmed, autoParsed: false });
   renderSuccess(result.record, result.mergedDuplicate);
   await renderAll();
   el("status").textContent = learned
-    ? "Korjaus tallennettu. Tämän palkkalaskelman rakenne muistetaan paikallisesti seuraavaa kertaa varten."
+    ? "Korjaus tallennettu. Palkkalaskelman rakennehavainto päivitettiin paikallisesti."
     : "Korjaus tallennettu.";
+});
+
+el("replaceConflictButton")?.addEventListener("click", async () => {
+  if (!currentPendingRecord || !currentConflict?.existing?.id) return;
+  const confirmed = currentReviewWasManualConfirmation || Object.keys(currentPendingRecord.corrections || {}).length > 0;
+  const replacement = await replaceRecord(currentConflict.existing.id, currentPendingRecord);
+  await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed });
+  renderSuccess(replacement, false);
+  el("resultBadge").textContent = "Korvattu";
+  el("resultTitle").textContent = "Aiempi laskelma korvattu";
+  el("resultSubtitle").textContent = "Samalle palkka-ajalle ollut aiempi versio korvattiin tällä laskelmalla.";
+  await renderAll();
+  el("status").textContent = "Ristiriita ratkaistiin korvaamalla aiempi versio.";
+});
+
+el("keepBothConflictButton")?.addEventListener("click", async () => {
+  if (!currentPendingRecord) return;
+  const confirmed = currentReviewWasManualConfirmation || Object.keys(currentPendingRecord.corrections || {}).length > 0;
+  const separate = await saveRecordSeparately(currentPendingRecord);
+  await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed });
+  renderSuccess(separate, false);
+  el("resultBadge").textContent = "Molemmat";
+  el("resultTitle").textContent = "Molemmat laskelmat säilytettiin";
+  el("resultSubtitle").textContent = "Saman palkka-ajan eri versiot pidetään erillisinä historiassa.";
+  await renderAll();
+  el("status").textContent = "Ristiriita ratkaistiin säilyttämällä molemmat versiot.";
+});
+
+el("cancelConflictButton")?.addEventListener("click", () => {
+  currentPendingRecord = null;
+  currentConflict = null;
+  currentPendingWasAutoParsed = false;
+  el("conflictSection")?.classList.add("hidden");
+  el("status").textContent = "Tallennus peruttiin. Historiadataa ei muutettu.";
 });
 
 el("editParsedButton").addEventListener("click", () => {
@@ -679,7 +804,7 @@ el("clearLearnedButton")?.addEventListener("click", async () => {
   await setLearnedProfiles([]);
   currentLearnedProfile = null;
   await renderLearnedProfileSummary();
-  el("backupStatus").textContent = "Opitut rakenteet nollattu. Palkkahistoria säilyi ennallaan.";
+  el("backupStatus").textContent = "Tunnistetut rakenteet nollattu. Palkkahistoria säilyi ennallaan.";
 });
 
 el("clearButton").addEventListener("click", async () => {
@@ -692,7 +817,7 @@ el("clearButton").addEventListener("click", async () => {
   el("reviewSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
   await renderAll();
-  el("backupStatus").textContent = "Paikallinen palkkahistoria ja opitut rakenteet poistettu.";
+  el("backupStatus").textContent = "Paikallinen palkkahistoria ja tunnistetut rakenteet poistettu.";
 });
 
 window.addEventListener("beforeinstallprompt", event => {
