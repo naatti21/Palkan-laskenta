@@ -1,8 +1,8 @@
-# Palkka PWA — v0.3.1 testiversio
+# Palkka PWA — v0.4 testiversio
 
 Tämän version tavoite on tehdä prototyypin pohjasta sellainen, että sitä voidaan testata eri vuosien ja eri PDF-toimittajien oikeilla palkkalaskelmilla ilman että käyttöliittymä muuttuu raskaaksi.
 
-## Mitä v0.3.1 sisältää
+## Mitä v0.4 sisältää
 
 - tallennus siirtyy `localStorage`-tallennuksesta IndexedDB:hen
 - vanha prototyypin localStorage-historia migroidaan automaattisesti ensimmäisellä käynnistyksellä
@@ -21,14 +21,17 @@ Tämän version tavoite on tehdä prototyypin pohjasta sellainen, että sitä vo
 - käyttäjän tekemä korjaus säilyttää parserin alkuperäisen arvon rinnalla
 - vanha taulukkomainen palkkaerittelyformaatti tunnistetaan omana `legacy-table-fi-v1`-profiilinaan
 - vanhat ja nykyiset palkkalajikoodit normalisoidaan samoihin kategorioihin (esim. OT, sunnuntai, viikkovapaa)
-- uusi rakenne voidaan vahvistaa käyttäjän korjauksella; sovellus tallentaa vain neutraalit rakennetunnisteet paikallisesti
-- aiemmin vahvistettu rakenne voidaan tunnistaa myöhemmin palkkalaskelmaksi, vaikka parseri ei vielä saisi kaikkia arvoja irti
-- opitut rakenteet voi nollata erikseen ilman palkkahistorian poistamista
-- opitut, tunnisteettomat rakenneprofiilit kulkevat mukana JSON-varmuuskopiossa
+- onnistuneista PDF-tuonneista kertyy paikallisia, tunnisteettomia rakennehavaintoja automaattisesti
+- käyttäjän vahvistamasta epäselvästä kentästä voidaan oppia saman rakenteen kenttäkartta; sovellus tallentaa vain yksisuuntaiset kontekstitiivisteet, ei alkuperäistä tekstiä tai palkka-arvoa
+- aiemmin vahvistettu kenttäkartta voi täyttää saman rakenteen seuraavan laskelman automaattisesti, jos osuma on yksiselitteinen
+- samalle palkkakaudelle ja maksupäivälle osuvat mutta eri lukuja sisältävät laskelmat pysäytetään ristiriidaksi eikä yhdistetä hiljaa
+- ristiriidassa käyttäjä voi korvata aiemman version, säilyttää molemmat tai perua
+- tunnistetut rakenteet voi nollata erikseen ilman palkkahistorian poistamista
+- tunnisteettomat rakenneprofiilit ja hashatut kenttäkartat kulkevat mukana JSON-varmuuskopiossa
 
 ## Tietosuojaperiaate
 
-Palkkalaskelma luetaan selaimen muistissa. Pysyvään tietomalliin ei tallenneta palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Myöskään alkuperäistä PDF:ää, tiedostonimeä tai koko poimittua raakatekstiä ei tallenneta palkkahistoriaan tai varmuuskopioon. Paikallinen oppiminen tallentaa vain ennalta rajattuja neutraaleja rakenneotsikoita, kuten `palkkakausi`, `maksupvm` tai `kauden tiedot`; henkilö-, työnantaja- tai tilitietoja ei käytetä oppimisprofiilin tunnisteena.
+Palkkalaskelma luetaan selaimen muistissa. Pysyvään tietomalliin ei tallenneta palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Myöskään alkuperäistä PDF:ää, tiedostonimeä tai koko poimittua raakatekstiä ei tallenneta palkkahistoriaan tai varmuuskopioon. Paikallinen oppiminen tallentaa ennalta rajattuja neutraaleja rakennesignaaleja sekä käyttäjän vahvistamien kenttien ympäristöstä SHA-256-tiivisteitä. Tiivisteeseen ei tallenneta itse palkka-arvoa tai alkuperäistä kenttätekstiä; henkilö-, työnantaja- tai tilitietoja ei käytetä oppimisprofiilin tunnisteena.
 
 Repositorioon ei pidä commitoida oikeita palkkalaskelmia. Oikeista dokumenteista tehdään vain tunnisteettomat testifixturet, jotka sisältävät parserin kannalta tarpeelliset rivit.
 
@@ -81,14 +84,14 @@ node --test tests/*.test.mjs
 
 ## GitHub Pages
 
-Repossa oleva `.github/workflows/pages.yml` ajaa parseri- ja tietomallitestit Node 22:lla ennen GitHub Pages -julkaisua.
+Repossa oleva `Quality gate` ajaa kaikki Node-yksikkö- ja skenaariotestit sekä Playwrightin mobiiliselain-testit ennen GitHub Pages -julkaisua. `pages.yml` julkaisee vain laatutestin läpäisseen commitin.
 
 ## Tunnetut rajat
 
 - PDF:ssä pitää vielä olla tekstikerros; OCR:ää ei ole
 - PDF.js ladataan edelleen cdnjs-palvelusta, joten täysin ensimmäinen käyttö ei ole täysin offline
 - palkkarivien automaattinen kategorisointi on tarkoituksella varovainen; tunnistamaton rivi säilytetään kategoriassa `unknown`
-- paikallinen oppiminen tunnistaa rakenteen, mutta ei vielä rakenna täysin uusia kenttäpoimintasääntöjä itsenäisesti; epävarmat arvot kysytään edelleen käyttäjältä
+- paikallinen oppiminen käyttää vain aiemmin käyttäjän vahvistamia, saman rakenteen yksiselitteisiä kenttäosumia; jos konteksti antaa useita eri arvoja, sovellus ei arvaa vaan kysyy käyttäjältä
 - palkkapäiväennusteita tai pyhäpäiväsiirtojen ennustemoottoria ei vielä generoida; oikean palkkalaskelman ilmoittama maksupäivä on lähdetotuus
 - Google Drive -autobackup ei ole vielä tässä paketissa
 
