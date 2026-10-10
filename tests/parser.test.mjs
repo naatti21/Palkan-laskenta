@@ -196,3 +196,24 @@ Prosentti2 45,5%`;
   assert.equal(record.taxCardAccumulatedIncome, null);
   assert.ok(parsed.notices.find(item => item.code === "tax-card-accumulation-missing"));
 });
+
+
+test("kompakti B-formaatti ei joudu väärään legacy-parseriin", async () => {
+  const text = await readFile(new URL("./fixtures/test-format-b-compact.txt", import.meta.url), "utf8");
+  const parsed = parsePayslip(text);
+  const record = plainRecord(parsed);
+
+  assert.equal(parsed.documentType, "payslip");
+  assert.equal(record.payPeriodStart, "2026-08-03");
+  assert.equal(record.payPeriodEnd, "2026-08-16");
+  assert.equal(record.payDate, "2026-08-28");
+  assert.equal(record.grossPay, 4698.11);
+  assert.equal(record.netPay, 2678.39);
+  assert.equal(record.ytdTaxableIncome, 63832.82);
+  assert.equal(record.taxCardAccumulatedIncome, 8028.58);
+  assert.equal(record.taxRate, 32.5);
+  assert.equal(record.additionalRate, 47);
+  assert.equal(record.taxLimit, 40000);
+  assert.equal(record.kta, 25.07);
+  assert.equal(record.pp, 19.44);
+});
