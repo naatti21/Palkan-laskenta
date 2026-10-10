@@ -83,6 +83,14 @@ function sectionMoney(text, sectionPattern, labelPattern) {
   return matchOne(section, [new RegExp(`${labelPattern.source}\\s+(${MONEY_RE})`, "i")], fiNumber);
 }
 
+function moneyInNearbySection(text, sectionPattern, labelPattern, maxChars = 900) {
+  const sectionStart = text.search(sectionPattern);
+  if (sectionStart < 0) return null;
+  const section = text.slice(sectionStart, sectionStart + maxChars);
+  return matchOne(section, [new RegExp(`${labelPattern.source}\\s+(${MONEY_RE})`, "i")], fiNumber);
+}
+
+
 function withholdingRows(text) {
   return text.split("\n")
     .map(line => line.trim())
@@ -222,7 +230,10 @@ function sumLineValues(lines, categories, key) {
 }
 
 function detectSourceProfile(text) {
-  if (/\bPALKKAERITTELY\b/i.test(text) && /Kauden tiedot/i.test(text) && /Ver\.al\.ans/i.test(text)) {
+  const legacyHeader = /\bPALKKAERITTELY\b/i.test(text);
+  const legacyPayHeader = /Palkkaustiedot/i.test(text) && /\bYlityöh\/v\b/i.test(text);
+  const legacySummaryRow = /Kauden tiedot\s+Ver\.al\.ans\s+Rahapalkka\s+Enn\.pid/i.test(text);
+  if (legacyHeader && legacyPayHeader && legacySummaryRow) {
     return "legacy-table-fi-v1";
   }
   return "generic-text-pdf";
@@ -335,8 +346,11 @@ function parseGeneric(text, payLines) {
   ], fiNumber);
 
   const taxable = allNumbersAfterLabel(text, /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i);
+  const periodSectionTaxable = moneyInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
+  const yearSectionTaxable = moneyInNearbySection(text, /Vuoden\s+tiedot/i, /Ver\.al\.ans/i);
   const explicitGrossPay = matchOne(text, [
-    new RegExp(`(?:Veronalainen\\s+(?:palkka|ansio)(?:\\s*\\/\\s*kausi|\\s+palkkakaudelta)?|Kauden\\s+veronalainen\\s+(?:palkka|ansio))\\s+(${MONEY_RE})`, "i")
+    new RegExp(`(?:Veronalainen\\s+(?:palkka|ansio)(?:\\s*\\/\\s*kausi|\\s+palkkakaudelta)?|Kauden\\s+veronalainen\\s+(?:palkka|ansio))\\s+(${MONEY_RE})`, "i"),
+    new RegExp(`(?:^|\\n)\\s*Ver\\.al\\.ans\\s+(${MONEY_RE})`, "im")
   ], fiNumber);
   const explicitYtdTaxable = matchOne(text, [
     new RegExp(`(?:Vuositulo\\s+tähän\\s+asti|Veronalainen\\s+(?:YTD|vuoden\\s+alusta)|Vuoden\\s+veronalainen\\s+(?:tulo|ansio))\\s+(${MONEY_RE})`, "i")
@@ -345,17 +359,19 @@ function parseGeneric(text, payLines) {
     new RegExp(`(?:Edellisen\\s+vuoden\\s+veronalainen\\s+(?:tulo|ansio)|Veronalainen\\s+edellinen\\s+vuosi)\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
 
-  const grossPay = explicitGrossPay ?? taxable[0] ?? null;
-  const ytdTaxable = explicitYtdTaxable ?? taxable[1] ?? null;
+  const grossPay = periodSectionTaxable ?? explicitGrossPay ?? taxable[0] ?? null;
+  const ytdTaxable = yearSectionTaxable ?? explicitYtdTaxable ?? taxable[1] ?? null;
   const previousYearTaxable = explicitPreviousYearTaxable ?? taxable[2] ?? null;
 
   const withholdingNegatives = [...text.matchAll(new RegExp(`Ennakonpidätys\\s+(-\\s*\\d[\\d\\s\\u00A0]*,\\d{2})`, "gi"))]
     .map(match => fiNumber(match[1]))
     .filter(value => value != null);
   const withholdingPeriod = sectionMoney(text, /Kertymä\s+palkkakaudelta/i, /Ennakonpidätys/i)
+    ?? moneyInNearbySection(text, /Kauden\s+tiedot/i, /(?:Enn\.pid|Ennakonpidätys)/i)
     ?? withholdingNegatives[0]
     ?? null;
   const withholdingYtd = sectionMoney(text, /Kertymä\s+vuoden alusta/i, /Ennakonpidätys/i)
+    ?? moneyInNearbySection(text, /Vuoden\s+tiedot/i, /(?:Enn\.pid|Ennakonpidätys)/i)
     ?? withholdingNegatives[1]
     ?? null;
   const explicitTaxCardAccumulation = matchOne(text, [
@@ -364,17 +380,21 @@ function parseGeneric(text, payLines) {
   const taxCardAccumulatedIncome = explicitTaxCardAccumulation
     ?? taxCardAccumulationFromWithholdingRows(text, grossPay, ytdTaxable);
 
-  const taxRate = matchOne(text, [
+  const combinedTaxRates = matchOne(text, [
+    /Perus\/lisä\s*%?\s+(\d+(?:,\d+)?)\s*%?\s*\/\s*(\d+(?:,\d+)?)\s*%?/i
+  ], (base, m) => ({ base: fiNumber(base), additional: fiNumber(m[2]) }));
+
+  const taxRate = combinedTaxRates?.base ?? matchOne(text, [
     /Perusprosentti\s*\(\s*0\s*-\s*[\d\s]+,\d{2}\s*€?\s*\)\s*(\d+(?:,\d+)?)\s*%/i,
     /Prosentti1\s+(\d+(?:,\d+)?)\s*%/i,
     /Pidätysprosentti\s+(\d+(?:,\d+)?)\s*%/i
   ], fiNumber);
   const taxLimit = matchOne(text, [
     new RegExp(`Perusprosentti\\s*\\(\\s*0\\s*-\\s*(${MONEY_RE})\\s*€?\\s*\\)`, "i"),
-    new RegExp(`Tuloraja\\s+(${MONEY_RE})`, "i"),
+    new RegExp(`Tuloraja(?:\\/vv)?\\s+(${MONEY_RE})`, "i"),
     new RegExp(`Vuosituloraja\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
-  const additionalRate = matchOne(text, [
+  const additionalRate = combinedTaxRates?.additional ?? matchOne(text, [
     /Lisäprosentti\s+(\d+(?:,\d+)?)\s*%/i,
     /Prosentti2\s+(\d+(?:,\d+)?)\s*%/i
   ], fiNumber);
@@ -459,7 +479,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.0",
+    parserVersion: "0.4.1",
     sourceProfile,
     fields,
     payLines,
