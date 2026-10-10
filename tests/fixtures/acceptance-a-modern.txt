@@ -1,0 +1,30 @@
+PALKKALASKELMA-PALKKATODISTUS
+Palkkakausi 2026/17 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 678,39
+KTA 25,07
+PP 19,44
+Prosentti1 32,5% Tuloraja 40 000,00€
+Prosentti2 47,0%
+
+ERITTELYT YKSIKÖT/MÄÄRÄ A-HINTA YHTEENSÄ
+13001 Palkkiotyö 97,14 19,44 1 888,41
+13101 Porakonepalkkio 97,14 5,18 503,19
+20040 Ylityö 100 % vrk 4,15 25,07 104,04
+20050 Ylityö 50 % vko 7,90 25,07 99,03
+20060 Ylityö 100 % vko 8,00 25,07 200,56
+20070 Tes ylityö 50 % 0,10 25,07 1,25
+20110 Sunnuntaityö 11,32 25,07 283,79
+20120 Viikkovapaakorvaus 11,32 25,07 283,79
+20511 Työaikapankista käyttö 3,85 19,44 74,84
+20512 Työaikapankin lisäys -9,67 19,44 -187,99
+90000 Ennakonpidätys 8 028,58 -1 526,89
+
+KERTYMÄ PALKKAKAUDELTA
+Ennakonpid. al. tul 4 698,11
+Ennakonpidätys -1 526,89
+Maksetaan 2 678,39
+
+KERTYMÄ VUODEN ALUSTA
+Ennakonpid. al. tul 63 832,82
+Ennakonpidätys -18 792,51
