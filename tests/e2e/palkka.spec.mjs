@@ -144,3 +144,30 @@ test("korvaa aiempi -polku pitää yhden tietueen ja vaihtaa arvot", async ({ pa
   expect(result.netPay).toBe(2728.39);
   expect(result.fingerprints).toEqual(["fp-corrected"]);
 });
+
+
+test("Data-välilehti näyttää tunnistetut rakenteet ja opitut kentät", async ({ page }) => {
+  await page.goto("/index.html");
+
+  await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    await storage.setSetting("learnedLayoutProfiles:v1", [{
+      id: "test-layout",
+      signals: ["title:palkkalaskelma", "label:palkkakausi", "label:maksupaiva"],
+      observations: 3,
+      confirmations: 1,
+      autoParses: 2,
+      mappings: [{
+        field: "grossPay",
+        selectors: ["a".repeat(64)],
+        confirmations: 1,
+        learnedAt: "2026-10-10T00:00:00.000Z"
+      }],
+      sourceProfile: "generic-text-pdf"
+    }]);
+  });
+
+  await page.reload();
+  await page.getByRole("button", { name: "Data" }).click();
+  await expect(page.locator("#learnedProfileCount")).toHaveText("1 rakennetta · 3 havaintoa · 1 opittua kenttää");
+});
