@@ -204,8 +204,11 @@ export function classifyRecordRelation(existingInput, incomingInput) {
 }
 
 export function findRecordConflict(records, incomingInput) {
+  const incoming = migrateLegacyRecord(incomingInput);
+  if (!incoming) return null;
   for (const existing of Array.isArray(records) ? records : []) {
-    const relation = classifyRecordRelation(existing, incomingInput);
+    if (existing?.id && incoming.id && existing.id === incoming.id) continue;
+    const relation = classifyRecordRelation(existing, incoming);
     if (relation.type === "same_event_conflict") return { existing, ...relation };
   }
   return null;
