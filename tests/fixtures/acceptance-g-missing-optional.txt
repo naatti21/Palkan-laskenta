@@ -1,0 +1,18 @@
+PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 678,39
+
+ERITTELY
+13001 Palkkiotyö 97,14 19,44 1 888,41
+13101 Porakonepalkkio 97,14 5,18 503,19
+20040 Ylityö 100 % vrk 4,15 25,07 104,04
+20050 Ylityö 50 % vko 7,90 25,07 99,03
+20060 Ylityö 100 % vko 8,00 25,07 200,56
+20070 Tes ylityö 50 % 0,10 25,07 1,25
+
+Kertymä palkkakaudelta
+Ennakonpid. al. tul 4 698,11
+
+Kertymä vuoden alusta
+Ennakonpid. al. tul 63 832,82

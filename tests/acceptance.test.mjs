@@ -120,3 +120,53 @@ Jakson veropohja 3 301,02`;
   const learned = await applyLearnedMappings(ambiguous, mappings);
   assert.equal(learned.grossPay, undefined);
 });
+
+
+for (const [name, fixture] of [
+  ["E yhteenvetojen järjestys vaihtunut", "acceptance-e-reordered-sections.txt"],
+  ["F PDF-rivikatkot", "acceptance-f-linebreaks.txt"],
+  ["G valinnaiset kentät puuttuvat", "acceptance-g-missing-optional.txt"],
+  ["H verokortti-YTD ero ja ei ylityötä", "acceptance-h-no-overtime.txt"]
+]) {
+  test(`${name}: ydinkentät hyväksytään ilman käyttäjäkysymyksiä`, async () => {
+    const text = await readFile(new URL(`./fixtures/${fixture}`, import.meta.url), "utf8");
+    const parsed = parsePayslip(text);
+    assertGolden(parsed);
+  });
+}
+
+test("EFGH-mittari: E/F/G/H tarvitsevat yhteensä 0 manuaalista ydinkenttää", async () => {
+  let interventions = 0;
+  for (const fixture of [
+    "acceptance-e-reordered-sections.txt",
+    "acceptance-f-linebreaks.txt",
+    "acceptance-g-missing-optional.txt",
+    "acceptance-h-no-overtime.txt"
+  ]) {
+    const text = await readFile(new URL(`./fixtures/${fixture}`, import.meta.url), "utf8");
+    interventions += manualInterventions(parsePayslip(text)).length;
+  }
+  assert.equal(interventions, 0);
+});
+
+test("H: luotettava palkkarivierittely ilman OT-rivejä tarkoittaa 0 h, ei tuntematonta", async () => {
+  const text = await readFile(new URL("./fixtures/acceptance-h-no-overtime.txt", import.meta.url), "utf8");
+  const r = plainRecord(parsePayslip(text));
+  assert.equal(r.overtimeHours, 0);
+  assert.equal(r.overtimeCompensation, 0);
+  assert.equal(r.taxCardAccumulatedIncome, 8028.58);
+  assert.equal(r.ytdTaxableIncome, 63832.82);
+  assert.notEqual(r.taxCardAccumulatedIncome, r.ytdTaxableIncome);
+});
+
+test("G: valinnaisten verotus-, KTA- ja PP-kenttien puuttuminen ei pakota ydinkenttien tarkistusta", async () => {
+  const text = await readFile(new URL("./fixtures/acceptance-g-missing-optional.txt", import.meta.url), "utf8");
+  const parsed = parsePayslip(text);
+  const r = plainRecord(parsed);
+  assert.deepEqual(manualInterventions(parsed), []);
+  assert.equal(r.taxLimit, null);
+  assert.equal(r.taxRate, null);
+  assert.equal(r.additionalRate, null);
+  assert.equal(r.kta, null);
+  assert.equal(r.pp, null);
+});

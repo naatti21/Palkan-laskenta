@@ -1,0 +1,25 @@
+PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 678,39
+Nykyisen verokortin kertymä 8 028,58
+Prosentti1 32,5% Tuloraja 40 000,00€
+Prosentti2 47,0%
+
+ERITTELY
+13001 Palkkiotyö 97,14 19,44 1 888,41
+13101 Porakonepalkkio 97,14 5,18 503,19
+20512 Työaikapankin lisäys -9,67 19,44 -187,99
+30020 Iltavuorolisä 39,54 1,39 54,96
+90000 Ennakonpidätys 8 028,58 -1 526,89
+
+Kertymä palkkakaudelta
+Ennakonpid. al. tul 4 698,11
+Ennakonpidätys -1 526,89
+
+Kertymä vuoden alusta
+Ennakonpid. al. tul 63 832,82
+Ennakonpidätys -18 792,51
+
+Kertymä edelliseltä vuodelta
+Ennakonpid.al. tulo 78 829,16
