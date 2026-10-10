@@ -641,9 +641,9 @@ function renderConflict(record, conflict) {
   el("status").textContent = "Samalle palkka-ajalle löytyi eri luvut. Mitään ei yhdistetty automaattisesti.";
 }
 
-async function conflictForRecord(record) {
+async function conflictForRecord(record, ignoreRecordId = null) {
   const records = await getAllRecords();
-  return findRecordConflict(records, record);
+  return findRecordConflict(records, record, { ignoreRecordId });
 }
 
 async function processPdf(file) {
@@ -729,7 +729,7 @@ el("saveButton").addEventListener("click", async () => {
     return;
   }
 
-  const conflict = await conflictForRecord(record);
+  const conflict = await conflictForRecord(record, currentRecord?.id || null);
   if (conflict) {
     currentPendingWasAutoParsed = false;
     renderConflict(record, conflict);

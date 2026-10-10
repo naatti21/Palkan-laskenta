@@ -171,22 +171,29 @@ export async function mergeManyRecords(records) {
 
     if (sameId) {
       const relation = classifyRecordRelation(sameId, incoming);
-      if (relation.type === "same_event_conflict") {
+
+      if (relation.type === "same_event_conflict" || relation.type === "distinct") {
         await saveRecordSeparately(incoming);
         added += 1;
         conflictsPreserved += 1;
         continue;
       }
-    } else {
-      const conflict = existingRecords.find(existing =>
-        classifyRecordRelation(existing, incoming).type === "same_event_conflict"
-      );
-      if (conflict) {
-        await putRecordPreservingIdentity(incoming);
-        added += 1;
-        conflictsPreserved += 1;
-        continue;
-      }
+
+      const mergedSameId = mergeRecords(sameId, incoming);
+      mergedSameId.id = sameId.id;
+      await putRecordPreservingIdentity(mergedSameId);
+      merged += 1;
+      continue;
+    }
+
+    const conflict = existingRecords.find(existing =>
+      classifyRecordRelation(existing, incoming).type === "same_event_conflict"
+    );
+    if (conflict) {
+      await putRecordPreservingIdentity(incoming);
+      added += 1;
+      conflictsPreserved += 1;
+      continue;
     }
 
     const result = await upsertRecord(incoming);

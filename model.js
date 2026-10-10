@@ -223,11 +223,13 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   return { type: "distinct", eventKey: null, differences: [] };
 }
 
-export function findRecordConflict(records, incomingInput) {
+export function findRecordConflict(records, incomingInput, options = {}) {
   const incoming = migrateLegacyRecord(incomingInput);
   if (!incoming) return null;
+  const ignoreRecordId = options?.ignoreRecordId || null;
+
   for (const existing of Array.isArray(records) ? records : []) {
-    if (existing?.id && incoming.id && existing.id === incoming.id) continue;
+    if (ignoreRecordId && existing?.id === ignoreRecordId) continue;
     const relation = classifyRecordRelation(existing, incoming);
     if (relation.type === "same_event_conflict") return { existing, ...relation };
   }
@@ -329,8 +331,19 @@ export function mergeRecords(existingInput, incomingInput) {
   if (!incoming) return existing;
 
   const existingCorrections = existing.corrections || {};
+  const incomingCorrections = incoming.corrections || {};
   const mergedValues = pickNonNull(existing.values, incoming.values);
+
   for (const [key, correction] of Object.entries(existingCorrections)) {
+    if (
+      !incomingCorrections[key] &&
+      correction &&
+      Object.prototype.hasOwnProperty.call(correction, "userValue")
+    ) {
+      mergedValues[key] = correction.userValue;
+    }
+  }
+  for (const [key, correction] of Object.entries(incomingCorrections)) {
     if (correction && Object.prototype.hasOwnProperty.call(correction, "userValue")) {
       mergedValues[key] = correction.userValue;
     }
@@ -353,7 +366,7 @@ export function mergeRecords(existingInput, incomingInput) {
     values: mergedValues,
     fieldMeta: { ...(existing.fieldMeta || {}), ...(incoming.fieldMeta || {}) },
     payLines: useIncomingLines ? incoming.payLines : existing.payLines,
-    corrections: { ...(incoming.corrections || {}), ...existingCorrections },
+    corrections: { ...existingCorrections, ...incomingCorrections },
     notices: incoming.notices?.length ? incoming.notices : existing.notices,
     parser: incoming.parser || existing.parser
   });
