@@ -348,6 +348,16 @@ function parseGeneric(text, payLines) {
   const taxable = allNumbersAfterLabel(text, /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i);
   const periodSectionTaxable = moneyInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
   const yearSectionTaxable = moneyInNearbySection(text, /Vuoden\s+tiedot/i, /Ver\.al\.ans/i);
+  const periodCumulativeTaxable = sectionMoney(
+    text,
+    /Kertymä\s+palkkakaudelta/i,
+    /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i
+  );
+  const yearCumulativeTaxable = sectionMoney(
+    text,
+    /Kertymä\s+vuoden alusta/i,
+    /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i
+  );
   const explicitGrossPay = matchOne(text, [
     new RegExp(`(?:Veronalainen\\s+(?:palkka|ansio)(?:\\s*\\/\\s*kausi|\\s+palkkakaudelta)?|Kauden\\s+veronalainen\\s+(?:palkka|ansio))\\s+(${MONEY_RE})`, "i"),
     new RegExp(`(?:^|\\n)\\s*Ver\\.al\\.ans\\s+(${MONEY_RE})`, "im")
@@ -359,8 +369,8 @@ function parseGeneric(text, payLines) {
     new RegExp(`(?:Edellisen\\s+vuoden\\s+veronalainen\\s+(?:tulo|ansio)|Veronalainen\\s+edellinen\\s+vuosi)\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
 
-  const grossPay = periodSectionTaxable ?? explicitGrossPay ?? taxable[0] ?? null;
-  const ytdTaxable = yearSectionTaxable ?? explicitYtdTaxable ?? taxable[1] ?? null;
+  const grossPay = periodSectionTaxable ?? periodCumulativeTaxable ?? explicitGrossPay ?? taxable[0] ?? null;
+  const ytdTaxable = yearSectionTaxable ?? yearCumulativeTaxable ?? explicitYtdTaxable ?? taxable[1] ?? null;
   const previousYearTaxable = explicitPreviousYearTaxable ?? taxable[2] ?? null;
 
   const withholdingNegatives = [...text.matchAll(new RegExp(`Ennakonpidätys\\s+(-\\s*\\d[\\d\\s\\u00A0]*,\\d{2})`, "gi"))]
@@ -479,7 +489,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.1",
+    parserVersion: "0.4.2",
     sourceProfile,
     fields,
     payLines,
