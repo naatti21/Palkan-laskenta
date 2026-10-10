@@ -90,7 +90,9 @@ function safeLearnedProfiles(profiles) {
     return {
       id: safeText(profile?.id, 120) || signals.join("|"),
       signals,
-      confirmations: Math.max(1, Math.min(999, Number(profile?.confirmations) || 1)),
+      observations: Math.max(0, Math.min(9999, Number(profile?.observations) || 0)),
+      confirmations: Math.max(0, Math.min(999, Number(profile?.confirmations) || 0)),
+      autoParses: Math.max(0, Math.min(9999, Number(profile?.autoParses) || 0)),
       sourceProfile: safeText(profile?.sourceProfile, 80) || "learned-local",
       firstSeenAt: safeText(profile?.firstSeenAt, 40) || null,
       lastSeenAt: safeText(profile?.lastSeenAt, 40) || null
@@ -137,6 +139,78 @@ export function duplicateKeyFromValues(values = {}, fingerprint = "") {
   }
   return fingerprint ? `fp|${fingerprint}` : null;
 }
+
+export function payEventKeyFromValues(values = {}) {
+  const { payDate, payPeriodStart, payPeriodEnd } = values;
+  if (!payDate || !payPeriodStart || !payPeriodEnd) return null;
+  return ["event", payDate, payPeriodStart, payPeriodEnd].join("|");
+}
+
+const CONFLICT_VALUE_KEYS = [
+  "grossPay", "netPay", "ytdTaxableIncome", "previousYearTaxableIncome",
+  "taxCardAccumulatedIncome", "withholdingPeriod", "withholdingYtd",
+  "taxRate", "taxLimit", "additionalRate", "kta", "pp",
+  "overtime100DailyHours", "overtime50WeeklyHours", "overtime100WeeklyHours",
+  "overtimeHours", "overtimeCompensation", "sundayHours", "weeklyRestHours",
+  "worktimeBankUseHours", "worktimeBankAddHours", "cashPay",
+  "taxableBenefits", "taxExemptBenefits", "preTaxSalaryAdjustment"
+];
+
+function sameComparableValue(a, b) {
+  if (a == null || b == null) return true;
+  const aNumber = Number(a);
+  const bNumber = Number(b);
+  if (Number.isFinite(aNumber) && Number.isFinite(bNumber)) {
+    return stableNumber(aNumber) === stableNumber(bNumber);
+  }
+  return String(a) === String(b);
+}
+
+export function recordDifferences(existingInput, incomingInput) {
+  const existing = migrateLegacyRecord(existingInput);
+  const incoming = migrateLegacyRecord(incomingInput);
+  if (!existing || !incoming) return [];
+
+  const differences = [];
+  for (const key of CONFLICT_VALUE_KEYS) {
+    const before = existing.values?.[key] ?? null;
+    const after = incoming.values?.[key] ?? null;
+    if (before == null || after == null || sameComparableValue(before, after)) continue;
+    differences.push({ key, before, after });
+  }
+  return differences;
+}
+
+export function classifyRecordRelation(existingInput, incomingInput) {
+  const existing = migrateLegacyRecord(existingInput);
+  const incoming = migrateLegacyRecord(incomingInput);
+  if (!existing || !incoming) return { type: "distinct", differences: [] };
+
+  const existingEventKey = payEventKeyFromValues(existing.values);
+  const incomingEventKey = payEventKeyFromValues(incoming.values);
+  const sameEvent = existingEventKey && incomingEventKey && existingEventKey === incomingEventKey;
+  const differences = sameEvent ? recordDifferences(existing, incoming) : [];
+
+  if (sameEvent && differences.length) {
+    return { type: "same_event_conflict", eventKey: existingEventKey, differences };
+  }
+  if (existing.duplicateKey && incoming.duplicateKey && existing.duplicateKey === incoming.duplicateKey) {
+    return { type: "exact_duplicate", eventKey: existingEventKey || incomingEventKey || null, differences: [] };
+  }
+  if (sameEvent) {
+    return { type: "same_event_compatible", eventKey: existingEventKey, differences: [] };
+  }
+  return { type: "distinct", eventKey: null, differences: [] };
+}
+
+export function findRecordConflict(records, incomingInput) {
+  for (const existing of Array.isArray(records) ? records : []) {
+    const relation = classifyRecordRelation(existing, incomingInput);
+    if (relation.type === "same_event_conflict") return { existing, ...relation };
+  }
+  return null;
+}
+
 
 export function recordIdFrom(values = {}, fingerprint = "") {
   const duplicateKey = duplicateKeyFromValues(values, fingerprint) || `manual|${Date.now()}`;
