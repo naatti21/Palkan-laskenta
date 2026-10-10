@@ -1,0 +1,14 @@
+{
+  "name": "palkka-pwa-qa",
+  "private": true,
+  "version": "0.4.0",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs && playwright test",
+    "test:logic": "node --test tests/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:smoke": "playwright test --grep @smoke"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.57.0"
+  }
+}
