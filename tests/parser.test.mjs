@@ -156,3 +156,43 @@ Lisäprosentti 40,0%`;
   const parsed = parsePayslip(text);
   assert.equal(parsed.notices.some(item => item.code === "tax-card-accumulation-suspiciously-low"), false);
 });
+
+
+test("2025 kahden 90000-rivin rakenne valitsee oikean verokortin kertymän", async () => {
+  const text = await readFile(new URL("./fixtures/withholding-multiline-2025.txt", import.meta.url), "utf8");
+  const parsed = parsePayslip(text);
+  const record = plainRecord(parsed);
+
+  assert.equal(parsed.documentType, "payslip");
+  assert.equal(record.grossPay, 858.67);
+  assert.equal(record.netPay, 522.74);
+  assert.equal(record.ytdTaxableIncome, 47774.38);
+  assert.equal(record.taxCardAccumulatedIncome, 47774.38);
+  assert.equal(record.withholdingPeriod, -244.72);
+  assert.equal(record.withholdingYtd, -13615.70);
+  assert.equal(record.taxRate, 28.5);
+  assert.equal(record.additionalRate, 45.5);
+  assert.equal(record.taxLimit, 77700);
+  assert.equal(parsed.notices.some(item => item.code === "tax-card-accumulation-suspiciously-low"), false);
+});
+
+test("90000-päivä-/määräriviä ei tulkita verokortin kertymäksi", () => {
+  const text = `PALKKALASKELMA/PALKKATODISTUS
+Palkkakausi 23.6.2025 - 6.7.2025
+Maksupäivä 11.7.2025
+Maksetaan 522,74
+90000 Ennakonpidätys 30.6.2025 - 27.7.2025 -7,00
+Kertymä palkkakaudelta
+Ennakonpid. al. tul 858,67
+Ennakonpidätys -244,72
+Kertymä vuoden alusta
+Ennakonpid. al. tul 47 774,38
+Ennakonpidätys -13 615,70
+Prosentti1 28,5% Tuloraja 77 700,00€
+Prosentti2 45,5%`;
+
+  const parsed = parsePayslip(text);
+  const record = plainRecord(parsed);
+  assert.equal(record.taxCardAccumulatedIncome, null);
+  assert.ok(parsed.notices.find(item => item.code === "tax-card-accumulation-missing"));
+});
