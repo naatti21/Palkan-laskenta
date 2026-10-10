@@ -1,6 +1,12 @@
 import { extractPdfText } from "./pdf-reader.js";
 import { parsePayslip, validate } from "./parser.js";
 import {
+  applyLearnedMappings,
+  learnMappingsFromCorrections,
+  mergeMappingUpdates,
+  sanitizeMappings
+} from "./learning.js";
+import {
   VALUE_KEYS,
   applyUserCorrections,
   makeBackup,
@@ -139,6 +145,7 @@ async function setLearnedProfiles(profiles) {
     observations: Math.max(0, Math.min(9999, Number(profile.observations) || 0)),
     confirmations: Math.max(0, Math.min(999, Number(profile.confirmations) || 0)),
     autoParses: Math.max(0, Math.min(9999, Number(profile.autoParses) || 0)),
+    mappings: sanitizeMappings(profile.mappings),
     sourceProfile: String(profile.sourceProfile || "learned-local").slice(0, 80),
     firstSeenAt: profile.firstSeenAt || null,
     lastSeenAt: profile.lastSeenAt || null
@@ -160,7 +167,38 @@ async function findLearnedProfile(signals) {
   return { ...best, score: bestScore, trusted };
 }
 
-async function rememberCurrentStructure({ confirmed = false, autoParsed = false } = {}) {
+async function applyProfileMappings(parsed, rawText, profile) {
+  if (!profile?.mappings?.length) return { parsed, appliedFields: [] };
+  const learnedValues = await applyLearnedMappings(rawText, profile.mappings);
+  const appliedFields = [];
+
+  for (const [field, value] of Object.entries(learnedValues)) {
+    const meta = parsed.fields?.[field];
+    if (!meta || meta.value == null || Number(meta.confidence || 0) < 0.95) {
+      parsed.fields[field] = {
+        value,
+        confidence: 0.965,
+        source: "Paikallinen vahvistettu kenttäkartta"
+      };
+      appliedFields.push(field);
+    }
+  }
+
+  if (!appliedFields.length) return { parsed, appliedFields };
+
+  const requiredFound = requiredFields.filter(key => parsed.fields?.[key]?.value != null).length;
+  parsed.overallConfidence = requiredFound / requiredFields.length;
+  parsed.notices = validate(parsed.fields);
+  parsed.warnings = parsed.notices.map(notice => notice.message);
+
+  if (requiredFound >= 3 && (parsed.documentType === "payslip" || profile.trusted || (parsed.signals || 0) >= 3)) {
+    parsed.documentType = "payslip";
+  }
+  parsed.sourceProfile = `${parsed.sourceProfile || "generic-text-pdf"}+learned-local`;
+  return { parsed, appliedFields };
+}
+
+async function rememberCurrentStructure({ confirmed = false, autoParsed = false, mappingUpdates = [] } = {}) {
   const signals = normalizedSignals(currentParsed?.structureSignals);
   if (signals.length < 3) return null;
   const profiles = await getLearnedProfiles();
@@ -175,6 +213,7 @@ async function rememberCurrentStructure({ confirmed = false, autoParsed = false 
       observations: Math.max(previous.observations || 0, previous.confirmations || 0) + 1,
       confirmations: (previous.confirmations || 0) + (confirmed ? 1 : 0),
       autoParses: (previous.autoParses || 0) + (autoParsed ? 1 : 0),
+      mappings: mergeMappingUpdates(previous.mappings, mappingUpdates),
       lastSeenAt: now
     };
     profiles[existingIndex] = profile;
@@ -185,6 +224,7 @@ async function rememberCurrentStructure({ confirmed = false, autoParsed = false 
       observations: 1,
       confirmations: confirmed ? 1 : 0,
       autoParses: autoParsed ? 1 : 0,
+      mappings: sanitizeMappings(mappingUpdates),
       sourceProfile: currentParsed?.sourceProfile || "learned-local",
       firstSeenAt: now,
       lastSeenAt: now
@@ -208,6 +248,7 @@ async function mergeLearnedProfiles(incoming) {
         observations: Math.max(profiles[i].observations || 0, item.observations || 0),
         confirmations: Math.max(profiles[i].confirmations || 0, item.confirmations || 0),
         autoParses: Math.max(profiles[i].autoParses || 0, item.autoParses || 0),
+        mappings: mergeMappingUpdates(profiles[i].mappings, item.mappings),
         lastSeenAt: profiles[i].lastSeenAt || item.lastSeenAt || null
       };
     } else profiles.push(item);
@@ -559,9 +600,10 @@ function renderDataSummary(records) {
 async function renderLearnedProfileSummary() {
   const profiles = await getLearnedProfiles();
   const observations = profiles.reduce((sum, profile) => sum + Math.max(profile.observations || 0, profile.confirmations || 0), 0);
+  const mappedFields = profiles.reduce((sum, profile) => sum + sanitizeMappings(profile.mappings).length, 0);
   if (el("learnedProfileCount")) {
     el("learnedProfileCount").textContent = profiles.length
-      ? `${profiles.length} rakennetta · ${observations} havaintoa`
+      ? `${profiles.length} rakennetta · ${observations} havaintoa${mappedFields ? ` · ${mappedFields} opittua kenttää` : ""}`
       : "Ei vielä tunnistettuja rakenteita";
   }
 }
@@ -620,6 +662,8 @@ async function processPdf(file) {
   currentRawText = await extractPdfText(file);
   currentParsed = parsePayslip(currentRawText);
   currentLearnedProfile = await findLearnedProfile(currentParsed.structureSignals);
+  const learnedResult = await applyProfileMappings(currentParsed, currentRawText, currentLearnedProfile);
+  currentParsed = learnedResult.parsed;
   currentFingerprint = await sha256(safeFingerprintPayload(currentParsed));
   el("rawText").textContent = currentRawText;
 
@@ -694,7 +738,10 @@ el("saveButton").addEventListener("click", async () => {
 
   const result = await upsertRecord(record);
   const confirmed = currentReviewWasManualConfirmation || Object.keys(record.corrections || {}).length > 0;
-  const learned = await rememberCurrentStructure({ confirmed, autoParsed: false });
+  const mappingUpdates = confirmed
+    ? await learnMappingsFromCorrections(currentRawText, record.corrections)
+    : [];
+  const learned = await rememberCurrentStructure({ confirmed, autoParsed: false, mappingUpdates });
   renderSuccess(result.record, result.mergedDuplicate);
   await renderAll();
   el("status").textContent = learned
@@ -705,8 +752,11 @@ el("saveButton").addEventListener("click", async () => {
 el("replaceConflictButton")?.addEventListener("click", async () => {
   if (!currentPendingRecord || !currentConflict?.existing?.id) return;
   const confirmed = currentReviewWasManualConfirmation || Object.keys(currentPendingRecord.corrections || {}).length > 0;
+  const mappingUpdates = confirmed
+    ? await learnMappingsFromCorrections(currentRawText, currentPendingRecord.corrections)
+    : [];
   const replacement = await replaceRecord(currentConflict.existing.id, currentPendingRecord);
-  await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed });
+  await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed, mappingUpdates });
   renderSuccess(replacement, false);
   el("resultBadge").textContent = "Korvattu";
   el("resultTitle").textContent = "Aiempi laskelma korvattu";
@@ -718,8 +768,11 @@ el("replaceConflictButton")?.addEventListener("click", async () => {
 el("keepBothConflictButton")?.addEventListener("click", async () => {
   if (!currentPendingRecord) return;
   const confirmed = currentReviewWasManualConfirmation || Object.keys(currentPendingRecord.corrections || {}).length > 0;
+  const mappingUpdates = confirmed
+    ? await learnMappingsFromCorrections(currentRawText, currentPendingRecord.corrections)
+    : [];
   const separate = await saveRecordSeparately(currentPendingRecord);
-  await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed });
+  await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed, mappingUpdates });
   renderSuccess(separate, false);
   el("resultBadge").textContent = "Molemmat";
   el("resultTitle").textContent = "Molemmat laskelmat säilytettiin";
