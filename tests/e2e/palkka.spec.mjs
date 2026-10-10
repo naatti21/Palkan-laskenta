@@ -171,3 +171,79 @@ test("Data-välilehti näyttää tunnistetut rakenteet ja opitut kentät", async
   await page.getByRole("button", { name: "Data" }).click();
   await expect(page.locator("#learnedProfileCount")).toHaveText("1 rakennetta · 3 havaintoa · 1 opittua kenttää");
 });
+
+
+test("QA-01: backup-palautus säilyttää erillisiksi hyväksytyt ristiriitaversiot", async ({ page }) => {
+  await page.goto("/index.html");
+
+  const backup = {
+    app: "Palkka PWA",
+    backupSchemaVersion: 2,
+    recordSchemaVersion: 1,
+    records: [
+      {
+        recordSchemaVersion: 1,
+        id: "qa-original",
+        values: {
+          payDate: "2026-08-28",
+          payPeriodStart: "2026-08-03",
+          payPeriodEnd: "2026-08-16",
+          grossPay: 4698.11,
+          netPay: 2678.39,
+          ytdTaxableIncome: 63832.82,
+          withholdingPeriod: -1526.89
+        },
+        fingerprints: ["qa-fp-original"],
+        payLines: [],
+        fieldMeta: {},
+        corrections: {},
+        notices: [],
+        parser: { version: "test", confidence: 1, documentType: "payslip", sourceProfile: "test" }
+      },
+      {
+        recordSchemaVersion: 1,
+        id: "qa-kept-variant",
+        values: {
+          payDate: "2026-08-28",
+          payPeriodStart: "2026-08-03",
+          payPeriodEnd: "2026-08-16",
+          grossPay: 4698.11,
+          netPay: 2678.39,
+          ytdTaxableIncome: 63832.82,
+          withholdingPeriod: -1500.00
+        },
+        fingerprints: ["qa-fp-changed"],
+        payLines: [],
+        fieldMeta: {},
+        corrections: {},
+        notices: [],
+        parser: { version: "test", confidence: 1, documentType: "payslip", sourceProfile: "test" }
+      }
+    ],
+    learnedProfiles: []
+  };
+
+  await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    await storage.clearAllRecords();
+  });
+
+  await page.getByRole("button", { name: "Data" }).click();
+  await page.locator("#backupInput").setInputFiles({
+    name: "qa-conflict-backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(backup))
+  });
+
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+
+  const records = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return await storage.getAllRecords();
+  });
+
+  expect(records).toHaveLength(2);
+  expect(records.map(r => r.values.withholdingPeriod).sort((a, b) => a - b))
+    .toEqual([-1526.89, -1500.00]);
+  expect(new Set(records.map(r => r.id)).size).toBe(2);
+});
