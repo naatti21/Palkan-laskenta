@@ -90,6 +90,23 @@
         <pre id="rawText" class="raw hidden"></pre>
       </section>
 
+      <section id="conflictSection" class="card hidden">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">RISTIRIITA</p>
+            <h2>Sama palkka-aika, eri luvut</h2>
+          </div>
+          <span class="badge warn">Tarkista</span>
+        </div>
+        <p class="muted">Historiassa on jo laskelma samalle palkkakaudelle ja maksupäivälle, mutta yksi tai useampi arvo eroaa. Sovellus ei yhdistä niitä hiljaa.</p>
+        <div id="conflictSummary" class="summary-list"></div>
+        <div class="actions">
+          <button id="replaceConflictButton">Korvaa aiempi</button>
+          <button id="keepBothConflictButton" class="secondary">Säilytä molemmat</button>
+          <button id="cancelConflictButton" class="secondary">Peruuta</button>
+        </div>
+      </section>
+
       <section class="card">
         <div class="section-heading">
           <div>
@@ -156,11 +173,11 @@
           <div class="summary-row"><span>Sisältö</span><strong id="recordCount">0 palkkalaskelmaa paikallisesti</strong></div>
           <div class="summary-row"><span>Historia</span><strong id="recordYears">Ei vielä historiaa</strong></div>
           <div class="summary-row"><span>Tallennus</span><strong>IndexedDB</strong></div>
-          <div class="summary-row"><span>Opitut rakenteet</span><strong id="learnedProfileCount">Ei vielä opittuja rakenteita</strong></div>
+          <div class="summary-row"><span>Tunnistetut rakenteet</span><strong id="learnedProfileCount">Ei vielä tunnistettuja rakenteita</strong></div>
         </div>
         <div class="actions">
           <button id="installButton" class="secondary hidden">Asenna sovellus</button>
-          <button id="clearLearnedButton" class="secondary">Nollaa opitut rakenteet</button>
+          <button id="clearLearnedButton" class="secondary">Nollaa tunnistetut rakenteet</button>
           <button id="clearButton" class="danger">Poista kaikki paikallinen data</button>
         </div>
       </section>
