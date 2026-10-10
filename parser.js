@@ -73,13 +73,47 @@ function codeLastMoney(text, code, labelPattern) {
   return nums.length ? nums.at(-1) : null;
 }
 
-function codeFirstAndLastMoney(text, code, labelPattern) {
-  const line = matchOne(text, [
-    new RegExp(`(${code}\\s+${labelPattern}[^\\n]*)`, "i")
-  ]);
-  if (!line) return { first: null, last: null };
-  const nums = [...line.matchAll(new RegExp(MONEY_RE, "g"))].map(m => fiNumber(m[0])).filter(v => v != null);
-  return { first: nums[0] ?? null, last: nums.at(-1) ?? null };
+function sectionMoney(text, sectionPattern, labelPattern) {
+  const sectionStart = text.search(sectionPattern);
+  if (sectionStart < 0) return null;
+
+  const tail = text.slice(sectionStart);
+  const nextSection = tail.slice(1).search(/\n\s*Kertymä\s+(?:vuoden alusta|edelliseltä vuodelta|palkkakaudelta)\b/i);
+  const section = nextSection >= 0 ? tail.slice(0, nextSection + 1) : tail;
+  return matchOne(section, [new RegExp(`${labelPattern.source}\\s+(${MONEY_RE})`, "i")], fiNumber);
+}
+
+function withholdingRows(text) {
+  return text.split("\n")
+    .map(line => line.trim())
+    .filter(line => /^90000\s+Ennakonpidätys\b/i.test(line));
+}
+
+function taxCardAccumulationFromWithholdingRows(text, grossPay, ytdTaxableIncome) {
+  const allCandidates = [];
+  const plausibleCandidates = [];
+
+  for (const line of withholdingRows(text)) {
+    const values = [...line.matchAll(new RegExp(MONEY_RE, "g"))]
+      .map(match => fiNumber(match[0]))
+      .filter(value => value != null && value > 0);
+
+    for (const value of values) {
+      allCandidates.push(value);
+
+      if (ytdTaxableIncome != null && value > ytdTaxableIncome * 1.10) continue;
+      if (
+        grossPay != null &&
+        ytdTaxableIncome != null &&
+        ytdTaxableIncome > grossPay * 2 &&
+        value < grossPay * 0.5
+      ) continue;
+      plausibleCandidates.push(value);
+    }
+  }
+
+  if (plausibleCandidates.length) return Math.max(...plausibleCandidates);
+  return allCandidates.length ? Math.max(...allCandidates) : null;
 }
 
 function field(value, confidence, source) {
@@ -293,10 +327,15 @@ function parseGeneric(text, payLines) {
   const previousYearTaxable = taxable[2] ?? null;
 
   const withholdingNegatives = [...text.matchAll(new RegExp(`Ennakonpidätys\\s+(-\\s*\\d[\\d\\s\\u00A0]*,\\d{2})`, "gi"))]
-    .map(m => fiNumber(m[1])).filter(v => v != null);
-  const withholdingPeriod = withholdingNegatives[0] ?? null;
-  const withholdingYtd = withholdingNegatives[1] ?? null;
-  const cardRow = codeFirstAndLastMoney(text, "90000", "Ennakonpidätys");
+    .map(match => fiNumber(match[1]))
+    .filter(value => value != null);
+  const withholdingPeriod = sectionMoney(text, /Kertymä\s+palkkakaudelta/i, /Ennakonpidätys/i)
+    ?? withholdingNegatives[0]
+    ?? null;
+  const withholdingYtd = sectionMoney(text, /Kertymä\s+vuoden alusta/i, /Ennakonpidätys/i)
+    ?? withholdingNegatives[1]
+    ?? null;
+  const taxCardAccumulatedIncome = taxCardAccumulationFromWithholdingRows(text, grossPay, ytdTaxable);
 
   const taxRate = matchOne(text, [
     /Perusprosentti\s*\(\s*0\s*-\s*[\d\s]+,\d{2}\s*€?\s*\)\s*(\d+(?:,\d+)?)\s*%/i,
@@ -330,7 +369,7 @@ function parseGeneric(text, payLines) {
     netPay: field(netPay, 0.99, "Maksetaan"),
     ytdTaxableIncome: field(ytdTaxable, 0.96, "Ennakonpid. al. tul / vuoden alusta"),
     previousYearTaxableIncome: field(previousYearTaxable, 0.85, "Ennakonpid. al. tulo / edellinen vuosi"),
-    taxCardAccumulatedIncome: field(cardRow.first, 0.96, "90000 Ennakonpidätys"),
+    taxCardAccumulatedIncome: field(taxCardAccumulatedIncome, 0.97, "90000 Ennakonpidätys / kertymä"),
     withholdingPeriod: field(withholdingPeriod, 0.95, "Ennakonpidätys / palkkakausi"),
     withholdingYtd: field(withholdingYtd, 0.90, "Ennakonpidätys / vuoden alusta"),
     taxRate: field(taxRate, 0.98, "Perusprosentti / Prosentti1"),
@@ -384,7 +423,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.3.2",
+    parserVersion: "0.3.3",
     sourceProfile,
     fields,
     payLines,
