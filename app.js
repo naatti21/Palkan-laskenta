@@ -844,7 +844,10 @@ el("backupInput").addEventListener("change", async event => {
     const result = await mergeManyRecords(records);
     if (learnedProfiles.length) await mergeLearnedProfiles(learnedProfiles);
     await renderAll();
-    el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa${learnedProfiles.length ? `, ${learnedProfiles.length} tunnistettua rakennetta` : ""}.`;
+    const preserved = result.conflictsPreserved
+      ? `, ${result.conflictsPreserved} ristiriitaversiota säilytetty erillään`
+      : "";
+    el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa${preserved}${learnedProfiles.length ? `, ${learnedProfiles.length} tunnistettua rakennetta` : ""}.`;
   } catch (err) {
     el("backupStatus").textContent = `Palautus epäonnistui: ${err.message}`;
   } finally {

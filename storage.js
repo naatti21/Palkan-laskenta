@@ -1,4 +1,4 @@
-import { mergeRecords, migrateLegacyRecord } from "./model.js";
+import { classifyRecordRelation, mergeRecords, migrateLegacyRecord } from "./model.js";
 
 const DB_NAME = "palkka-pwa";
 const DB_VERSION = 1;
@@ -146,15 +146,55 @@ export async function saveRecordSeparately(record) {
   return separate;
 }
 
+async function putRecordPreservingIdentity(record) {
+  const incoming = migrateLegacyRecord(record);
+  if (!incoming) throw new Error("Palautettava palkkatieto ei ole kelvollinen.");
+
+  const db = await openDb();
+  const tx = db.transaction(RECORD_STORE, "readwrite");
+  tx.objectStore(RECORD_STORE).put(incoming);
+  await transactionDone(tx);
+  return incoming;
+}
+
 export async function mergeManyRecords(records) {
   let added = 0;
   let merged = 0;
+  let conflictsPreserved = 0;
+
   for (const record of records) {
-    const result = await upsertRecord(record);
+    const incoming = migrateLegacyRecord(record);
+    if (!incoming) continue;
+
+    const existingRecords = await getAllRecords();
+    const sameId = existingRecords.find(existing => existing.id === incoming.id) || null;
+
+    if (sameId) {
+      const relation = classifyRecordRelation(sameId, incoming);
+      if (relation.type === "same_event_conflict") {
+        await saveRecordSeparately(incoming);
+        added += 1;
+        conflictsPreserved += 1;
+        continue;
+      }
+    } else {
+      const conflict = existingRecords.find(existing =>
+        classifyRecordRelation(existing, incoming).type === "same_event_conflict"
+      );
+      if (conflict) {
+        await putRecordPreservingIdentity(incoming);
+        added += 1;
+        conflictsPreserved += 1;
+        continue;
+      }
+    }
+
+    const result = await upsertRecord(incoming);
     if (result.mergedDuplicate) merged += 1;
     else added += 1;
   }
-  return { added, merged };
+
+  return { added, merged, conflictsPreserved };
 }
 
 export async function clearAllRecords() {

@@ -16,6 +16,17 @@ export function isoDate(fiDate) {
   if (!fiDate) return null;
   const m = String(fiDate).match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
   if (!m) return null;
+
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) return null;
+
   return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
 
@@ -124,8 +135,8 @@ function taxCardAccumulationFromWithholdingRows(text, grossPay, ytdTaxableIncome
   return allCandidates.length ? Math.max(...allCandidates) : null;
 }
 
-function field(value, confidence, source) {
-  return { value, confidence: value == null ? 0 : confidence, source };
+function field(value, confidence, source, diagnostics = {}) {
+  return { value, confidence: value == null ? 0 : confidence, source, ...diagnostics };
 }
 
 const CODE_CATEGORY = new Map([
@@ -334,16 +345,22 @@ function parseLegacyTable(text, lines, payLines) {
 
 function parseGeneric(text, payLines) {
   const period = matchOne(text, [
-    /Palkkakausi(?:\s+\d{4}\/\d+)?\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4})/i,
-    /(?:^|\n)\s*Jakso\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4})/im
+    /Palkkakausi(?:\s+\d{4}\/\d+)?\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*[-–—]\s*(\d{1,2}\.\d{1,2}\.\d{4})/i,
+    /(?:^|\n)\s*Jakso\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*[-–—]\s*(\d{1,2}\.\d{1,2}\.\d{4})/im
   ], (start, m) => ({ start: isoDate(start), end: isoDate(m[2]) }));
 
   const payDate = matchOne(text, [
     /(?:Maksupäivä|Palkanmaksupäivä|Maksupvm)\s+(\d{1,2}\.\d{1,2}\.\d{4})/i
   ], isoDate);
-  const netPay = matchOne(text, [
-    new RegExp(`(?:^|\\n)\\s*(?:Maksetaan|Käteen\\s+maksettava|Nettopalkka|Netto)\\s+(${MONEY_RE})`, "im")
-  ], fiNumber);
+  const netPayCandidates = allNumbersAfterLabel(
+    text,
+    /(?:Maksetaan|Käteen\s+maksettava|Nettopalkka|Netto)/i
+  );
+  const uniqueNetPayCandidates = [...new Map(
+    netPayCandidates.map(value => [Number(value).toFixed(2), value])
+  ).values()];
+  const netPay = uniqueNetPayCandidates[0] ?? null;
+  const netPayConflict = uniqueNetPayCandidates.length > 1;
 
   const taxable = allNumbersAfterLabel(text, /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i);
   const periodSectionTaxable = moneyInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
@@ -369,9 +386,10 @@ function parseGeneric(text, payLines) {
     new RegExp(`(?:Edellisen\\s+vuoden\\s+veronalainen\\s+(?:tulo|ansio)|Veronalainen\\s+edellinen\\s+vuosi)\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
 
-  const grossPay = periodSectionTaxable ?? periodCumulativeTaxable ?? explicitGrossPay ?? taxable[0] ?? null;
-  const ytdTaxable = yearSectionTaxable ?? yearCumulativeTaxable ?? explicitYtdTaxable ?? taxable[1] ?? null;
-  const previousYearTaxable = explicitPreviousYearTaxable ?? taxable[2] ?? null;
+  const orderedTaxableFallback = taxable.length >= 2 ? taxable : [];
+  const grossPay = periodSectionTaxable ?? periodCumulativeTaxable ?? explicitGrossPay ?? orderedTaxableFallback[0] ?? null;
+  const ytdTaxable = yearSectionTaxable ?? yearCumulativeTaxable ?? explicitYtdTaxable ?? orderedTaxableFallback[1] ?? null;
+  const previousYearTaxable = explicitPreviousYearTaxable ?? (taxable.length >= 3 ? taxable[2] : null);
 
   const withholdingNegatives = [...text.matchAll(new RegExp(`Ennakonpidätys\\s+(-\\s*\\d[\\d\\s\\u00A0]*,\\d{2})`, "gi"))]
     .map(match => fiNumber(match[1]))
@@ -432,7 +450,12 @@ function parseGeneric(text, payLines) {
     payPeriodEnd: field(period?.end ?? null, 0.99, "Palkkakausi"),
     payDate: field(payDate, 0.99, "Maksupäivä / palkanmaksupäivä"),
     grossPay: field(grossPay, 0.97, "Veronalainen ansio / palkkakausi"),
-    netPay: field(netPay, 0.99, "Maksetaan / netto"),
+    netPay: field(
+      netPay,
+      netPayConflict ? 0.50 : 0.99,
+      netPayConflict ? "Ristiriitaiset Maksetaan / netto -arvot" : "Maksetaan / netto",
+      netPayConflict ? { conflict: true, candidates: uniqueNetPayCandidates } : {}
+    ),
     ytdTaxableIncome: field(ytdTaxable, 0.96, "Veronalainen ansio / vuoden alusta"),
     previousYearTaxableIncome: field(previousYearTaxable, 0.85, "Veronalainen ansio / edellinen vuosi"),
     taxCardAccumulatedIncome: field(taxCardAccumulatedIncome, 0.97, "Verokortin kertymä / 90000 Ennakonpidätys"),
@@ -489,7 +512,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.2",
+    parserVersion: "0.4.3",
     sourceProfile,
     fields,
     payLines,
@@ -504,6 +527,22 @@ export function parsePayslip(inputText) {
 export function validate(fields) {
   const notices = [];
   const v = k => fields[k]?.value;
+
+  if (fields.netPay?.conflict) {
+    notices.push({
+      level: "blocking", code: "net-pay-conflict",
+      message: "Palkkalaskelmasta löytyi useita eri nettoarvoja. Valitse oikea arvo ennen tallennusta.",
+      fields: ["netPay"]
+    });
+  }
+
+  if (v("payPeriodStart") != null && v("payPeriodEnd") != null && v("payPeriodStart") > v("payPeriodEnd")) {
+    notices.push({
+      level: "blocking", code: "pay-period-reversed",
+      message: "Palkkakauden loppupäivä on ennen alkupäivää — tarkista kausi.",
+      fields: ["payPeriodStart", "payPeriodEnd"]
+    });
+  }
 
   if (v("grossPay") != null && v("netPay") != null && v("netPay") > v("grossPay")) {
     notices.push({

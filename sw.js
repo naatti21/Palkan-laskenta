@@ -1,4 +1,4 @@
-const CACHE = "palkka-pwa-v8";
+const CACHE = "palkka-pwa-v9";
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./parser.js",
   "./model.js", "./storage.js", "./learning.js", "./pdf-reader.js", "./manifest.webmanifest"
