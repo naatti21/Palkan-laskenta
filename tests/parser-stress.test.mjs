@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parsePayslip, plainRecord } from "../parser.js";
 
+const assertClose = (actual, expected, epsilon = 1e-9) =>
+  assert.ok(Math.abs(actual - expected) <= epsilon, `expected ${actual} ≈ ${expected}`);
+
 const alternateFormat = `PALKANMAKSUN YHTEENVETO - TESTI
 Jakso 3.8.2026 - 16.8.2026
 Palkanmaksupäivä 28.8.2026
@@ -45,8 +48,8 @@ test("uusi sanasto normalisoituu ilman käsin syötettäviä ydinkenttiä", () =
   assert.equal(r.additionalRate, 47);
   assert.equal(r.kta, 25.07);
   assert.equal(r.pp, 19.44);
-  assert.equal(r.overtimeHours, 20.15);
-  assert.equal(r.overtimeCompensation, 404.88);
+  assertClose(r.overtimeHours, 20.15);
+  assertClose(r.overtimeCompensation, 404.88);
 });
 
 test("välilyönti- ja rivivaihtelut eivät muuta ydintulkintaa", () => {
@@ -60,7 +63,7 @@ test("välilyönti- ja rivivaihtelut eivät muuta ydintulkintaa", () => {
   assert.equal(r.netPay, 2678.39);
   assert.equal(r.ytdTaxableIncome, 63832.82);
   assert.equal(r.taxCardAccumulatedIncome, 8028.58);
-  assert.equal(r.overtimeHours, 20.15);
+  assertClose(r.overtimeHours, 20.15);
 });
 
 test("erittelyssä varmasti puuttuva ylityö on 0 h eikä null", () => {
