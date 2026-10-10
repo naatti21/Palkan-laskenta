@@ -193,7 +193,7 @@ test("ristiriitahaku ei vertaa muokattavaa tietuetta itseensä", () => {
     values: { ...base.values, netPay: 2728.39 }
   });
 
-  assert.equal(findRecordConflict([base], edited), null);
+  assert.equal(findRecordConflict([base], edited, { ignoreRecordId: base.id }), null);
 });
 
 test("rakenneprofiilin havainto- ja automaattitulkintalaskurit säilyvät backupissa", async () => {
@@ -214,4 +214,26 @@ test("rakenneprofiilin havainto- ja automaattitulkintalaskurit säilyvät backup
   assert.equal(profile.observations, 5);
   assert.equal(profile.confirmations, 1);
   assert.equal(profile.autoParses, 4);
+});
+
+
+test("R2-03: uuden tuonnin sama generoitu id ei saa ohittaa tapahtumaristiriitaa", () => {
+  const base = migrateLegacyRecord({
+    recordSchemaVersion: 1,
+    id: "same-generated-id",
+    values: {
+      payDate: "2026-08-28",
+      payPeriodStart: "2026-08-03",
+      payPeriodEnd: "2026-08-16",
+      grossPay: 4698.11,
+      netPay: 2678.39,
+      ytdTaxableIncome: 63832.82
+    },
+    fingerprints: ["same-fingerprint"]
+  });
+  const incoming = applyUserCorrections(base, { netPay: 2700 });
+
+  const conflict = findRecordConflict([base], incoming);
+  assert.equal(conflict?.type, "same_event_conflict");
+  assert.deepEqual(conflict?.differences?.map(item => item.key), ["netPay"]);
 });

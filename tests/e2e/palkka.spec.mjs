@@ -247,3 +247,131 @@ test("QA-01: backup-palautus säilyttää erillisiksi hyväksytyt ristiriitavers
     .toEqual([-1526.89, -1500.00]);
   expect(new Set(records.map(r => r.id)).size).toBe(2);
 });
+
+
+test("R2-01: fingerprintittömän konfliktibackupin toinen palautus säilyttää molemmat arvot", async ({ page }) => {
+  await page.goto("/index.html");
+
+  const backup = {
+    app: "Palkka PWA",
+    backupSchemaVersion: 2,
+    recordSchemaVersion: 1,
+    learnedProfiles: [],
+    records: [
+      {
+        recordSchemaVersion: 1,
+        id: "qa-r2-no-fp-A",
+        values: {
+          payDate: "2026-03-27",
+          payPeriodStart: "2026-03-02",
+          payPeriodEnd: "2026-03-15",
+          grossPay: 3000,
+          netPay: 1900,
+          ytdTaxableIncome: 18000,
+          withholdingPeriod: -800
+        },
+        fingerprints: [],
+        payLines: [],
+        fieldMeta: {},
+        corrections: {},
+        notices: [],
+        parser: { version: "test", confidence: 1, documentType: "payslip", sourceProfile: "test" }
+      },
+      {
+        recordSchemaVersion: 1,
+        id: "qa-r2-no-fp-B",
+        values: {
+          payDate: "2026-03-27",
+          payPeriodStart: "2026-03-02",
+          payPeriodEnd: "2026-03-15",
+          grossPay: 3000,
+          netPay: 1900,
+          ytdTaxableIncome: 18000,
+          withholdingPeriod: -750
+        },
+        fingerprints: [],
+        payLines: [],
+        fieldMeta: {},
+        corrections: {},
+        notices: [],
+        parser: { version: "test", confidence: 1, documentType: "payslip", sourceProfile: "test" }
+      }
+    ]
+  };
+
+  await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    await storage.clearAllRecords();
+  });
+
+  await page.getByRole("button", { name: "Data" }).click();
+  const input = page.locator("#backupInput");
+  const file = {
+    name: "r2-no-fingerprints.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(backup))
+  };
+  await input.setInputFiles(file);
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+  await input.setInputFiles(file);
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+
+  const values = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return (await storage.getAllRecords())
+      .filter(r => ["qa-r2-no-fp-A", "qa-r2-no-fp-B"].includes(r.id))
+      .map(r => [r.id, r.values.withholdingPeriod])
+      .sort((a, b) => a[0].localeCompare(b[0]));
+  });
+
+  expect(values).toEqual([
+    ["qa-r2-no-fp-A", -800],
+    ["qa-r2-no-fp-B", -750]
+  ]);
+});
+
+test("R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo säilyy", async ({ page }) => {
+  await page.goto("/index.html");
+
+  const result = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    const model = await import("/model.js");
+    await storage.clearAllRecords();
+
+    const original = model.migrateLegacyRecord({
+      recordSchemaVersion: 1,
+      id: "qa-r2-correction",
+      values: {
+        payDate: "2024-02-29",
+        payPeriodStart: "2024-02-15",
+        payPeriodEnd: "2024-02-28",
+        grossPay: 4698.11,
+        netPay: 2678.39,
+        ytdTaxableIncome: 63832.82
+      },
+      fingerprints: ["qa-r2-correction-fp"],
+      payLines: [],
+      fieldMeta: {},
+      corrections: {},
+      notices: [],
+      parser: { version: "test", confidence: 1, documentType: "payslip", sourceProfile: "test" }
+    });
+
+    const first = model.applyUserCorrections(original, { netPay: 2400 });
+    await storage.upsertRecord(first);
+    const storedFirst = (await storage.getAllRecords())[0];
+    const second = model.applyUserCorrections(storedFirst, { netPay: 2500 });
+    await storage.upsertRecord(second);
+    const storedSecond = (await storage.getAllRecords())[0];
+
+    return {
+      netPay: storedSecond.values.netPay,
+      parserValue: storedSecond.corrections.netPay?.parserValue,
+      userValue: storedSecond.corrections.netPay?.userValue
+    };
+  });
+
+  expect(result.netPay).toBe(2500);
+  expect(result.parserValue).toBe(2678.39);
+  expect(result.userValue).toBe(2500);
+});

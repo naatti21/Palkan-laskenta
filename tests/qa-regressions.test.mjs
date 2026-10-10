@@ -105,3 +105,61 @@ Ennakonpid. al. tul 63 832,82`;
   assert.equal(parsed.fields.payPeriodStart.value, "2026-08-03");
   assert.equal(parsed.fields.payPeriodEnd.value, "2026-08-16");
 });
+
+
+test("R2-04: kaksi vuosiyhteenvetoa ei saa muuttua kauden brutoksi", () => {
+  const text = `PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 678,39
+KERTYMÄ PALKKAKAUDELTA
+Ennakonpidätys -1 526,89
+KERTYMÄ VUODEN ALUSTA
+Ennakonpid. al. tul 63 832,82
+KERTYMÄ EDELLISELTÄ VUODELTA
+Ennakonpid. al. tul 58 000,00`;
+
+  const parsed = parsePayslip(text);
+  const record = plainRecord(parsed);
+
+  assert.equal(record.grossPay, null);
+  assert.equal(record.ytdTaxableIncome, 63832.82);
+  assert.equal(parsed.fields.grossPay.confidence, 0);
+});
+
+test("R2-05: kaksi eri bruttoarvoa samassa kausiosiossa vaatii tarkistuksen", () => {
+  const text = `PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 678,39
+KERTYMÄ PALKKAKAUDELTA
+Ennakonpid. al. tul 4 698,11
+Ennakonpid. al. tul 4 900,00
+KERTYMÄ VUODEN ALUSTA
+Ennakonpid. al. tul 63 832,82`;
+
+  const parsed = parsePayslip(text);
+
+  assert.ok(parsed.fields.grossPay.confidence < 0.95);
+  const notice = parsed.notices.find(item => item.code === "gross-pay-conflict");
+  assert.ok(notice);
+  assert.equal(notice.level, "blocking");
+  assert.deepEqual(notice.fields, ["grossPay"]);
+});
+
+test("R2-05: sama brutto kahdesti samassa kausiosiossa ei ole ristiriita", () => {
+  const text = `PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 678,39
+KERTYMÄ PALKKAKAUDELTA
+Ennakonpid. al. tul 4 698,11
+Ennakonpid. al. tul 4 698,11
+KERTYMÄ VUODEN ALUSTA
+Ennakonpid. al. tul 63 832,82`;
+
+  const parsed = parsePayslip(text);
+  assert.equal(parsed.fields.grossPay.value, 4698.11);
+  assert.ok(parsed.fields.grossPay.confidence >= 0.95);
+  assert.equal(parsed.notices.some(item => item.code === "gross-pay-conflict"), false);
+});
