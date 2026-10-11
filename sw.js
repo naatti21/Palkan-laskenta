@@ -1,4 +1,5 @@
-const CACHE = "palkka-pwa-v13";
+const CACHE_PREFIX = "palkka-pwa-v";
+const CACHE = `${CACHE_PREFIX}14`;
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./parser.js",
   "./model.js", "./storage.js", "./learning.js", "./pdf-reader.js", "./manifest.webmanifest",
@@ -13,7 +14,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
