@@ -140,8 +140,11 @@ function compatibleRecord(records, incoming, ignoreId = null) {
   return records.find(existing => {
     if (ignoreId && existing.id === ignoreId) return false;
     if (sameRecordContent(existing, incoming)) return true;
-    if ((existing.fingerprints || []).some(fp => incomingFingerprints.has(fp))) return true;
+
     const relation = classifyRecordRelation(existing, incoming);
+    if (relation.type === "same_event_conflict") return false;
+
+    if ((existing.fingerprints || []).some(fp => incomingFingerprints.has(fp))) return true;
     return relation.type === "exact_duplicate" || relation.type === "same_event_compatible";
   }) || null;
 }
