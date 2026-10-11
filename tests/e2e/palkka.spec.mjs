@@ -23,7 +23,7 @@ function makeTextPdf(lines) {
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
     "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
     `<< /Length ${Buffer.byteLength(content, "latin1")} >>\nstream\n${content}\nendstream`,
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
   ];
 
   let pdf = "%PDF-1.4\n";
@@ -422,7 +422,11 @@ test("R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo s�
 
 
 test("oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa", async ({ page }) => {
-  await page.route("https://**", route => route.abort());
+  const externalPdfRuntime = [];
+  page.on("request", request => {
+    if (/cdnjs\.cloudflare\.com|unpkg\.com|jsdelivr\.net/i.test(request.url())) externalPdfRuntime.push(request.url());
+  });
+  await page.route("https://**/*", route => route.abort());
   await page.goto("/index.html");
 
   const pdf = makeTextPdf([
@@ -468,4 +472,5 @@ test("oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa", async ({ page }) =
   expect(records[0].values.grossPay).toBe(4698.11);
   expect(records[0].values.netPay).toBe(2678.39);
   expect(records[0].values.ytdTaxableIncome).toBe(63832.82);
+  expect(externalPdfRuntime).toEqual([]);
 });
