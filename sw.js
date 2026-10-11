@@ -1,7 +1,8 @@
-const CACHE = "palkka-pwa-v11";
+const CACHE = "palkka-pwa-v12";
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./parser.js",
-  "./model.js", "./storage.js", "./learning.js", "./pdf-reader.js", "./manifest.webmanifest"
+  "./model.js", "./storage.js", "./learning.js", "./pdf-reader.js", "./manifest.webmanifest",
+  "./vendor/pdfjs/pdf.min.mjs", "./vendor/pdfjs/pdf.worker.min.mjs"
 ];
 
 self.addEventListener("install", event => {

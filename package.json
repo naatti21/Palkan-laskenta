@@ -1,12 +1,16 @@
 {
   "name": "palkka-pwa-qa",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "scripts": {
-    "test": "node --test tests/*.test.mjs && playwright test",
+    "prepare:pdfjs": "node scripts/prepare-pdfjs.mjs",
+    "test": "node --test tests/*.test.mjs && npm run test:e2e",
     "test:logic": "node --test tests/*.test.mjs",
-    "test:e2e": "playwright test",
-    "test:smoke": "playwright test --grep @smoke"
+    "test:e2e": "npm run prepare:pdfjs && playwright test",
+    "test:smoke": "npm run prepare:pdfjs && playwright test --grep @smoke"
+  },
+  "dependencies": {
+    "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {
     "@playwright/test": "1.57.0"

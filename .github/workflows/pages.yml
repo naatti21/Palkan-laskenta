@@ -61,13 +61,32 @@ jobs:
         with:
           ref: ${{ needs.resolve-green-ref.outputs.sha }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install runtime dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare local PDF.js runtime
+        run: npm run prepare:pdfjs
+
+      - name: Stage static site
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site/vendor/pdfjs
+          cp index.html styles.css app.js parser.js model.js storage.js learning.js pdf-reader.js manifest.webmanifest sw.js _site/
+          cp vendor/pdfjs/pdf.min.mjs vendor/pdfjs/pdf.worker.min.mjs _site/vendor/pdfjs/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment

@@ -1,6 +1,5 @@
-const PDFJS_VERSION = "6.4.299";
-const PDFJS_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.mjs`;
-const PDFJS_WORKER = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.mjs`;
+const PDFJS_URL = new URL("./vendor/pdfjs/pdf.min.mjs", import.meta.url).href;
+const PDFJS_WORKER = new URL("./vendor/pdfjs/pdf.worker.min.mjs", import.meta.url).href;
 
 let pdfjsPromise;
 async function getPdfJs() {
