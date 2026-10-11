@@ -144,3 +144,52 @@ test("offline reload säilyttää historian ja uusi PDF tunnistuu ilman verkkoa"
   await page.reload();
   await expect(page.locator("#recordCount")).toContainText("2 palkkalaskelmaa");
 });
+
+
+test("uusi service worker poistaa vanhan palkka-cachen aktivoinnissa", async ({ context }) => {
+  const seed = await context.newPage();
+  await seed.goto("/index.html");
+
+  await seed.evaluate(async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.unregister()));
+
+    const names = await caches.keys();
+    await Promise.all(
+      names
+        .filter(name => name.startsWith("palkka-pwa-v"))
+        .map(name => caches.delete(name))
+    );
+
+    const stale = await caches.open("palkka-pwa-v12");
+    await stale.put(
+      new Request(new URL("./stale-marker.txt", location.href)),
+      new Response("old-cache")
+    );
+  });
+  await seed.close();
+
+  const page = await context.newPage();
+  await page.goto("/index.html");
+  await waitForServiceWorkerControl(page);
+
+  await page.waitForFunction(async () => {
+    const names = await caches.keys();
+    return names.includes("palkka-pwa-v13") && !names.includes("palkka-pwa-v12");
+  });
+
+  const state = await page.evaluate(async () => {
+    const names = (await caches.keys()).filter(name => name.startsWith("palkka-pwa-v")).sort();
+    const current = await caches.open("palkka-pwa-v13");
+    const staleMarker = await current.match(new URL("./stale-marker.txt", location.href));
+    return {
+      controlled: Boolean(navigator.serviceWorker.controller),
+      names,
+      staleMarkerPresent: Boolean(staleMarker)
+    };
+  });
+
+  expect(state.controlled).toBe(true);
+  expect(state.names).toEqual(["palkka-pwa-v13"]);
+  expect(state.staleMarkerPresent).toBe(false);
+});
