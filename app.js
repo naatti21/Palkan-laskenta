@@ -174,6 +174,8 @@ async function applyProfileMappings(parsed, rawText, profile) {
 
   for (const [field, value] of Object.entries(learnedValues)) {
     const meta = parsed.fields?.[field];
+    // Learned mappings must not suppress parser-detected value conflicts.
+    if (meta?.conflict) continue;
     if (!meta || meta.value == null || Number(meta.confidence || 0) < 0.95) {
       parsed.fields[field] = {
         value,

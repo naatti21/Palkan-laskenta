@@ -163,3 +163,55 @@ Ennakonpid. al. tul 63 832,82`;
   assert.ok(parsed.fields.grossPay.confidence >= 0.95);
   assert.equal(parsed.notices.some(item => item.code === "gross-pay-conflict"), false);
 });
+
+
+test("rinnakkaiset kolmen vuoden kertymäsarakkeet erotetaan oikein", () => {
+  // Entirely synthetic payroll amounts and no personal or employer data.
+  const text = `PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 300,12
+KERTYMÄ PALKKAKAUDELTA KERTYMÄ VUODEN ALUSTA KERTYMÄ EDELLISELTÄ VUODELTA
+Ennakonpid. al. tul 3 240,50 Ennakonpid. al. tul 48 905,75 Ennakonpid. al. tul 60 123,12
+Luontoisedut 0,00 Luontoisedut 350,00 Luontoisedut 480,00
+Rahapalkka 3 240,50 Rahapalkka 48 905,75 Rahapalkka 60 123,12
+Ennakonpidätys -810,13 Ennakonpidätys -11 200,42 Ennakonpidätys -15 300,91
+Maksetaan 2 300,12`;
+  const parsed = parsePayslip(text);
+  const record = plainRecord(parsed);
+  assert.equal(record.grossPay, 3240.50);
+  assert.equal(record.ytdTaxableIncome, 48905.75);
+  assert.equal(record.previousYearTaxableIncome, 60123.12);
+  assert.equal(record.withholdingPeriod, -810.13);
+  assert.equal(record.withholdingYtd, -11200.42);
+  assert.equal(parsed.notices.some(n => n.code === "gross-pay-conflict" || n.code === "ytd-taxable-conflict"), false);
+});
+
+test("puuttuva rinnakkaisen sarakkeen arvo jätetään tarkistettavaksi", () => {
+  const text = `PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 300,12
+KERTYMÄ PALKKAKAUDELTA KERTYMÄ VUODEN ALUSTA KERTYMÄ EDELLISELTÄ VUODELTA
+Ennakonpid. al. tul 3 240,50 Ennakonpid. al. tul 48 905,75
+Ennakonpidätys -810,13`;
+  const parsed = parsePayslip(text);
+  assert.equal(parsed.fields.grossPay.value, null);
+  assert.equal(parsed.fields.ytdTaxableIncome.value, null);
+  assert.equal(parsed.fields.withholdingPeriod.value, null);
+  assert.equal(parsed.fields.withholdingYtd.value, null);
+});
+
+test("kaksi rinnakkaista kertymäsaraketta tuottaa oikean YTD:n", () => {
+  const text = `PALKKALASKELMA
+Palkkakausi 3.8.2026 - 16.8.2026
+Maksupäivä 28.8.2026
+Maksetaan 2 300,12
+KERTYMÄ PALKKAKAUDELTA KERTYMÄ VUODEN ALUSTA
+Ennakonpid. al. tul 3 240,50 Ennakonpid. al. tul 48 905,75
+Ennakonpidätys -810,13 Ennakonpidätys -11 200,42`;
+  const parsed = parsePayslip(text);
+  assert.equal(parsed.fields.grossPay.value, 3240.50);
+  assert.equal(parsed.fields.ytdTaxableIncome.value, 48905.75);
+  assert.equal(parsed.fields.withholdingYtd.value, -11200.42);
+});
