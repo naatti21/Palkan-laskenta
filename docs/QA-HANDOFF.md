@@ -10,7 +10,7 @@ Rakentaa nykyisen tuotannon rinnalle develop-haara, CI ja erillisen originin tes
 ## Versiot ja muutokset
 
 Lähtö ja developin haaroitus: `607a74a7334ce7130cb1261c009c08056c9e3b6d`.
-Toteutuksen SHA ja CI-linkit täydennetään `docs/evidence/CI-RESULTS.md`-tiedostoon toteutuscommitin jälkeen. Viimeinen dokumentointicommit ei voi sisältää omaa SHA:taan; tarkista PR:n viimeinen head-SHA GitHubista. Arvioi sen koko diff.
+Toteutuksen SHA ja CI-linkit ovat `docs/evidence/CI-RESULTS.md`-tiedostossa. Viimeinen dokumentointicommit ei voi sisältää omaa SHA:taan; tarkista PR:n viimeinen head-SHA GitHubista. Arvioi sen koko diff.
 
 [Diff main...develop](https://github.com/naatti21/Palkan-laskenta/compare/main...develop) on liikkuva näkymä; QA lukitsee tarkastettavan SHA:n.
 
@@ -38,7 +38,7 @@ Ulkoinen osoite: **ei julkaistu**. Cloudflare-kytkentä puuttuu ja edellyttää 
 - `npm test`: paikallinen aiempi Node-korpus suoriutui, selaintestien käynnistys epäonnistui puuttuvan Chromiumin vuoksi; staging-vaiheeseen ei päästy. Raakaloki `evidence/local-browser-attempt.txt`. Ei tulkita sovelluksen 25 erilliseksi virheeksi eikä onnistuneeksi selaintestaukseksi.
 - `npm run test:logic`: 70 testiä, 70 läpi, 0 hylätty. Mukana 6 uutta build-estojen testiä. Raakaloki `evidence/local-node.tap` (Node:n tekstituloste, ei pakotettu TAP-reporter).
 - `STAGING_ORIGIN=http://127.0.0.1:4175 npm run build:staging`: exit 0. Raakaloki `evidence/local-build.txt`; build-info commit kuvaa checkoutin HEADia, paikalliset muutokset eivät olleet silloin commitissa.
-- GitHub Actions: ajokohtaiset tiedot ja raakalokit `evidence/CI-RESULTS.md` ja sen linkit täydennetään erikseen. Paikallista epäonnistumista ei peitetä CI-tuloksella.
+- GitHub Actions: ajokohtaiset tiedot ja raakalokit `evidence/CI-RESULTS.md` ja sen linkeissä. Toteutuscommitin CI: 70 Node-, 25 aiempaa selain- ja 4 staging-testiä läpäisi. Paikallista epäonnistumista ei peitetä CI-tuloksella.
 
 ## Testiluokkien kartta
 
