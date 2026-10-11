@@ -2,7 +2,7 @@ name: Quality gate
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "develop"]
   pull_request:
   workflow_dispatch:
 
@@ -42,13 +42,16 @@ jobs:
           node-version: 22
 
       - name: Install test dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
         run: npm run test:e2e
+
+      - name: Run staging isolation tests
+        run: npm run test:staging
 
       - name: Upload failure report
         if: failure()
@@ -60,3 +63,12 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Upload staging raw results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-results
+          path: test-results/staging.json
+          if-no-files-found: error
+          retention-days: 14

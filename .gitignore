@@ -1,0 +1,6 @@
+node_modules/
+vendor/pdfjs/
+_site/
+_staging/
+playwright-report/
+test-results/
