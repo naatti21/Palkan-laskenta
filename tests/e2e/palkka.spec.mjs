@@ -755,3 +755,121 @@ test("R3-07: käänteistä palkkakautta ei voi hyväksyä Tallenna-painikkeella 
   });
   expect(count).toBe(0);
 });
+
+
+test("oppimisen roundtrip: kerran korjattu uusi rakenne täyttää seuraavan PDF:n ilman kysymystä", async ({ page }) => {
+  await page.goto("/index.html");
+
+  const firstPdf = makeTextPdf([
+    "PALKKALASKELMA",
+    "Palkkakausi 1.9.2026 - 14.9.2026",
+    "Maksupäivä 25.9.2026",
+    "Maksetaan 2 100,00",
+    "KAUDEN TIEDOT",
+    "Ansio X 3 500,00",
+    "VUODEN TIEDOT",
+    "Kertymä X 70 000,00"
+  ]);
+
+  await page.locator("#pdfInput").setInputFiles({
+    name: "learn-first.pdf",
+    mimeType: "application/pdf",
+    buffer: firstPdf
+  });
+
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator('#reviewGrid input[data-key="grossPay"]')).toBeVisible();
+  await expect(page.locator('#reviewGrid input[data-key="ytdTaxableIncome"]')).toBeVisible();
+
+  await page.locator('#reviewGrid input[data-key="grossPay"]').fill("3500");
+  await page.locator('#reviewGrid input[data-key="ytdTaxableIncome"]').fill("70000");
+  await page.locator("#saveButton").click();
+
+  await expect(page.locator("#resultSection")).toBeVisible();
+  await expect(page.locator("#status")).toContainText(/rakennehavainto päivitettiin|Korjaus tallennettu/i);
+
+  const profile = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return await storage.getSetting("learnedLayoutProfiles:v1");
+  });
+  expect(Array.isArray(profile)).toBe(true);
+  expect(profile.length).toBeGreaterThan(0);
+  expect(profile.some(item => (item.mappings || []).some(mapping => mapping.field === "grossPay"))).toBe(true);
+  expect(profile.some(item => (item.mappings || []).some(mapping => mapping.field === "ytdTaxableIncome"))).toBe(true);
+
+  const secondPdf = makeTextPdf([
+    "PALKKALASKELMA",
+    "Palkkakausi 15.9.2026 - 28.9.2026",
+    "Maksupäivä 9.10.2026",
+    "Maksetaan 2 250,00",
+    "KAUDEN TIEDOT",
+    "Ansio X 3 750,00",
+    "VUODEN TIEDOT",
+    "Kertymä X 73 750,00"
+  ]);
+
+  await page.locator("#pdfInput").setInputFiles({
+    name: "learn-second.pdf",
+    mimeType: "application/pdf",
+    buffer: secondPdf
+  });
+
+  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
+  await expect(page.locator("#reviewSection")).toBeHidden();
+
+  const records = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return (await storage.getAllRecords()).map(record => record.values).sort((a,b) =>
+      String(a.payDate).localeCompare(String(b.payDate))
+    );
+  });
+
+  expect(records).toHaveLength(2);
+  expect(records[1].grossPay).toBe(3750);
+  expect(records[1].netPay).toBe(2250);
+  expect(records[1].ytdTaxableIncome).toBe(73750);
+});
+
+for (const width of [360, 412]) {
+  test(`mobiili ${width}px kestää pitkän PDF-tuloksen ilman vaakavieritystä`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 915 });
+    await page.goto("/index.html");
+
+    const longLines = Array.from({ length: 45 }, (_, index) =>
+      `${31000 + index} Tuntematon erittäin pitkä palkkalajin nimi numero ${index + 1} 1,00 10,00 10,00`
+    );
+
+    const pdf = makeTextPdf([
+      "PALKKALASKELMA",
+      "Palkkakausi 1.10.2026 - 14.10.2026",
+      "Maksupäivä 23.10.2026",
+      "Maksetaan 2 678,39",
+      ...longLines,
+      "KERTYMÄ PALKKAKAUDELTA",
+      "Ennakonpid. al. tul 4 698,11",
+      "KERTYMÄ VUODEN ALUSTA",
+      "Ennakonpid. al. tul 78 448,11"
+    ]);
+
+    await page.locator("#pdfInput").setInputFiles({
+      name: `mobile-long-${width}.pdf`,
+      mimeType: "application/pdf",
+      buffer: pdf
+    });
+
+    await expect(page.locator("#resultSection")).toBeVisible();
+    await page.getByRole("button", { name: "Historia" }).click();
+    await expect(page.getByRole("heading", { name: "Tallennetut laskelmat" })).toBeVisible();
+
+    const overflow = await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    await page.getByRole("button", { name: "Data" }).click();
+    const dataOverflow = await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth
+    );
+    expect(dataOverflow).toBeLessThanOrEqual(1);
+  });
+}
