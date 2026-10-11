@@ -85,7 +85,7 @@ test("service worker cache sisältää sovelluksen ja paikallisen PDF.js-runtime
   });
 
   expect(state.controlled).toBe(true);
-  expect(state.cacheName).toBe("palkka-pwa-v13");
+  expect(state.cacheName).toBe("palkka-pwa-v14");
   expect(state.urls).toContain("/index.html");
   expect(state.urls).toContain("/vendor/pdfjs/pdf.min.mjs");
   expect(state.urls).toContain("/vendor/pdfjs/pdf.worker.min.mjs");
@@ -146,11 +146,12 @@ test("offline reload säilyttää historian ja uusi PDF tunnistuu ilman verkkoa"
 });
 
 
-test("uusi service worker poistaa vanhan palkka-cachen aktivoinnissa", async ({ context }) => {
+test("uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:iden dataa", async ({ context }) => {
+  const foreignCacheName = "osakevahti-shell-test";
   const seed = await context.newPage();
   await seed.goto("/index.html");
 
-  await seed.evaluate(async () => {
+  await seed.evaluate(async otherCacheName => {
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map(registration => registration.unregister()));
 
@@ -161,12 +162,20 @@ test("uusi service worker poistaa vanhan palkka-cachen aktivoinnissa", async ({ 
         .map(name => caches.delete(name))
     );
 
-    const stale = await caches.open("palkka-pwa-v12");
-    await stale.put(
-      new Request(new URL("./stale-marker.txt", location.href)),
-      new Response("old-cache")
+    for (const oldName of ["palkka-pwa-v12", "palkka-pwa-v13"]) {
+      const stale = await caches.open(oldName);
+      await stale.put(
+        new Request(new URL(`./${oldName}-marker.txt`, location.href)),
+        new Response("old-cache")
+      );
+    }
+
+    const foreign = await caches.open(otherCacheName);
+    await foreign.put(
+      new Request(new URL("./other-app-marker.txt", location.href)),
+      new Response("do-not-delete")
     );
-  });
+  }, foreignCacheName);
   await seed.close();
 
   const page = await context.newPage();
@@ -175,21 +184,31 @@ test("uusi service worker poistaa vanhan palkka-cachen aktivoinnissa", async ({ 
 
   await page.waitForFunction(async () => {
     const names = await caches.keys();
-    return names.includes("palkka-pwa-v13") && !names.includes("palkka-pwa-v12");
+    return names.includes("palkka-pwa-v14")
+      && !names.includes("palkka-pwa-v13")
+      && !names.includes("palkka-pwa-v12");
   });
 
-  const state = await page.evaluate(async () => {
-    const names = (await caches.keys()).filter(name => name.startsWith("palkka-pwa-v")).sort();
-    const current = await caches.open("palkka-pwa-v13");
-    const staleMarker = await current.match(new URL("./stale-marker.txt", location.href));
+  const state = await page.evaluate(async otherCacheName => {
+    const allNames = await caches.keys();
+    const ownCaches = allNames.filter(name => name.startsWith("palkka-pwa-v")).sort();
+    const current = await caches.open("palkka-pwa-v14");
+    const oldMarker = await current.match(new URL("./palkka-pwa-v13-marker.txt", location.href));
+    const foreignCachePresent = allNames.includes(otherCacheName);
+    const foreignCache = await caches.open(otherCacheName);
+    const foreignMarker = await foreignCache.match(new URL("./other-app-marker.txt", location.href));
     return {
       controlled: Boolean(navigator.serviceWorker.controller),
-      names,
-      staleMarkerPresent: Boolean(staleMarker)
+      ownCaches,
+      oldMarkerPresent: Boolean(oldMarker),
+      foreignCachePresent,
+      foreignMarkerBody: foreignMarker ? await foreignMarker.text() : null
     };
-  });
+  }, foreignCacheName);
 
   expect(state.controlled).toBe(true);
-  expect(state.names).toEqual(["palkka-pwa-v13"]);
-  expect(state.staleMarkerPresent).toBe(false);
+  expect(state.ownCaches).toEqual(["palkka-pwa-v14"]);
+  expect(state.oldMarkerPresent).toBe(false);
+  expect(state.foreignCachePresent).toBe(true);
+  expect(state.foreignMarkerBody).toBe("do-not-delete");
 });
