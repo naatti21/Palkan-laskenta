@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "palkka-pwa-v";
-const CACHE = `${CACHE_PREFIX}15`;
+const CACHE = `${CACHE_PREFIX}16`;
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./parser.js",
   "./model.js", "./storage.js", "./learning.js", "./pdf-reader.js", "./manifest.webmanifest",
