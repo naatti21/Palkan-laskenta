@@ -237,3 +237,39 @@ test("R2-03: uuden tuonnin sama generoitu id ei saa ohittaa tapahtumaristiriitaa
   assert.equal(conflict?.type, "same_event_conflict");
   assert.deepEqual(conflict?.differences?.map(item => item.key), ["netPay"]);
 });
+
+
+test("R3-04: väärän sovelluksen tai tuntemattoman skeeman backup hylätään", () => {
+  const good = makeBackup([migrateLegacyRecord({
+    payDate: "2026-03-27",
+    payPeriodStart: "2026-03-02",
+    payPeriodEnd: "2026-03-15",
+    grossPay: 3000,
+    netPay: 1900,
+    ytdTaxableIncome: 18000
+  })]);
+
+  assert.throws(() => parseBackup({ ...good, app: "Other QA application" }), /sovelluks/i);
+  assert.throws(() => parseBackup({ ...good, backupSchemaVersion: 999 }), /versio|skeema/i);
+});
+
+test("R3-04: virheelliset backupin ydintyypit hylätään ennen migraatiota", () => {
+  const good = makeBackup([migrateLegacyRecord({
+    payDate: "2026-03-27",
+    payPeriodStart: "2026-03-02",
+    payPeriodEnd: "2026-03-15",
+    grossPay: 3000,
+    netPay: 1900,
+    ytdTaxableIncome: 18000
+  })]);
+
+  const broken = structuredClone(good);
+  broken.records.push(null);
+  assert.throws(() => parseBackup(broken), /tietue|kelvoll/i);
+
+  const brokenValues = structuredClone(good);
+  brokenValues.records[0].values.payDate = "garbage";
+  brokenValues.records[0].values.grossPay = "not-a-number";
+  brokenValues.records[0].values.netPay = { bad: true };
+  assert.throws(() => parseBackup(brokenValues), /payDate|grossPay|netPay|kelvoll/i);
+});

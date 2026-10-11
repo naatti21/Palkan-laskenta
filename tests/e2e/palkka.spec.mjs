@@ -474,3 +474,284 @@ test("oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa", async ({ page }) =
   expect(records[0].values.ytdTaxableIncome).toBe(63832.82);
   expect(externalPdfRuntime).toEqual([]);
 });
+
+
+function backupRecord(id, withholdingPeriod, overrides = {}) {
+  return {
+    recordSchemaVersion: 1,
+    id,
+    kind: "payslip",
+    values: {
+      payPeriodStart: "2026-03-02",
+      payPeriodEnd: "2026-03-15",
+      payDate: "2026-03-27",
+      grossPay: 3000,
+      netPay: 1900,
+      ytdTaxableIncome: 18000,
+      withholdingPeriod,
+      withholdingYtd: null,
+      ...overrides
+    },
+    fingerprints: [],
+    payLines: [],
+    fieldMeta: {},
+    corrections: {},
+    notices: [],
+    parser: { version: "test", confidence: 1, documentType: "payslip", sourceProfile: "test" },
+    createdAt: "2026-10-11T04:52:12.705Z",
+    updatedAt: "2026-10-11T04:52:12.705Z"
+  };
+}
+
+function backupPayload(records) {
+  return {
+    app: "Palkka PWA",
+    backupSchemaVersion: 2,
+    recordSchemaVersion: 1,
+    exportedAt: "2026-10-11T04:52:12.706Z",
+    learnedProfiles: [],
+    records
+  };
+}
+
+test("R3-01: legacy-migraatio säilyttää saman tapahtuman ristiriitaversiot ennen lähteen poistoa", async ({ page }) => {
+  const legacy = [
+    {
+      payDate: "2026-03-27",
+      payPeriodStart: "2026-03-02",
+      payPeriodEnd: "2026-03-15",
+      grossPay: 3000,
+      netPay: 1900,
+      ytdTaxableIncome: 18000,
+      withholdingPeriod: -800,
+      savedAt: "2026-03-27T10:00:00.000Z"
+    },
+    {
+      payDate: "2026-03-27",
+      payPeriodStart: "2026-03-02",
+      payPeriodEnd: "2026-03-15",
+      grossPay: 3000,
+      netPay: 1900,
+      ytdTaxableIncome: 18000,
+      withholdingPeriod: -750,
+      savedAt: "2026-03-28T10:00:00.000Z"
+    }
+  ];
+
+  await page.addInitScript(records => {
+    localStorage.setItem("palkka-pwa-proto:v1", JSON.stringify(records));
+  }, legacy);
+  await page.goto("/index.html");
+  await expect(page.locator("#status")).toContainText("siirrettiin uuteen tietokantaan");
+
+  const result = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    const records = await storage.getAllRecords();
+    return {
+      values: records.map(r => r.values.withholdingPeriod).sort((a,b) => a-b),
+      source: localStorage.getItem("palkka-pwa-proto:v1")
+    };
+  });
+
+  expect(result.values).toEqual([-800, -750]);
+  expect(result.source).toBeNull();
+});
+
+test("R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei tee kopiota", async ({ page }) => {
+  await page.goto("/index.html");
+  const basePdf = makeTextPdf([
+    "PALKKALASKELMA",
+    "Palkkakausi 3.8.2026 - 16.8.2026",
+    "Maksupäivä 28.8.2026",
+    "Maksetaan 2 678,39",
+    "KERTYMÄ PALKKAKAUDELTA",
+    "Ennakonpid. al. tul 4 698,11",
+    "KERTYMÄ VUODEN ALUSTA",
+    "Ennakonpid. al. tul 63 832,82"
+  ]);
+
+  const upload = async () => page.locator("#pdfInput").setInputFiles({
+    name: "same-version.pdf",
+    mimeType: "application/pdf",
+    buffer: basePdf
+  });
+
+  await upload();
+  await expect(page.locator("#resultSection")).toBeVisible();
+  await page.locator("#editParsedButton").click();
+  await page.locator('#reviewGrid input[data-key="netPay"]').fill("2700");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#resultSection")).toBeVisible();
+
+  await upload();
+  await expect(page.locator("#conflictSection")).toBeVisible();
+  await page.locator("#keepBothConflictButton").click();
+
+  await upload();
+  await expect(page.locator("#conflictSection")).toBeVisible();
+  await page.locator("#keepBothConflictButton").click();
+
+  const records = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return await storage.getAllRecords();
+  });
+  expect(records).toHaveLength(2);
+  expect(records.map(r => r.values.netPay).sort((a,b)=>a-b)).toEqual([2678.39, 2700]);
+});
+
+test("R3-03: sama saman-id:n konfliktibackup kahdesti lisää variantin vain kerran", async ({ page }) => {
+  await page.goto("/index.html");
+  await page.getByRole("button", { name: "Data" }).click();
+  const input = page.locator("#backupInput");
+
+  const initial = backupPayload([
+    backupRecord("qa-A", -800),
+    backupRecord("qa-B", -750)
+  ]);
+  const changed = backupPayload([
+    backupRecord("qa-A", -700)
+  ]);
+
+  const setBackup = async (name, payload) => input.setInputFiles({
+    name,
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(payload))
+  });
+
+  await setBackup("initial.json", initial);
+  await setBackup("changed.json", changed);
+  await setBackup("changed-again.json", changed);
+
+  const values = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return (await storage.getAllRecords()).map(r => r.values.withholdingPeriod).sort((a,b)=>a-b);
+  });
+  expect(values).toEqual([-800, -750, -700]);
+});
+
+test("R3-05: restore on atominen jos toinen IndexedDB-kirjoitus epäonnistuu", async ({ page }) => {
+  await page.goto("/index.html");
+
+  const result = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    const model = await import("/model.js");
+    await storage.clearAllRecords();
+
+    const a = model.migrateLegacyRecord({
+      recordSchemaVersion: 1,
+      id: "atomic-A",
+      values: {
+        payPeriodStart: "2026-03-02", payPeriodEnd: "2026-03-15", payDate: "2026-03-27",
+        grossPay: 3000, netPay: 1900, ytdTaxableIncome: 18000, withholdingPeriod: -800
+      },
+      fingerprints: [], payLines: [], fieldMeta: {}, corrections: {}, notices: []
+    });
+    const b = model.migrateLegacyRecord({
+      recordSchemaVersion: 1,
+      id: "atomic-B",
+      values: {
+        payPeriodStart: "2026-04-01", payPeriodEnd: "2026-04-15", payDate: "2026-04-27",
+        grossPay: 3100, netPay: 1950, ytdTaxableIncome: 21100, withholdingPeriod: -820
+      },
+      fingerprints: [], payLines: [], fieldMeta: {}, corrections: {}, notices: []
+    });
+    await storage.mergeManyRecords([a,b]);
+    const before = JSON.stringify(await storage.getAllRecords());
+
+    const updateA = model.migrateLegacyRecord({
+      ...a,
+      values: { ...a.values, withholdingYtd: -1000 }
+    });
+    const c = model.migrateLegacyRecord({
+      recordSchemaVersion: 1,
+      id: "atomic-C",
+      values: {
+        payPeriodStart: "2026-05-01", payPeriodEnd: "2026-05-15", payDate: "2026-05-27",
+        grossPay: 3200, netPay: 2000, ytdTaxableIncome: 24300, withholdingPeriod: -830
+      },
+      fingerprints: [], payLines: [], fieldMeta: {}, corrections: {}, notices: []
+    });
+
+    const originalPut = IDBObjectStore.prototype.put;
+    let puts = 0;
+    IDBObjectStore.prototype.put = function(...args) {
+      puts += 1;
+      if (puts === 2) throw new DOMException("QA quota failure", "QuotaExceededError");
+      return originalPut.apply(this, args);
+    };
+
+    let errorName = null;
+    try {
+      await storage.mergeManyRecords([updateA, c]);
+    } catch (err) {
+      errorName = err?.name || "Error";
+    } finally {
+      IDBObjectStore.prototype.put = originalPut;
+    }
+
+    const after = JSON.stringify(await storage.getAllRecords());
+    return { before, after, errorName };
+  });
+
+  expect(result.errorName).toBe("QuotaExceededError");
+  expect(result.after).toBe(result.before);
+});
+
+test("R3-06: identtinen restore ei muuta updatedAt-metaa", async ({ page }) => {
+  await page.goto("/index.html");
+  const result = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    const model = await import("/model.js");
+    await storage.clearAllRecords();
+
+    const record = model.migrateLegacyRecord({
+      recordSchemaVersion: 1,
+      id: "no-op",
+      createdAt: "2026-10-10T10:00:00.000Z",
+      updatedAt: "2026-10-10T10:00:00.000Z",
+      values: {
+        payPeriodStart: "2026-03-02", payPeriodEnd: "2026-03-15", payDate: "2026-03-27",
+        grossPay: 3000, netPay: 1900, ytdTaxableIncome: 18000, withholdingPeriod: -800
+      },
+      fingerprints: [], payLines: [], fieldMeta: {}, corrections: {}, notices: []
+    });
+
+    await storage.mergeManyRecords([record]);
+    const first = (await storage.getAllRecords())[0];
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await storage.mergeManyRecords([record]);
+    const second = (await storage.getAllRecords())[0];
+    return { first: first.updatedAt, second: second.updatedAt };
+  });
+  expect(result.second).toBe(result.first);
+});
+
+test("R3-07: käänteistä palkkakautta ei voi hyväksyä Tallenna-painikkeella muuttamatta", async ({ page }) => {
+  await page.goto("/index.html");
+  const pdf = makeTextPdf([
+    "PALKKALASKELMA",
+    "Palkkakausi 16.8.2026 - 3.8.2026",
+    "Maksupäivä 28.8.2026",
+    "Maksetaan 2 678,39",
+    "KERTYMÄ PALKKAKAUDELTA",
+    "Ennakonpid. al. tul 4 698,11",
+    "KERTYMÄ VUODEN ALUSTA",
+    "Ennakonpid. al. tul 63 832,82"
+  ]);
+
+  await page.locator("#pdfInput").setInputFiles({
+    name: "reversed-period.pdf",
+    mimeType: "application/pdf",
+    buffer: pdf
+  });
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator("#status")).toContainText(/loppupäivä|korjaa|tarkista/i);
+
+  const count = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return (await storage.getAllRecords()).length;
+  });
+  expect(count).toBe(0);
+});
