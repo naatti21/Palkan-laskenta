@@ -1,0 +1,81 @@
+name: Prepare Palkka Staging ZIP
+
+on:
+  push:
+    branches: ["develop"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STAGING_ORIGIN: https://palkka-staging.pages.dev
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run complete test suite
+        run: npm test
+
+      - name: Build staging assets for approved Pages origin
+        run: npm run build:staging
+
+      - name: Check package contents and origin
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile, readdir, stat } from 'node:fs/promises';
+          import path from 'node:path';
+          const dir = '_staging';
+          const meta = JSON.parse(await readFile(path.join(dir, 'build-info.json'), 'utf8'));
+          assert.equal(meta.origin, process.env.STAGING_ORIGIN);
+          assert.equal(meta.environment, 'staging');
+          assert.equal(meta.commit, process.env.GITHUB_SHA);
+          const html = await readFile(path.join(dir, 'index.html'), 'utf8');
+          assert.match(html, /TESTIVERSIO/);
+          assert.match(html, /staging-entry\.mjs/);
+          const start = await readFile(path.join(dir, 'staging-entry.mjs'), 'utf8');
+          assert.ok(start.includes(process.env.STAGING_ORIGIN));
+          const sw = await readFile(path.join(dir, 'sw.js'), 'utf8');
+          assert.match(sw, /palkka-staging-v/);
+          assert.doesNotMatch(sw, /const CACHE_PREFIX = "palkka-pwa-v"/);
+          for (const f of [
+            'index.html', 'styles.css', 'app.js', 'parser.js', 'storage.js', 'model.js',
+            'learning.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js',
+            'staging-entry.mjs', 'build-info.json', 'icon-192.png', 'icon-512.png',
+            'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs'
+          ]) {
+            assert.ok((await stat(path.join(dir, f))).isFile(), 'missing asset: ' + f);
+          }
+          console.log('Staging package contents and exact origin verified:', meta);
+          NODE
+
+      - name: Upload staging ZIP as GitHub artifact (no deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: palkka-staging-direct-upload
+          path: _staging/
+          if-no-files-found: error
+          retention-days: 14
