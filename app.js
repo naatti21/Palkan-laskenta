@@ -729,6 +729,12 @@ el("saveButton").addEventListener("click", async () => {
     return;
   }
 
+  const blocking = (record.notices || []).filter(notice => notice.level === "blocking");
+  if (blocking.length) {
+    el("status").textContent = blocking[0].message;
+    return;
+  }
+
   const conflict = await conflictForRecord(record, currentRecord?.id || null);
   if (conflict) {
     currentPendingWasAutoParsed = false;

@@ -43,6 +43,74 @@ function safeValues(input = {}) {
   return Object.fromEntries(VALUE_KEYS.map(key => [key, input?.[key] ?? null]));
 }
 
+const DATE_VALUE_KEYS = new Set(["payPeriodStart", "payPeriodEnd", "payDate"]);
+
+function validIsoDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function assertValueType(key, value, context) {
+  if (value == null) return;
+  if (DATE_VALUE_KEYS.has(key)) {
+    if (!validIsoDate(value)) throw new Error(`${context}: ${key} ei ole kelvollinen ISO-päivä.`);
+    return;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${context}: ${key} ei ole kelvollinen numero.`);
+  }
+}
+
+function validateBackupRecordInput(input, index, allowLegacyFlat = false) {
+  const context = `Varmuuskopion tietue ${index + 1}`;
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`${context} ei ole kelvollinen tietue.`);
+  }
+
+  const values = input.recordSchemaVersion === RECORD_SCHEMA_VERSION && input.values
+    ? input.values
+    : allowLegacyFlat ? input : null;
+
+  if (!values || typeof values !== "object" || Array.isArray(values)) {
+    throw new Error(`${context}: values puuttuu tai ei ole kelvollinen.`);
+  }
+  if (!allowLegacyFlat && input.recordSchemaVersion !== RECORD_SCHEMA_VERSION) {
+    throw new Error(`${context}: tietueskeemaa ei tueta.`);
+  }
+
+  for (const key of VALUE_KEYS) assertValueType(key, values[key], context);
+
+  if (values.payPeriodStart && values.payPeriodEnd && values.payPeriodStart > values.payPeriodEnd) {
+    throw new Error(`${context}: palkkakauden loppupäivä on ennen alkupäivää.`);
+  }
+
+  if (Array.isArray(input.payLines)) {
+    for (const [lineIndex, line] of input.payLines.entries()) {
+      if (!line || typeof line !== "object" || Array.isArray(line)) {
+        throw new Error(`${context}: palkkarivi ${lineIndex + 1} ei ole kelvollinen.`);
+      }
+      for (const key of ["quantity", "unitPrice", "amount"]) {
+        const value = line[key];
+        if (value != null && (typeof value !== "number" || !Number.isFinite(value))) {
+          throw new Error(`${context}: palkkarivin ${key} ei ole kelvollinen numero.`);
+        }
+      }
+    }
+  }
+
+  if (input.corrections && typeof input.corrections === "object") {
+    for (const [key, correction] of Object.entries(input.corrections)) {
+      if (!VALUE_KEYS.includes(key) || !correction || typeof correction !== "object") continue;
+      assertValueType(key, correction.parserValue, context);
+      assertValueType(key, correction.userValue, context);
+    }
+  }
+
+  return migrateLegacyRecord(input);
+}
+
 function safeFieldMeta(input = {}) {
   const out = {};
   for (const key of VALUE_KEYS) {
@@ -324,6 +392,27 @@ function pickNonNull(existing = {}, incoming = {}) {
   return out;
 }
 
+export function recordContentKey(input) {
+  const record = migrateLegacyRecord(input);
+  if (!record) return "";
+  return JSON.stringify({
+    kind: record.kind,
+    values: record.values,
+    fingerprints: [...(record.fingerprints || [])].sort(),
+    fieldMeta: record.fieldMeta,
+    payLines: record.payLines,
+    corrections: record.corrections,
+    notices: record.notices,
+    parser: record.parser
+  });
+}
+
+export function sameRecordContent(a, b) {
+  const left = recordContentKey(a);
+  const right = recordContentKey(b);
+  return Boolean(left) && left === right;
+}
+
 export function mergeRecords(existingInput, incomingInput) {
   const existing = migrateLegacyRecord(existingInput);
   const incoming = migrateLegacyRecord(incomingInput);
@@ -351,15 +440,14 @@ export function mergeRecords(existingInput, incomingInput) {
 
   const mergedFingerprints = [...new Set([...(existing.fingerprints || []), ...(incoming.fingerprints || [])].filter(Boolean))];
   const useIncomingLines = (incoming.payLines?.length || 0) >= (existing.payLines?.length || 0);
-  const updatedAt = nowIso();
   const duplicateKey = duplicateKeyFromValues(mergedValues, mergedFingerprints[0] || "");
 
-  return migrateLegacyRecord({
+  const candidate = migrateLegacyRecord({
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
     id: existing.id || incoming.id || recordIdFrom(mergedValues, mergedFingerprints[0] || ""),
     kind: existing.kind || incoming.kind || "payslip",
-    createdAt: existing.createdAt || incoming.createdAt || updatedAt,
-    updatedAt,
+    createdAt: existing.createdAt || incoming.createdAt || nowIso(),
+    updatedAt: existing.updatedAt || incoming.updatedAt || nowIso(),
     taxYear: taxYearFromDate(mergedValues.payDate),
     duplicateKey,
     fingerprints: mergedFingerprints,
@@ -370,6 +458,9 @@ export function mergeRecords(existingInput, incomingInput) {
     notices: incoming.notices?.length ? incoming.notices : existing.notices,
     parser: incoming.parser || existing.parser
   });
+
+  if (!sameRecordContent(existing, candidate)) candidate.updatedAt = nowIso();
+  return candidate;
 }
 
 export function migrateLegacyRecord(input) {
@@ -440,9 +531,23 @@ export function makeBackup(records, options = {}) {
 
 export function parseBackup(payload) {
   if (!payload || typeof payload !== "object") throw new Error("Varmuuskopio ei ole kelvollinen JSON-tiedosto.");
-  const records = Array.isArray(payload) ? payload : payload.records;
-  if (!Array.isArray(records)) throw new Error("Varmuuskopiosta ei löytynyt palkkatietoja.");
-  return records.map(migrateLegacyRecord).filter(Boolean);
+
+  if (Array.isArray(payload)) {
+    return payload.map((record, index) => validateBackupRecordInput(record, index, true));
+  }
+
+  if (payload.app !== "Palkka PWA") {
+    throw new Error("Varmuuskopio kuuluu eri sovellukselle.");
+  }
+  if (payload.backupSchemaVersion !== BACKUP_SCHEMA_VERSION) {
+    throw new Error("Varmuuskopion versiota tai skeemaa ei tueta.");
+  }
+  if (payload.recordSchemaVersion !== RECORD_SCHEMA_VERSION) {
+    throw new Error("Varmuuskopion tietueskeemaa ei tueta.");
+  }
+  if (!Array.isArray(payload.records)) throw new Error("Varmuuskopiosta ei löytynyt palkkatietoja.");
+
+  return payload.records.map((record, index) => validateBackupRecordInput(record, index, false));
 }
 
 
