@@ -77,7 +77,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/vendor/pdfjs
-          cp index.html styles.css app.js parser.js model.js storage.js learning.js pdf-reader.js manifest.webmanifest sw.js _site/
+          cp index.html styles.css app.js parser.js model.js storage.js learning.js pdf-reader.js manifest.webmanifest sw.js icon-192.png icon-512.png _site/
           cp vendor/pdfjs/pdf.min.mjs vendor/pdfjs/pdf.worker.min.mjs _site/vendor/pdfjs/
 
       - name: Configure Pages
