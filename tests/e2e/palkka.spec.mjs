@@ -1,5 +1,49 @@
 import { test, expect } from "@playwright/test";
 
+function makeTextPdf(lines) {
+  const escapePdf = value => String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+
+  const content = [
+    "BT",
+    "/F1 10 Tf",
+    "50 790 Td",
+    "14 TL",
+    ...lines.flatMap((line, index) => [
+      `(${escapePdf(line)}) Tj`,
+      ...(index < lines.length - 1 ? ["T*"] : [])
+    ]),
+    "ET"
+  ].join("\n");
+
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+    `<< /Length ${Buffer.byteLength(content, "latin1")} >>\nstream\n${content}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (let i = 0; i < objects.length; i++) {
+    offsets.push(Buffer.byteLength(pdf, "latin1"));
+    pdf += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
+  }
+
+  const xrefOffset = Buffer.byteLength(pdf, "latin1");
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += "0000000000 65535 f \n";
+  for (let i = 1; i <= objects.length; i++) {
+    pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return Buffer.from(pdf, "latin1");
+}
+
+
 test("@smoke mobiilin ydinpolku avautuu ilman vaakavieritystä", async ({ page }) => {
   await page.goto("/index.html");
 
@@ -374,4 +418,54 @@ test("R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo s�
   expect(result.netPay).toBe(2500);
   expect(result.parserValue).toBe(2678.39);
   expect(result.userValue).toBe(2500);
+});
+
+
+test("oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa", async ({ page }) => {
+  await page.route("https://**", route => route.abort());
+  await page.goto("/index.html");
+
+  const pdf = makeTextPdf([
+    "PALKKALASKELMA",
+    "Palkkakausi 3.8.2026 - 16.8.2026",
+    "Maksupäivä 28.8.2026",
+    "Maksetaan 2 678,39",
+    "KTA 25,07",
+    "PP 19,44",
+    "Prosentti1 32,5% Tuloraja 40 000,00",
+    "Prosentti2 47,0%",
+    "20040 Ylityö 100 % vrk 4,15 25,07 104,04",
+    "20050 Ylityö 50 % vko 7,90 25,07 99,03",
+    "20060 Ylityö 100 % vko 8,00 25,07 200,56",
+    "90000 Ennakonpidätys 8 028,58 -1 526,89",
+    "KERTYMÄ PALKKAKAUDELTA",
+    "Ennakonpid. al. tul 4 698,11",
+    "Ennakonpidätys -1 526,89",
+    "Maksetaan 2 678,39",
+    "KERTYMÄ VUODEN ALUSTA",
+    "Ennakonpid. al. tul 63 832,82",
+    "Ennakonpidätys -18 792,51"
+  ]);
+
+  await page.locator("#pdfInput").setInputFiles({
+    name: "anonymisoitu-tunnistus.pdf",
+    mimeType: "application/pdf",
+    buffer: pdf
+  });
+
+  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
+  await expect(page.locator("#resultSection")).toBeVisible();
+  await expect(page.locator("#resultSummary")).toContainText("4 698,11");
+  await expect(page.locator("#resultSummary")).toContainText("2 678,39");
+  await expect(page.locator("#resultSummary")).toContainText("63 832,82");
+
+  const records = await page.evaluate(async () => {
+    const storage = await import("/storage.js");
+    return await storage.getAllRecords();
+  });
+
+  expect(records).toHaveLength(1);
+  expect(records[0].values.grossPay).toBe(4698.11);
+  expect(records[0].values.netPay).toBe(2678.39);
+  expect(records[0].values.ytdTaxableIncome).toBe(63832.82);
 });
