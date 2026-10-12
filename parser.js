@@ -106,29 +106,51 @@ function sectionMoney(text, sectionPattern, labelPattern) {
 
 function parallelCumulativeSummary(text, taxableLabel) {
   const lines = textLines(text);
+  const columnRe = /Kertymä\s+(palkkakaudelta|vuoden alusta|edelliseltä vuodelta)\b/gi;
   const index = lines.findIndex(line =>
     /Kertymä\s+palkkakaudelta\b/i.test(line) &&
     /Kertymä\s+vuoden alusta\b/i.test(line)
   );
   if (index < 0) return null;
-  const columnCount = /Kertymä\s+edelliseltä vuodelta\b/i.test(lines[index]) ? 3 : 2;
+
+  // PDF.js's line renderer sorts text by horizontal position. The header order,
+  // NOT the numeric position alone, decides the meaning of each column.
+  const names = {
+    "palkkakaudelta": "period",
+    "vuoden alusta": "ytd",
+    "edelliseltä vuodelta": "previous"
+  };
+  const columns = [...lines[index].matchAll(columnRe)]
+    .map(match => names[match[1].toLocaleLowerCase("fi-FI")]);
+  const uniqueHeaders = new Set(columns);
+  const headerValid = columns.length >= 2 && columns.length <= 3 &&
+    uniqueHeaders.size === columns.length &&
+    uniqueHeaders.has("period") && uniqueHeaders.has("ytd");
   const following = lines.slice(index + 1, index + 22);
 
-  function completeRow(label) {
+  function collect(label) {
     const re = new RegExp(label.source + "\\s+(" + MONEY_RE + ")", "gi");
-    const rows = following.map(line => [...line.matchAll(re)]
+    const observations = following.map(line => [...line.matchAll(re)]
       .map(match => fiNumber(match[1]))
       .filter(value => value != null)
-    ).filter(values => values.length === columnCount);
-    if (!rows.length) return null;
+    ).filter(values => values.length);
+
+    if (!observations.length) return { values: null, observations: [], uncertain: false };
+    const complete = observations.filter(values => values.length === columns.length);
+    const incomplete = observations.some(values => values.length !== columns.length);
     const key = values => values.map(value => value.toFixed(2)).join("|");
-    if (rows.some(values => key(values) !== key(rows[0]))) return null;
-    return rows[0];
+    const inconsistent = complete.some(values => key(values) !== key(complete[0]));
+    const uncertain = !headerValid || incomplete || inconsistent || !complete.length;
+    const values = uncertain ? null : Object.fromEntries(columns.map((name, i) => [name, complete[0][i]]));
+    // Never discard observed numbers simply because a row is incomplete.
+    return { values, observations, uncertain };
   }
 
   return {
-    taxable: completeRow(taxableLabel),
-    withholding: completeRow(/Ennakonpidätys\b/i)
+    columns,
+    headerValid,
+    taxable: collect(taxableLabel),
+    withholding: collect(/Ennakonpidätys\b/i)
   };
 }
 
@@ -160,11 +182,24 @@ function inlineTaxableTriple(text, labelPattern) {
   return null;
 }
 
+function moneyCandidatesInNearbySection(text, sectionPattern, labelPattern, maxChars = 900) {
+  // Keep every observation of the same semantic field, not just the first one.
+  // A section must end at the next named section: a YTD value following
+  // "Vuoden tiedot" must never be mistaken for pay-period gross.
+  const results = [];
+  const headers = new RegExp(sectionPattern.source, "gi");
+  const nextHeader = /(?:^|\n)\s*(?:Kauden\s+tiedot|Vuoden\s+tiedot|Kertymä\s+(?:palkkakaudelta|vuoden\s+alusta|edelliseltä\s+vuodelta))\b/i;
+  for (const match of text.matchAll(headers)) {
+    const from = match.index + match[0].length;
+    const after = text.slice(from, from + maxChars);
+    const stop = after.search(nextHeader);
+    const section = stop >= 0 ? after.slice(0, stop) : after;
+    results.push(...allNumbersAfterLabel(section, labelPattern));
+  }
+  return uniqueMoneyValues(results);
+}
 function moneyInNearbySection(text, sectionPattern, labelPattern, maxChars = 900) {
-  const sectionStart = text.search(sectionPattern);
-  if (sectionStart < 0) return null;
-  const section = text.slice(sectionStart, sectionStart + maxChars);
-  return matchOne(section, [new RegExp(`${labelPattern.source}\\s+(${MONEY_RE})`, "i")], fiNumber);
+  return moneyCandidatesInNearbySection(text, sectionPattern, labelPattern, maxChars)[0] ?? null;
 }
 
 
@@ -369,7 +404,9 @@ function parseLegacyTable(text, lines, payLines) {
   const ot100Weekly = firstLine(payLines, "overtime_100_weekly")?.quantity ?? null;
   const overtimeCategories = ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"];
   const overtimeLines = payLines.filter(line => overtimeCategories.includes(line.category));
-  const hasParsedEarningsLines = payLines.some(line => !["withholding", "pension", "unemployment_insurance", "union_fee", "sickness_fund"].includes(line.category));
+  const hasParsedEarningsLines = payLines.length > 0 &&
+    !payLines.some(line => line.category === "unknown") &&
+    payLines.some(line => !["withholding", "pension", "unemployment_insurance", "union_fee", "sickness_fund"].includes(line.category));
   const overtimeHours = overtimeLines.length
     ? sumLineValues(payLines, overtimeCategories, "quantity")
     : hasParsedEarningsLines ? 0 : null;
@@ -432,22 +469,23 @@ function parseGeneric(text, payLines) {
   const parallel = parallelCumulativeSummary(text, taxableLabel);
   const taxable = allNumbersAfterLabel(text, taxableLabel);
   const inlineTaxable = inlineTaxableTriple(text, taxableLabel);
-  const periodSectionTaxable = moneyInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
-  const yearSectionTaxable = moneyInNearbySection(text, /Vuoden\s+tiedot/i, /Ver\.al\.ans/i);
+  const periodSectionCandidates = moneyCandidatesInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
+  const yearSectionCandidates = moneyCandidatesInNearbySection(text, /Vuoden\s+tiedot/i, /Ver\.al\.ans/i);
+  const periodSectionTaxable = periodSectionCandidates[0] ?? null;
+  const yearSectionTaxable = yearSectionCandidates[0] ?? null;
   const periodCumulativeCandidates = parallel
-    ? (parallel.taxable ? [parallel.taxable[0]] : [])
+    ? (parallel.taxable.values ? [parallel.taxable.values.period] : [])
     : sectionMoneyCandidates(text, /Kertymä\s+palkkakaudelta/i, taxableLabel);
   const periodCumulativeTaxable = periodCumulativeCandidates[0] ?? null;
-  const periodCumulativeConflict = periodCumulativeCandidates.length > 1;
 
   const yearCumulativeCandidates = parallel
-    ? (parallel.taxable ? [parallel.taxable[1]] : [])
+    ? (parallel.taxable.values ? [parallel.taxable.values.ytd] : [])
     : sectionMoneyCandidates(text, /Kertymä\s+vuoden alusta/i, taxableLabel);
   const yearCumulativeTaxable = yearCumulativeCandidates[0] ?? null;
-  const yearCumulativeConflict = yearCumulativeCandidates.length > 1;
+  // Compare other YTD observations after explicit values have been extracted.
 
   const previousYearCumulativeTaxable = parallel
-    ? (parallel.taxable?.[2] ?? null)
+    ? (parallel.taxable.values?.previous ?? null)
     : sectionMoney(text, /Kertymä\s+edelliseltä vuodelta/i, taxableLabel);
   const explicitGrossPay = matchOne(text, [
     new RegExp(`(?:Veronalainen\\s+(?:palkka|ansio)(?:\\s*\\/\\s*kausi|\\s+palkkakaudelta)?|Kauden\\s+veronalainen\\s+(?:palkka|ansio))\\s+(${MONEY_RE})`, "i"),
@@ -460,8 +498,26 @@ function parseGeneric(text, payLines) {
     new RegExp(`(?:Edellisen\\s+vuoden\\s+veronalainen\\s+(?:tulo|ansio)|Veronalainen\\s+edellinen\\s+vuosi)\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
 
+  // Gather ALL independently labeled pay-period observations. In particular,
+  // "Veronalainen palkka / kausi" was being parsed but silently ignored by
+  // the earlier cross-source consistency gate. Do not use an unqualified
+  // "Ver.al.ans" here: that label may belong to a separate YTD section.
+  const explicitPeriodGrossCandidates = uniqueMoneyValues(allNumbersAfterLabel(
+    text,
+    /(?:Veronalainen\s+(?:palkka|ansio)\s*(?:\/\s*kausi|palkkakaudelta)|Kauden\s+veronalainen\s+(?:palkka|ansio))/i
+  ));
+  const periodGrossCandidates = uniqueMoneyValues([
+    ...periodSectionCandidates, ...periodCumulativeCandidates, ...explicitPeriodGrossCandidates
+  ]);
+  const periodCumulativeConflict = periodGrossCandidates.length > 1;
+
+  const yearTaxableCandidates = uniqueMoneyValues([
+    ...yearSectionCandidates, ...yearCumulativeCandidates, explicitYtdTaxable
+  ]);
+  const yearCumulativeConflict = yearTaxableCandidates.length > 1;
+
   const semanticallyAttributed = new Set(
-    [periodSectionTaxable, periodCumulativeTaxable, yearSectionTaxable, yearCumulativeTaxable, previousYearCumulativeTaxable, explicitGrossPay, explicitYtdTaxable, explicitPreviousYearTaxable]
+    [...periodSectionCandidates, periodCumulativeTaxable, ...yearSectionCandidates, yearCumulativeTaxable, previousYearCumulativeTaxable, explicitGrossPay, explicitYtdTaxable, explicitPreviousYearTaxable]
       .filter(value => value != null)
       .map(value => Number(value).toFixed(2))
   );
@@ -493,12 +549,12 @@ function parseGeneric(text, payLines) {
     .map(match => fiNumber(match[1]))
     .filter(value => value != null);
   const withholdingPeriod = parallel
-    ? (parallel.withholding?.[0] ?? null)
+    ? (parallel.withholding.values?.period ?? null)
     : (sectionMoney(text, /Kertymä\s+palkkakaudelta/i, /Ennakonpidätys/i)
       ?? moneyInNearbySection(text, /Kauden\s+tiedot/i, /(?:Enn\.pid|Ennakonpidätys)/i)
       ?? withholdingNegatives[0] ?? null);
   const withholdingYtd = parallel
-    ? (parallel.withholding?.[1] ?? null)
+    ? (parallel.withholding.values?.ytd ?? null)
     : (sectionMoney(text, /Kertymä\s+vuoden alusta/i, /Ennakonpidätys/i)
       ?? moneyInNearbySection(text, /Vuoden\s+tiedot/i, /(?:Enn\.pid|Ennakonpidätys)/i)
       ?? withholdingNegatives[1] ?? null);
@@ -535,7 +591,9 @@ function parseGeneric(text, payLines) {
   const ot100Weekly = firstLine(payLines, "overtime_100_weekly")?.quantity ?? codeUnits(text, "20060", "Ylityö\\s+100\\s*%\\s*vko");
   const overtimeCategories = ["overtime_100_daily", "overtime_50_weekly", "overtime_100_weekly", "overtime_50", "overtime_100"];
   const overtimeLines = payLines.filter(line => overtimeCategories.includes(line.category));
-  const hasParsedEarningsLines = payLines.some(line => !["withholding", "pension", "unemployment_insurance", "union_fee", "sickness_fund"].includes(line.category));
+  const hasParsedEarningsLines = payLines.length > 0 &&
+    !payLines.some(line => line.category === "unknown") &&
+    payLines.some(line => !["withholding", "pension", "unemployment_insurance", "union_fee", "sickness_fund"].includes(line.category));
   const overtimeHours = overtimeLines.length
     ? sumLineValues(payLines, overtimeCategories, "quantity")
     : hasParsedEarningsLines ? 0 : null;
@@ -551,9 +609,9 @@ function parseGeneric(text, payLines) {
     payDate: field(payDate, 0.99, "Maksupäivä / palkanmaksupäivä"),
     grossPay: field(
       grossPay,
-      periodCumulativeConflict ? 0.50 : 0.97,
-      periodCumulativeConflict ? "Ristiriitaiset veronalaiset ansiot / palkkakausi" : "Veronalainen ansio / palkkakausi",
-      periodCumulativeConflict ? { conflict: true, candidates: periodCumulativeCandidates } : {}
+      (periodCumulativeConflict || (parallel && (!parallel.headerValid || parallel.taxable.uncertain))) ? 0.50 : 0.97,
+      periodCumulativeConflict ? "Ristiriitaiset kauden bruttohavainnot" : parallel?.taxable.uncertain ? `Epäselvä kertymärivi, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / palkkakausi",
+      periodCumulativeConflict ? { conflict: true, candidates: periodGrossCandidates } : parallel?.taxable.uncertain ? { evidenceIssue: true, candidates: parallel.taxable.observations.flat() } : {}
     ),
     netPay: field(
       netPay,
@@ -563,14 +621,14 @@ function parseGeneric(text, payLines) {
     ),
     ytdTaxableIncome: field(
       ytdTaxable,
-      yearCumulativeConflict ? 0.50 : 0.96,
-      yearCumulativeConflict ? "Ristiriitaiset veronalaiset ansiot / vuoden alusta" : "Veronalainen ansio / vuoden alusta",
-      yearCumulativeConflict ? { conflict: true, candidates: yearCumulativeCandidates } : {}
+      (yearCumulativeConflict || (parallel && (!parallel.headerValid || parallel.taxable.uncertain))) ? 0.50 : 0.96,
+      yearCumulativeConflict ? "Ristiriitaiset veronalaiset ansiot / vuoden alusta" : parallel?.taxable.uncertain ? `Epäselvä kertymärivi, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / vuoden alusta",
+      yearCumulativeConflict ? { conflict: true, candidates: yearTaxableCandidates } : parallel?.taxable.uncertain ? { evidenceIssue: true, candidates: parallel.taxable.observations.flat() } : {}
     ),
-    previousYearTaxableIncome: field(previousYearTaxable, 0.85, "Veronalainen ansio / edellinen vuosi"),
+    previousYearTaxableIncome: field(previousYearTaxable, parallel?.taxable.uncertain ? 0.50 : 0.85, parallel?.taxable.uncertain ? `Epäselvä edellisen vuoden kertymä, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / edellinen vuosi"),
     taxCardAccumulatedIncome: field(taxCardAccumulatedIncome, 0.97, "Verokortin kertymä / 90000 Ennakonpidätys"),
-    withholdingPeriod: field(withholdingPeriod, 0.95, "Ennakonpidätys / palkkakausi"),
-    withholdingYtd: field(withholdingYtd, 0.90, "Ennakonpidätys / vuoden alusta"),
+    withholdingPeriod: field(withholdingPeriod, parallel?.withholding.uncertain ? 0.50 : 0.95, parallel?.withholding.uncertain ? `Epäselvä pidätysrivi, havainnot: ${JSON.stringify(parallel.withholding.observations)}` : "Ennakonpidätys / palkkakausi", parallel?.withholding.uncertain ? { evidenceIssue: true, candidates: parallel.withholding.observations.flat() } : {}),
+    withholdingYtd: field(withholdingYtd, parallel?.withholding.uncertain ? 0.50 : 0.90, parallel?.withholding.uncertain ? `Epäselvä pidätysrivi, havainnot: ${JSON.stringify(parallel.withholding.observations)}` : "Ennakonpidätys / vuoden alusta", parallel?.withholding.uncertain ? { evidenceIssue: true, candidates: parallel.withholding.observations.flat() } : {}),
     taxRate: field(taxRate, 0.98, "Perusprosentti / Prosentti1"),
     taxLimit: field(taxLimit, 0.98, "Tuloraja"),
     additionalRate: field(additionalRate, 0.98, "Lisäprosentti / Prosentti2"),
@@ -622,7 +680,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.6",
+    parserVersion: "0.4.10",
     sourceProfile,
     fields,
     payLines,
@@ -637,6 +695,21 @@ export function parsePayslip(inputText) {
 export function validate(fields) {
   const notices = [];
   const v = k => fields[k]?.value;
+ 
+  for (const [key, label] of [
+    ["grossPay", "kauden brutto"],
+    ["ytdTaxableIncome", "vuoden veronalainen kertymä"],
+    ["withholdingPeriod", "kauden ennakonpidätys"],
+    ["withholdingYtd", "vuoden ennakonpidätys"]
+  ]) {
+    if (!fields[key]?.evidenceIssue) continue;
+    notices.push({
+      level: "blocking",
+      code: `ambiguous-parallel-column-${key}`,
+      message: `Sarakkeiden ${label} on epäselvä. Havaitut arvot: ${(fields[key].candidates || []).join(" / ") || "ei yksiselitteistä arvoa"}. Tarkista laskelma ennen tallennusta.`,
+      fields: [key]
+    });
+  }
 
   if (fields.grossPay?.conflict) {
     notices.push({

@@ -1,0 +1,1309 @@
+﻿2026-10-11T10:23:52.1023971Z Current runner version: '2.337.0'
+2026-10-11T10:23:52.1044970Z ##[group]Runner Image Provisioner
+2026-10-11T10:23:52.1045748Z Hosted Compute Agent
+2026-10-11T10:23:52.1046227Z Version: 20261002.596
+2026-10-11T10:23:52.1046725Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-11T10:23:52.1047370Z Build Date: 2026-10-02T22:28:27Z
+2026-10-11T10:23:52.1047947Z Worker ID: {71caec83-0679-4dc4-bfc5-d2d5c527f758}
+2026-10-11T10:23:52.1048533Z Region: westus3
+2026-10-11T10:23:52.1048993Z Cloud: Azure
+2026-10-11T10:23:52.1049468Z ##[endgroup]
+2026-10-11T10:23:52.1050686Z ##[group]Operating System
+2026-10-11T10:23:52.1051223Z Ubuntu
+2026-10-11T10:23:52.1051695Z 24.04.5
+2026-10-11T10:23:52.1052131Z LTS
+2026-10-11T10:23:52.1052722Z ##[endgroup]
+2026-10-11T10:23:52.1053230Z ##[group]Runner Image
+2026-10-11T10:23:52.1053748Z Image: ubuntu-24.04
+2026-10-11T10:23:52.1054193Z Version: 20261004.327.1
+2026-10-11T10:23:52.1055273Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-11T10:23:52.1056859Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-11T10:23:52.1057631Z ##[endgroup]
+2026-10-11T10:23:52.1058564Z ##[group]GITHUB_TOKEN Permissions
+2026-10-11T10:23:52.1060279Z Contents: read
+2026-10-11T10:23:52.1060764Z Metadata: read
+2026-10-11T10:23:52.1061330Z ##[endgroup]
+2026-10-11T10:23:52.1063224Z Secret source: Actions
+2026-10-11T10:23:52.1064036Z Cache mode: write
+2026-10-11T10:23:52.1064603Z Prepare workflow directory
+2026-10-11T10:23:52.1326942Z Prepare all required actions
+2026-10-11T10:23:52.1366098Z Getting action download info
+2026-10-11T10:23:52.4378742Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-11T10:23:52.5121612Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-10-11T10:23:52.6296600Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-11T10:23:52.9258886Z Complete job name: browser-tests
+2026-10-11T10:23:53.0044260Z ##[group]Run actions/checkout@v4
+2026-10-11T10:23:53.0045353Z with:
+2026-10-11T10:23:53.0045786Z   repository: naatti21/Palkan-laskenta
+2026-10-11T10:23:53.0049532Z   token: ***
+2026-10-11T10:23:53.0049939Z   ssh-strict: true
+2026-10-11T10:23:53.0050305Z   ssh-user: git
+2026-10-11T10:23:53.0050686Z   persist-credentials: true
+2026-10-11T10:23:53.0051087Z   clean: true
+2026-10-11T10:23:53.0051469Z   sparse-checkout-cone-mode: true
+2026-10-11T10:23:53.0051904Z   fetch-depth: 1
+2026-10-11T10:23:53.0052260Z   fetch-tags: false
+2026-10-11T10:23:53.0053027Z   show-progress: true
+2026-10-11T10:23:53.0053541Z   lfs: false
+2026-10-11T10:23:53.0053951Z   submodules: false
+2026-10-11T10:23:53.0054345Z   set-safe-directory: true
+2026-10-11T10:23:53.0054828Z   allow-unsafe-pr-checkout: false
+2026-10-11T10:23:53.0055629Z ##[endgroup]
+2026-10-11T10:23:53.1076838Z Syncing repository: naatti21/Palkan-laskenta
+2026-10-11T10:23:53.1079129Z ##[group]Getting Git version info
+2026-10-11T10:23:53.1079951Z Working directory is '/home/runner/work/Palkan-laskenta/Palkan-laskenta'
+2026-10-11T10:23:53.1080841Z [command]/usr/bin/git version
+2026-10-11T10:23:53.1153667Z git version 2.55.0
+2026-10-11T10:23:53.1183648Z ##[endgroup]
+2026-10-11T10:23:53.1190178Z Temporarily overriding HOME='/home/runner/work/_temp/d3709894-f1bf-4b43-96e5-ce93d20b821b' before making global git config changes
+2026-10-11T10:23:53.1191492Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-11T10:23:53.1196117Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Palkan-laskenta/Palkan-laskenta
+2026-10-11T10:23:53.1248591Z Deleting the contents of '/home/runner/work/Palkan-laskenta/Palkan-laskenta'
+2026-10-11T10:23:53.1257540Z ##[group]Initializing the repository
+2026-10-11T10:23:53.1258545Z [command]/usr/bin/git init /home/runner/work/Palkan-laskenta/Palkan-laskenta
+2026-10-11T10:23:53.1346008Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-11T10:23:53.1349178Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-11T10:23:53.1351062Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-11T10:23:53.1352350Z hint: call:
+2026-10-11T10:23:53.1353745Z hint:
+2026-10-11T10:23:53.1354628Z hint: 	git config --global init.defaultBranch <name>
+2026-10-11T10:23:53.1355589Z hint:
+2026-10-11T10:23:53.1356437Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-11T10:23:53.1357828Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-11T10:23:53.1358900Z hint:
+2026-10-11T10:23:53.1359625Z hint: 	git branch -m <name>
+2026-10-11T10:23:53.1360394Z hint:
+2026-10-11T10:23:53.1361324Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-11T10:23:53.1363612Z Initialized empty Git repository in /home/runner/work/Palkan-laskenta/Palkan-laskenta/.git/
+2026-10-11T10:23:53.1368136Z [command]/usr/bin/git remote add origin https://github.com/naatti21/Palkan-laskenta
+2026-10-11T10:23:53.1427617Z ##[endgroup]
+2026-10-11T10:23:53.1428723Z ##[group]Disabling automatic garbage collection
+2026-10-11T10:23:53.1436243Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-11T10:23:53.1476798Z ##[endgroup]
+2026-10-11T10:23:53.1484236Z ##[group]Setting up auth
+2026-10-11T10:23:53.1485278Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-11T10:23:53.1536830Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-11T10:23:53.1944500Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-11T10:23:53.1995524Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-11T10:23:53.2285327Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-11T10:23:53.2334912Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-11T10:23:53.2570972Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-11T10:23:53.2648326Z ##[endgroup]
+2026-10-11T10:23:53.2649045Z ##[group]Fetching the repository
+2026-10-11T10:23:53.2657136Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f7786cac443f915a01dc6bb0923352ca65a9358e:refs/remotes/origin/develop
+2026-10-11T10:23:53.7469890Z From https://github.com/naatti21/Palkan-laskenta
+2026-10-11T10:23:53.7471217Z  * [new ref]         f7786cac443f915a01dc6bb0923352ca65a9358e -> origin/develop
+2026-10-11T10:23:53.7474194Z ##[endgroup]
+2026-10-11T10:23:53.7474968Z ##[group]Determining the checkout info
+2026-10-11T10:23:53.7476188Z ##[endgroup]
+2026-10-11T10:23:53.7480685Z [command]/usr/bin/git sparse-checkout disable
+2026-10-11T10:23:53.7531062Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-11T10:23:53.7564581Z ##[group]Checking out the ref
+2026-10-11T10:23:53.7568813Z [command]/usr/bin/git checkout --progress --force -B develop refs/remotes/origin/develop
+2026-10-11T10:23:53.7658408Z Switched to a new branch 'develop'
+2026-10-11T10:23:53.7662755Z branch 'develop' set up to track 'origin/develop'.
+2026-10-11T10:23:53.7671023Z ##[endgroup]
+2026-10-11T10:23:53.7703827Z [command]/usr/bin/git log -1 --format=%H
+2026-10-11T10:23:53.7727663Z f7786cac443f915a01dc6bb0923352ca65a9358e
+2026-10-11T10:23:53.8064888Z ##[group]Run actions/setup-node@v4
+2026-10-11T10:23:53.8065583Z with:
+2026-10-11T10:23:53.8066010Z   node-version: 22
+2026-10-11T10:23:53.8066504Z   always-auth: false
+2026-10-11T10:23:53.8067209Z   check-latest: false
+2026-10-11T10:23:53.8074899Z   token: ***
+2026-10-11T10:23:53.8075357Z ##[endgroup]
+2026-10-11T10:23:53.9256513Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+2026-10-11T10:23:53.9258912Z (node:2095) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T10:23:53.9261099Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T10:23:53.9262770Z ##[group]Environment details
+2026-10-11T10:23:54.2252365Z node: v22.23.3
+2026-10-11T10:23:54.2253359Z npm: 10.9.9
+2026-10-11T10:23:54.2253884Z yarn: 1.22.22
+2026-10-11T10:23:54.2255255Z ##[endgroup]
+2026-10-11T10:23:54.2390825Z ##[group]Run npm ci --no-audit --no-fund
+2026-10-11T10:23:54.2391878Z [36;1mnpm ci --no-audit --no-fund[0m
+2026-10-11T10:23:54.2599410Z shell: /usr/bin/bash -e {0}
+2026-10-11T10:23:54.2600276Z ##[endgroup]
+2026-10-11T10:23:55.9025877Z 
+2026-10-11T10:23:55.9030961Z added 7 packages in 2s
+2026-10-11T10:23:55.9409869Z ##[group]Run npx playwright install --with-deps chromium
+2026-10-11T10:23:55.9410274Z [36;1mnpx playwright install --with-deps chromium[0m
+2026-10-11T10:23:55.9469912Z shell: /usr/bin/bash -e {0}
+2026-10-11T10:23:55.9470157Z ##[endgroup]
+2026-10-11T10:23:56.6509207Z Installing dependencies...
+2026-10-11T10:23:56.6595238Z Switching to root user to install dependencies...
+2026-10-11T10:23:56.7767374Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-11T10:23:56.8118362Z Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+2026-10-11T10:23:56.8119328Z Get:6 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+2026-10-11T10:23:56.8165587Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+2026-10-11T10:23:56.8213073Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+2026-10-11T10:23:56.8263989Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+2026-10-11T10:23:56.9952025Z Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [492 kB]
+2026-10-11T10:23:57.0143744Z Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble/main all Packages [640 B]
+2026-10-11T10:23:57.0193963Z Get:9 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [548 kB]
+2026-10-11T10:23:57.0223247Z Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [12.3 kB]
+2026-10-11T10:23:57.0386906Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1375 kB]
+2026-10-11T10:23:57.0464554Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [306 kB]
+2026-10-11T10:23:57.0494140Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1702 kB]
+2026-10-11T10:23:57.0540412Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [342 kB]
+2026-10-11T10:23:57.0562438Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1761 kB]
+2026-10-11T10:23:57.0653880Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [401 kB]
+2026-10-11T10:23:57.0684318Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [55.0 kB]
+2026-10-11T10:23:57.0686728Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse Translation-en [14.3 kB]
+2026-10-11T10:23:57.1371947Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1121 kB]
+2026-10-11T10:23:57.1425510Z Get:20 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [228 kB]
+2026-10-11T10:23:57.1862123Z Get:21 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1220 kB]
+2026-10-11T10:23:57.1917525Z Get:22 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [245 kB]
+2026-10-11T10:23:57.1944369Z Get:23 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1669 kB]
+2026-10-11T10:23:57.2011283Z Get:24 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [383 kB]
+2026-10-11T10:23:57.2033061Z Get:25 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [49.8 kB]
+2026-10-11T10:23:57.2042205Z Get:26 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse Translation-en [12.4 kB]
+2026-10-11T10:24:05.9163067Z Fetched 12.3 MB in 1s (10.5 MB/s)
+2026-10-11T10:24:06.6371671Z Reading package lists...
+2026-10-11T10:24:06.6580590Z Reading package lists...
+2026-10-11T10:24:06.8391503Z Building dependency tree...
+2026-10-11T10:24:06.8397358Z Reading state information...
+2026-10-11T10:24:07.0011757Z libasound2t64 is already the newest version (1.2.11-1ubuntu0.3).
+2026-10-11T10:24:07.0012841Z libasound2t64 set to manually installed.
+2026-10-11T10:24:07.0013456Z libatk-bridge2.0-0t64 is already the newest version (2.52.0-1build1).
+2026-10-11T10:24:07.0014011Z libatk-bridge2.0-0t64 set to manually installed.
+2026-10-11T10:24:07.0014953Z libatk1.0-0t64 is already the newest version (2.52.0-1build1).
+2026-10-11T10:24:07.0015307Z libatk1.0-0t64 set to manually installed.
+2026-10-11T10:24:07.0015711Z libatspi2.0-0t64 is already the newest version (2.52.0-1build1).
+2026-10-11T10:24:07.0016066Z libatspi2.0-0t64 set to manually installed.
+2026-10-11T10:24:07.0016413Z libcairo2 is already the newest version (1.18.0-3build1).
+2026-10-11T10:24:07.0016721Z libcairo2 set to manually installed.
+2026-10-11T10:24:07.0017234Z libcups2t64 is already the newest version (2.4.7-1.2ubuntu7.14).
+2026-10-11T10:24:07.0017739Z libcups2t64 set to manually installed.
+2026-10-11T10:24:07.0018212Z libdbus-1-3 is already the newest version (1.14.10-4ubuntu4.1).
+2026-10-11T10:24:07.0018532Z libdbus-1-3 set to manually installed.
+2026-10-11T10:24:07.0018893Z libdrm2 is already the newest version (2.4.125-1ubuntu0.1~24.04.2).
+2026-10-11T10:24:07.0019232Z libdrm2 set to manually installed.
+2026-10-11T10:24:07.0019566Z libgbm1 is already the newest version (25.2.8-0ubuntu0.24.04.4).
+2026-10-11T10:24:07.0019877Z libgbm1 set to manually installed.
+2026-10-11T10:24:07.0020211Z libglib2.0-0t64 is already the newest version (2.80.0-6ubuntu3.9).
+2026-10-11T10:24:07.0020543Z libglib2.0-0t64 set to manually installed.
+2026-10-11T10:24:07.0020919Z libnspr4 is already the newest version (2:4.35-1.1build1).
+2026-10-11T10:24:07.0021238Z libnspr4 set to manually installed.
+2026-10-11T10:24:07.0021553Z libnss3 is already the newest version (2:3.98-1ubuntu0.2).
+2026-10-11T10:24:07.0021842Z libnss3 set to manually installed.
+2026-10-11T10:24:07.0022217Z libpango-1.0-0 is already the newest version (1.52.1+ds-1build1).
+2026-10-11T10:24:07.0022712Z libpango-1.0-0 set to manually installed.
+2026-10-11T10:24:07.0023132Z libx11-6 is already the newest version (2:1.8.7-1build1).
+2026-10-11T10:24:07.0023433Z libx11-6 set to manually installed.
+2026-10-11T10:24:07.0023730Z libxcb1 is already the newest version (1.15-1ubuntu2).
+2026-10-11T10:24:07.0024036Z libxcb1 set to manually installed.
+2026-10-11T10:24:07.0024375Z libxcomposite1 is already the newest version (1:0.4.5-1build3).
+2026-10-11T10:24:07.0024706Z libxcomposite1 set to manually installed.
+2026-10-11T10:24:07.0025046Z libxdamage1 is already the newest version (1:1.1.6-1build1).
+2026-10-11T10:24:07.0025365Z libxdamage1 set to manually installed.
+2026-10-11T10:24:07.0025686Z libxext6 is already the newest version (2:1.3.4-1build2).
+2026-10-11T10:24:07.0025976Z libxext6 set to manually installed.
+2026-10-11T10:24:07.0026291Z libxfixes3 is already the newest version (1:6.0.0-2build1).
+2026-10-11T10:24:07.0026599Z libxfixes3 set to manually installed.
+2026-10-11T10:24:07.0026921Z libxkbcommon0 is already the newest version (1.6.0-1build1).
+2026-10-11T10:24:07.0027235Z libxkbcommon0 set to manually installed.
+2026-10-11T10:24:07.0027711Z libxrandr2 is already the newest version (2:1.5.2-2build1).
+2026-10-11T10:24:07.0028022Z libxrandr2 set to manually installed.
+2026-10-11T10:24:07.0028338Z xvfb is already the newest version (2:21.1.12-1ubuntu1.8).
+2026-10-11T10:24:07.0028946Z fonts-noto-color-emoji is already the newest version (2.047-0ubuntu0.24.04.1).
+2026-10-11T10:24:07.0029450Z libfontconfig1 is already the newest version (2.15.0-1.1ubuntu2).
+2026-10-11T10:24:07.0029827Z libfontconfig1 set to manually installed.
+2026-10-11T10:24:07.0030153Z fonts-liberation is already the newest version (1:2.1.5-3).
+2026-10-11T10:24:07.0030472Z fonts-liberation set to manually installed.
+2026-10-11T10:24:07.0030797Z The following additional packages will be installed:
+2026-10-11T10:24:07.0031086Z   xfonts-encodings xfonts-utils
+2026-10-11T10:24:07.0031324Z Recommended packages:
+2026-10-11T10:24:07.0031552Z   fonts-ipafont-mincho fonts-tlwg-loma
+2026-10-11T10:24:07.0405737Z The following NEW packages will be installed:
+2026-10-11T10:24:07.0406230Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+2026-10-11T10:24:07.0413133Z   fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable
+2026-10-11T10:24:07.0413857Z   xfonts-utils
+2026-10-11T10:24:07.0417036Z The following packages will be upgraded:
+2026-10-11T10:24:07.0420764Z   libfreetype6
+2026-10-11T10:24:07.0567132Z 1 upgraded, 9 newly installed, 0 to remove and 22 not upgraded.
+2026-10-11T10:24:07.0567716Z Need to get 21.5 MB of archives.
+2026-10-11T10:24:07.0568299Z After this operation, 79.5 MB of additional disk space will be used.
+2026-10-11T10:24:07.0568975Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-11T10:24:07.1365963Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-ipafont-gothic all 00303-21ubuntu1 [3513 kB]
+2026-10-11T10:24:07.2657392Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 fonts-freefont-ttf all 20211204+svn4273-2 [5641 kB]
+2026-10-11T10:24:07.4103622Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-tlwg-loma-otf all 1:0.7.3-1 [107 kB]
+2026-10-11T10:24:07.4785273Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-unifont all 1:15.1.01-1build1 [2993 kB]
+2026-10-11T10:24:07.6153560Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-wqy-zenhei all 0.9.45-8 [7472 kB]
+2026-10-11T10:24:08.0376165Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libfreetype6 amd64 2.13.2+dfsg-1ubuntu0.2 [403 kB]
+2026-10-11T10:24:08.5755200Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-encodings all 1:1.0.5-0ubuntu2 [578 kB]
+2026-10-11T10:24:08.7075598Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-utils amd64 1:7.7+6build3 [94.4 kB]
+2026-10-11T10:24:08.7780430Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 xfonts-cyrillic all 1:1.0.5+nmu1 [384 kB]
+2026-10-11T10:24:08.8719599Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-scalable all 1:1.0.3-1.3 [304 kB]
+2026-10-11T10:24:09.2353698Z Fetched 21.5 MB in 2s (11.6 MB/s)
+2026-10-11T10:24:09.5817746Z Selecting previously unselected package fonts-ipafont-gothic.
+2026-10-11T10:24:09.6412745Z (Reading database ... 
+2026-10-11T10:24:09.6413372Z (Reading database ... 5%
+2026-10-11T10:24:09.6414018Z (Reading database ... 10%
+2026-10-11T10:24:09.6414282Z (Reading database ... 15%
+2026-10-11T10:24:09.6414501Z (Reading database ... 20%
+2026-10-11T10:24:09.6414794Z (Reading database ... 25%
+2026-10-11T10:24:09.6415185Z (Reading database ... 30%
+2026-10-11T10:24:09.6415623Z (Reading database ... 35%
+2026-10-11T10:24:09.6415931Z (Reading database ... 40%
+2026-10-11T10:24:09.6416198Z (Reading database ... 45%
+2026-10-11T10:24:09.6416414Z (Reading database ... 50%
+2026-10-11T10:24:09.6852764Z (Reading database ... 55%
+2026-10-11T10:24:10.1874460Z (Reading database ... 60%
+2026-10-11T10:24:10.6836449Z (Reading database ... 65%
+2026-10-11T10:24:11.1488415Z (Reading database ... 70%
+2026-10-11T10:24:11.4975467Z (Reading database ... 75%
+2026-10-11T10:24:11.9142325Z (Reading database ... 80%
+2026-10-11T10:24:12.7619521Z (Reading database ... 85%
+2026-10-11T10:24:13.6451722Z (Reading database ... 90%
+2026-10-11T10:24:14.2334828Z (Reading database ... 95%
+2026-10-11T10:24:14.2335546Z (Reading database ... 100%
+2026-10-11T10:24:14.2336101Z (Reading database ... 203191 files and directories currently installed.)
+2026-10-11T10:24:14.2378224Z Preparing to unpack .../0-fonts-ipafont-gothic_00303-21ubuntu1_all.deb ...
+2026-10-11T10:24:14.2536102Z Unpacking fonts-ipafont-gothic (00303-21ubuntu1) ...
+2026-10-11T10:24:14.4819689Z Selecting previously unselected package fonts-freefont-ttf.
+2026-10-11T10:24:14.4930546Z Preparing to unpack .../1-fonts-freefont-ttf_20211204+svn4273-2_all.deb ...
+2026-10-11T10:24:14.4937111Z Unpacking fonts-freefont-ttf (20211204+svn4273-2) ...
+2026-10-11T10:24:14.6216552Z Selecting previously unselected package fonts-tlwg-loma-otf.
+2026-10-11T10:24:14.6339327Z Preparing to unpack .../2-fonts-tlwg-loma-otf_1%3a0.7.3-1_all.deb ...
+2026-10-11T10:24:14.6347252Z Unpacking fonts-tlwg-loma-otf (1:0.7.3-1) ...
+2026-10-11T10:24:14.6559415Z Selecting previously unselected package fonts-unifont.
+2026-10-11T10:24:14.6670323Z Preparing to unpack .../3-fonts-unifont_1%3a15.1.01-1build1_all.deb ...
+2026-10-11T10:24:14.6676019Z Unpacking fonts-unifont (1:15.1.01-1build1) ...
+2026-10-11T10:24:14.8811748Z Selecting previously unselected package fonts-wqy-zenhei.
+2026-10-11T10:24:14.8924171Z Preparing to unpack .../4-fonts-wqy-zenhei_0.9.45-8_all.deb ...
+2026-10-11T10:24:14.9009729Z Unpacking fonts-wqy-zenhei (0.9.45-8) ...
+2026-10-11T10:24:15.3814914Z Preparing to unpack .../5-libfreetype6_2.13.2+dfsg-1ubuntu0.2_amd64.deb ...
+2026-10-11T10:24:15.3839979Z Unpacking libfreetype6:amd64 (2.13.2+dfsg-1ubuntu0.2) over (2.13.2+dfsg-1ubuntu0.1) ...
+2026-10-11T10:24:15.4072870Z Selecting previously unselected package xfonts-encodings.
+2026-10-11T10:24:15.4185635Z Preparing to unpack .../6-xfonts-encodings_1%3a1.0.5-0ubuntu2_all.deb ...
+2026-10-11T10:24:15.4191907Z Unpacking xfonts-encodings (1:1.0.5-0ubuntu2) ...
+2026-10-11T10:24:15.4420420Z Selecting previously unselected package xfonts-utils.
+2026-10-11T10:24:15.4528273Z Preparing to unpack .../7-xfonts-utils_1%3a7.7+6build3_amd64.deb ...
+2026-10-11T10:24:15.4534719Z Unpacking xfonts-utils (1:7.7+6build3) ...
+2026-10-11T10:24:15.5158143Z Selecting previously unselected package xfonts-cyrillic.
+2026-10-11T10:24:15.5270209Z Preparing to unpack .../8-xfonts-cyrillic_1%3a1.0.5+nmu1_all.deb ...
+2026-10-11T10:24:15.5277350Z Unpacking xfonts-cyrillic (1:1.0.5+nmu1) ...
+2026-10-11T10:24:15.5545761Z Selecting previously unselected package xfonts-scalable.
+2026-10-11T10:24:15.5655999Z Preparing to unpack .../9-xfonts-scalable_1%3a1.0.3-1.3_all.deb ...
+2026-10-11T10:24:15.5791735Z Unpacking xfonts-scalable (1:1.0.3-1.3) ...
+2026-10-11T10:24:15.6224363Z Setting up fonts-wqy-zenhei (0.9.45-8) ...
+2026-10-11T10:24:15.6328595Z Setting up fonts-freefont-ttf (20211204+svn4273-2) ...
+2026-10-11T10:24:15.6344894Z Setting up fonts-tlwg-loma-otf (1:0.7.3-1) ...
+2026-10-11T10:24:15.6360462Z Setting up libfreetype6:amd64 (2.13.2+dfsg-1ubuntu0.2) ...
+2026-10-11T10:24:15.6377546Z Setting up xfonts-encodings (1:1.0.5-0ubuntu2) ...
+2026-10-11T10:24:15.6395112Z Setting up fonts-ipafont-gothic (00303-21ubuntu1) ...
+2026-10-11T10:24:15.6453424Z update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
+2026-10-11T10:24:15.6466776Z Setting up fonts-unifont (1:15.1.01-1build1) ...
+2026-10-11T10:24:15.6497699Z Setting up xfonts-utils (1:7.7+6build3) ...
+2026-10-11T10:24:15.6533501Z Setting up xfonts-cyrillic (1:1.0.5+nmu1) ...
+2026-10-11T10:24:15.6812085Z Setting up xfonts-scalable (1:1.0.3-1.3) ...
+2026-10-11T10:24:15.7088095Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-11T10:24:17.5438194Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-11T10:24:17.5457308Z Not building database; man-db/auto-update is not 'true'.
+2026-10-11T10:24:17.5468223Z Processing triggers for fontconfig (2.15.0-1.1ubuntu2) ...
+2026-10-11T10:24:18.8859086Z 
+2026-10-11T10:24:18.8859545Z Running kernel seems to be up-to-date.
+2026-10-11T10:24:18.8860048Z 
+2026-10-11T10:24:18.8860150Z Restarting services...
+2026-10-11T10:24:18.8930917Z  systemctl restart php8.3-fpm.service
+2026-10-11T10:24:18.9885666Z 
+2026-10-11T10:24:18.9887029Z No containers need to be restarted.
+2026-10-11T10:24:18.9887416Z 
+2026-10-11T10:24:18.9893410Z No user sessions are running outdated binaries.
+2026-10-11T10:24:18.9893709Z 
+2026-10-11T10:24:18.9894071Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-11T10:24:19.8343045Z Downloading Chromium 143.0.7499.4 (playwright build v1200) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1200/chromium-linux.zip
+2026-10-11T10:24:20.0330854Z |                                                                                |   0% of 164.7 MiB
+2026-10-11T10:24:20.1993748Z |■■■■■■■■                                                                        |  10% of 164.7 MiB
+2026-10-11T10:24:20.2642513Z |■■■■■■■■■■■■■■■■                                                                |  20% of 164.7 MiB
+2026-10-11T10:24:20.3290766Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 164.7 MiB
+2026-10-11T10:24:20.3869786Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 164.7 MiB
+2026-10-11T10:24:20.4501212Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 164.7 MiB
+2026-10-11T10:24:20.5117476Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 164.7 MiB
+2026-10-11T10:24:20.5664441Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 164.7 MiB
+2026-10-11T10:24:20.6278681Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 164.7 MiB
+2026-10-11T10:24:20.6853582Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 164.7 MiB
+2026-10-11T10:24:20.7468720Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 164.7 MiB
+2026-10-11T10:24:22.7158242Z Chromium 143.0.7499.4 (playwright build v1200) downloaded to /home/runner/.cache/ms-playwright/chromium-1200
+2026-10-11T10:24:22.7161153Z Downloading FFMPEG playwright build v1011 from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+2026-10-11T10:24:22.8512794Z |                                                                                |   0% of 2.3 MiB
+2026-10-11T10:24:22.8541990Z |■■■■■■■■                                                                        |  10% of 2.3 MiB
+2026-10-11T10:24:22.8569680Z |■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+2026-10-11T10:24:22.8604180Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+2026-10-11T10:24:22.8624803Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+2026-10-11T10:24:22.8641072Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+2026-10-11T10:24:22.8656097Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+2026-10-11T10:24:22.8673139Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+2026-10-11T10:24:22.8687890Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+2026-10-11T10:24:22.8698605Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+2026-10-11T10:24:22.8708034Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+2026-10-11T10:24:22.9126706Z FFMPEG playwright build v1011 downloaded to /home/runner/.cache/ms-playwright/ffmpeg-1011
+2026-10-11T10:24:22.9129468Z Downloading Chromium Headless Shell 143.0.7499.4 (playwright build v1200) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1200/chromium-headless-shell-linux.zip
+2026-10-11T10:24:23.0870544Z |                                                                                |   0% of 109.7 MiB
+2026-10-11T10:24:23.2299577Z |■■■■■■■■                                                                        |  10% of 109.7 MiB
+2026-10-11T10:24:23.2748846Z |■■■■■■■■■■■■■■■■                                                                |  20% of 109.7 MiB
+2026-10-11T10:24:23.3230619Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 109.7 MiB
+2026-10-11T10:24:23.3598840Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 109.7 MiB
+2026-10-11T10:24:23.3954868Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 109.7 MiB
+2026-10-11T10:24:23.4418336Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 109.7 MiB
+2026-10-11T10:24:23.4846046Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 109.7 MiB
+2026-10-11T10:24:23.5234910Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 109.7 MiB
+2026-10-11T10:24:23.5633917Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 109.7 MiB
+2026-10-11T10:24:23.6082967Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 109.7 MiB
+2026-10-11T10:24:25.0124890Z Chromium Headless Shell 143.0.7499.4 (playwright build v1200) downloaded to /home/runner/.cache/ms-playwright/chromium_headless_shell-1200
+2026-10-11T10:24:25.0338713Z ##[group]Run npm run test:e2e
+2026-10-11T10:24:25.0338958Z [36;1mnpm run test:e2e[0m
+2026-10-11T10:24:25.0393639Z shell: /usr/bin/bash -e {0}
+2026-10-11T10:24:25.0393867Z ##[endgroup]
+2026-10-11T10:24:25.1174497Z 
+2026-10-11T10:24:25.1174880Z > palkka-pwa-qa@0.4.1 test:e2e
+2026-10-11T10:24:25.1175362Z > npm run prepare:pdfjs && playwright test
+2026-10-11T10:24:25.1175797Z 
+2026-10-11T10:24:25.1945853Z 
+2026-10-11T10:24:25.1946422Z > palkka-pwa-qa@0.4.1 prepare:pdfjs
+2026-10-11T10:24:25.1946864Z > node scripts/prepare-pdfjs.mjs
+2026-10-11T10:24:25.1947026Z 
+2026-10-11T10:24:25.2209794Z Prepared local PDF.js runtime in vendor/pdfjs.
+2026-10-11T10:24:26.1883756Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:26] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:26.1884266Z 
+2026-10-11T10:24:26.3640200Z 
+2026-10-11T10:24:26.3640834Z Running 25 tests using 2 workers
+2026-10-11T10:24:26.3641126Z 
+2026-10-11T10:24:26.9175893Z [1A[2K[1/25] tests/e2e/offline.spec.mjs:71:1 › service worker cache sisältää sovelluksen ja paikallisen PDF.js-runtimen
+2026-10-11T10:24:26.9221997Z [1A[2K[2/25] tests/e2e/install.spec.mjs:5:1 › PWA-asennusmanifesti ja kuvakkeet löytyvät myös offline-välimuistista
+2026-10-11T10:24:29.7484436Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:29.7484969Z 
+2026-10-11T10:24:29.7602015Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:29.7602531Z 
+2026-10-11T10:24:29.7693891Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.7694387Z 
+2026-10-11T10:24:29.7694474Z 
+2026-10-11T10:24:29.7750163Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:29.7814673Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.7815288Z 
+2026-10-11T10:24:29.7844192Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:29.7844702Z 
+2026-10-11T10:24:29.7995015Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.7995523Z 
+2026-10-11T10:24:29.8055743Z 
+2026-10-11T10:24:29.8068941Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8070199Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8071142Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8072063Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8357617Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8358338Z 
+2026-10-11T10:24:29.8436475Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8436989Z 
+2026-10-11T10:24:29.8437720Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8438684Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8439605Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8685671Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.8686276Z 
+2026-10-11T10:24:29.8813725Z 
+2026-10-11T10:24:29.8814935Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:29.9022037Z 
+2026-10-11T10:24:29.9033989Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:29.9143659Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:29.9144185Z 
+2026-10-11T10:24:29.9154620Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:29.9155182Z 
+2026-10-11T10:24:29.9219275Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:29.9219857Z 
+2026-10-11T10:24:29.9242472Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:29.9244045Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:29.9259008Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:29.9259435Z 
+2026-10-11T10:24:29.9371157Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:29.9371749Z 
+2026-10-11T10:24:29.9416108Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:29.9441425Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:29.9473386Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:29.9474000Z 
+2026-10-11T10:24:29.9543101Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:29.9571178Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:29.9571730Z 
+2026-10-11T10:24:29.9641210Z 
+2026-10-11T10:24:29.9688126Z 
+2026-10-11T10:24:29.9711836Z 
+2026-10-11T10:24:29.9725976Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:29.9781578Z 
+2026-10-11T10:24:29.9841262Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:29.9841800Z 
+2026-10-11T10:24:29.9844885Z 
+2026-10-11T10:24:29.9854822Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:29] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:30.1714312Z [1A[2K[3/25] tests/e2e/offline.spec.mjs:94:1 › offline reload säilyttää historian ja uusi PDF tunnistuu ilman verkkoa
+2026-10-11T10:24:30.2184374Z [1A[2K[4/25] tests/e2e/offline.spec.mjs:149:1 › uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:iden dataa
+2026-10-11T10:24:30.2342307Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:30.2343272Z 
+2026-10-11T10:24:30.2441144Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.2441656Z 
+2026-10-11T10:24:30.2463932Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:30.2465513Z 
+2026-10-11T10:24:30.2637709Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.2638340Z 
+2026-10-11T10:24:30.2661624Z 
+2026-10-11T10:24:30.2679144Z 
+2026-10-11T10:24:30.2679472Z 
+2026-10-11T10:24:30.2708669Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.2727478Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.2728608Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.2729586Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.2873648Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:30.2874088Z 
+2026-10-11T10:24:30.3009596Z 
+2026-10-11T10:24:30.3009802Z 
+2026-10-11T10:24:30.3043636Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:30.3063936Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3064420Z 
+2026-10-11T10:24:30.3157776Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3159129Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3159722Z 
+2026-10-11T10:24:30.3161033Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3171763Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3179971Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3212970Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3213462Z 
+2026-10-11T10:24:30.3213484Z 
+2026-10-11T10:24:30.3213490Z 
+2026-10-11T10:24:30.3213495Z 
+2026-10-11T10:24:30.3255439Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:30.3255922Z 
+2026-10-11T10:24:30.3487323Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:30.3487975Z 
+2026-10-11T10:24:30.3500703Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:30.3501268Z 
+2026-10-11T10:24:30.3519902Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:30.3520447Z 
+2026-10-11T10:24:30.3653693Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:30.3654264Z 
+2026-10-11T10:24:30.3725838Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:30.3726474Z 
+2026-10-11T10:24:30.3815277Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.3815782Z 
+2026-10-11T10:24:30.3989742Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:30.3990374Z 
+2026-10-11T10:24:30.4145569Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:30.4194923Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:30.4195486Z 
+2026-10-11T10:24:30.4195513Z 
+2026-10-11T10:24:30.4259800Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:30.4260435Z 
+2026-10-11T10:24:30.4284038Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:30.4285140Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:30.4285570Z 
+2026-10-11T10:24:30.5697361Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:30.5697909Z 
+2026-10-11T10:24:30.6653173Z 
+2026-10-11T10:24:30.6659316Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:30.6854727Z [1A[2K[5/25] tests/e2e/palkka.spec.mjs:47:1 › @smoke mobiilin ydinpolku avautuu ilman vaakavieritystä
+2026-10-11T10:24:30.7276875Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:30.7279952Z 
+2026-10-11T10:24:30.7332322Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:30.7332880Z 
+2026-10-11T10:24:30.7341888Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.7346222Z 
+2026-10-11T10:24:30.7410391Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.7411340Z 
+2026-10-11T10:24:30.7413985Z 
+2026-10-11T10:24:30.7422818Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.7430372Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.7430813Z 
+2026-10-11T10:24:30.7435110Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.7436878Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.8811074Z [1A[2K[6/25] tests/e2e/palkka.spec.mjs:60:1 › Data-välilehti kertoo paikallisen tallennuksen ja tietosuojan
+2026-10-11T10:24:30.9351902Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:30.9357598Z 
+2026-10-11T10:24:30.9454391Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.9454884Z 
+2026-10-11T10:24:30.9469827Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:30.9470311Z 
+2026-10-11T10:24:30.9539124Z 
+2026-10-11T10:24:30.9542493Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.9563780Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.9564255Z 
+2026-10-11T10:24:30.9588014Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.9588532Z 
+2026-10-11T10:24:30.9588552Z 
+2026-10-11T10:24:30.9589394Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:30.9590253Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:30] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.1269927Z [1A[2K[7/25] tests/e2e/palkka.spec.mjs:70:1 › Historia-välilehti toimii oikean navigaatiopolun kautta
+2026-10-11T10:24:31.1753802Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:31.1754385Z 
+2026-10-11T10:24:31.1828090Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:31.1834694Z 
+2026-10-11T10:24:31.1842270Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.1843035Z 
+2026-10-11T10:24:31.1910909Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.1911482Z 
+2026-10-11T10:24:31.1919235Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.1919734Z 
+2026-10-11T10:24:31.1931119Z 
+2026-10-11T10:24:31.1932787Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.1934224Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.1938400Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.3359939Z [1A[2K[8/25] tests/e2e/palkka.spec.mjs:78:1 › reload ei kadota paikallisen tietokannan käyttövalmiutta
+2026-10-11T10:24:31.3811508Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:31.3812309Z 
+2026-10-11T10:24:31.3874736Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:31.3875161Z 
+2026-10-11T10:24:31.3875994Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.3876419Z 
+2026-10-11T10:24:31.3942480Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.3943246Z 
+2026-10-11T10:24:31.3950576Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.3951059Z 
+2026-10-11T10:24:31.3951098Z 
+2026-10-11T10:24:31.3951963Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.3953097Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.3953925Z 
+2026-10-11T10:24:31.3973985Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.3974558Z 
+2026-10-11T10:24:31.4585189Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /index.html HTTP/1.1" 304 -
+2026-10-11T10:24:31.4603883Z 
+2026-10-11T10:24:31.6030032Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:31.6030577Z 
+2026-10-11T10:24:31.6308320Z [1A[2K[9/25] tests/e2e/palkka.spec.mjs:87:1 › saman palkkatapahtuman ristiriita voidaan säilyttää erillisenä ilman hiljaista mergeä
+2026-10-11T10:24:31.6635146Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:31.6635868Z 
+2026-10-11T10:24:31.6933816Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:31.6934385Z 
+2026-10-11T10:24:31.7045788Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:31.7046266Z 
+2026-10-11T10:24:31.7070371Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.7070914Z 
+2026-10-11T10:24:31.7252860Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.7253348Z 
+2026-10-11T10:24:31.7253477Z 
+2026-10-11T10:24:31.7273063Z 
+2026-10-11T10:24:31.7280075Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.7280596Z 
+2026-10-11T10:24:31.7285237Z 
+2026-10-11T10:24:31.7301545Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.7302878Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.7304145Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.8187211Z [1A[2K[10/25] tests/e2e/palkka.spec.mjs:139:1 › korvaa aiempi -polku pitää yhden tietueen ja vaihtaa arvot
+2026-10-11T10:24:31.8655735Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:31.8658124Z 
+2026-10-11T10:24:31.8771069Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:31.8771582Z 
+2026-10-11T10:24:31.8779263Z 
+2026-10-11T10:24:31.8782056Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.8939370Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.8939983Z 
+2026-10-11T10:24:31.8964632Z 
+2026-10-11T10:24:31.8966036Z 
+2026-10-11T10:24:31.8970504Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.8971092Z 
+2026-10-11T10:24:31.8985861Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.8988557Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:31.8989874Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:31] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.0067910Z [1A[2K[11/25] tests/e2e/palkka.spec.mjs:193:1 › Data-välilehti näyttää tunnistetut rakenteet ja opitut kentät
+2026-10-11T10:24:32.0127711Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 304 -
+2026-10-11T10:24:32.0128206Z 
+2026-10-11T10:24:32.0671563Z 
+2026-10-11T10:24:32.0679262Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:32.0743906Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:32.0754478Z 
+2026-10-11T10:24:32.0754523Z 
+2026-10-11T10:24:32.0763861Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.0829337Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.0829847Z 
+2026-10-11T10:24:32.0841000Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.0841954Z 
+2026-10-11T10:24:32.0842756Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.0843374Z 
+2026-10-11T10:24:32.0843994Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.0847921Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.1399197Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 304 -
+2026-10-11T10:24:32.1399704Z 
+2026-10-11T10:24:32.1623619Z [1A[2K[12/25] tests/e2e/palkka.spec.mjs:220:1 › QA-01: backup-palautus säilyttää erillisiksi hyväksytyt ristiriitaversiot
+2026-10-11T10:24:32.2191728Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:32.2192254Z 
+2026-10-11T10:24:32.2239876Z 
+2026-10-11T10:24:32.2241396Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:32.2247557Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.2247989Z 
+2026-10-11T10:24:32.2450155Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.2450648Z 
+2026-10-11T10:24:32.2514822Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.2515361Z 
+2026-10-11T10:24:32.2529486Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.2535735Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.2537112Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.3236320Z [1A[2K[13/25] tests/e2e/palkka.spec.mjs:296:1 › R2-01: fingerprintittömän konfliktibackupin toinen palautus säilyttää molemmat arvot
+2026-10-11T10:24:32.3819660Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:32.3834602Z 
+2026-10-11T10:24:32.3878943Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:32.3904642Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.3905136Z 
+2026-10-11T10:24:32.3906386Z 
+2026-10-11T10:24:32.3955970Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.3956517Z 
+2026-10-11T10:24:32.3963743Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.3964850Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.3974046Z 
+2026-10-11T10:24:32.3979941Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.3980398Z 
+2026-10-11T10:24:32.3983036Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.3983522Z 
+2026-10-11T10:24:32.4873352Z [1A[2K[14/25] tests/e2e/palkka.spec.mjs:377:1 › R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo säilyy
+2026-10-11T10:24:32.5356421Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:32.5356918Z 
+2026-10-11T10:24:32.5414950Z 
+2026-10-11T10:24:32.5428604Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.5429102Z 
+2026-10-11T10:24:32.5433676Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:32.5505206Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.5505565Z 
+2026-10-11T10:24:32.5514681Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.5519278Z 
+2026-10-11T10:24:32.5529508Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.5530556Z 
+2026-10-11T10:24:32.5533476Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.5533912Z 
+2026-10-11T10:24:32.5536292Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.5536721Z 
+2026-10-11T10:24:32.6593129Z [1A[2K[15/25] tests/e2e/palkka.spec.mjs:424:1 › oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa
+2026-10-11T10:24:32.6860518Z [1A[2K[16/25] tests/e2e/palkka.spec.mjs:517:1 › R3-01: legacy-migraatio säilyttää saman tapahtuman ristiriitaversiot ennen lähteen poistoa
+2026-10-11T10:24:32.7278209Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:32.7279857Z 
+2026-10-11T10:24:32.7444274Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:32.7444795Z 
+2026-10-11T10:24:32.7448500Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7448942Z 
+2026-10-11T10:24:32.7552124Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:32.7552495Z 
+2026-10-11T10:24:32.7622142Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:32.7623610Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7654073Z 
+2026-10-11T10:24:32.7654391Z 
+2026-10-11T10:24:32.7743611Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7765944Z 
+2026-10-11T10:24:32.7769786Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7770495Z 
+2026-10-11T10:24:32.7770685Z 
+2026-10-11T10:24:32.7770826Z 
+2026-10-11T10:24:32.7776160Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7776607Z 
+2026-10-11T10:24:32.7777338Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7778198Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7800129Z 
+2026-10-11T10:24:32.7822114Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7823587Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:32] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:32.7824021Z 
+2026-10-11T10:24:33.0228902Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.0229409Z 
+2026-10-11T10:24:33.0236161Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.0236598Z 
+2026-10-11T10:24:33.1080397Z [1A[2K[17/25] tests/e2e/palkka.spec.mjs:560:1 › R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei tee kopiota
+2026-10-11T10:24:33.1474631Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:33.1475308Z 
+2026-10-11T10:24:33.1524707Z 
+2026-10-11T10:24:33.1524866Z 
+2026-10-11T10:24:33.1525906Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:33.1526862Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.1588867Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.1589289Z 
+2026-10-11T10:24:33.1596890Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.1597909Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.1598354Z 
+2026-10-11T10:24:33.1598362Z 
+2026-10-11T10:24:33.1607580Z 
+2026-10-11T10:24:33.1614948Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.1616507Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.1616949Z 
+2026-10-11T10:24:33.2121138Z 
+2026-10-11T10:24:33.2123916Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:33.2653379Z 
+2026-10-11T10:24:33.2658162Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:33.7767528Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:33.7768017Z 
+2026-10-11T10:24:33.8291786Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:33.8292418Z 
+2026-10-11T10:24:33.8424546Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:33.8424954Z 
+2026-10-11T10:24:33.9398901Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:33] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:33.9399467Z 
+2026-10-11T10:24:34.2524824Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:34.2526644Z 
+2026-10-11T10:24:34.3128279Z [1A[2K[18/25] tests/e2e/palkka.spec.mjs:602:1 › R3-03: sama saman-id:n konfliktibackup kahdesti lisää variantin vain kerran
+2026-10-11T10:24:34.3545584Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:34.3545989Z 
+2026-10-11T10:24:34.3606671Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.3607154Z 
+2026-10-11T10:24:34.3613109Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:34.3613597Z 
+2026-10-11T10:24:34.3795507Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.3795986Z 
+2026-10-11T10:24:34.3820693Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.3821173Z 
+2026-10-11T10:24:34.3821999Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.3822424Z 
+2026-10-11T10:24:34.3823398Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.3823873Z 
+2026-10-11T10:24:34.3824703Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.3825133Z 
+2026-10-11T10:24:34.5975707Z [1A[2K[19/25] tests/e2e/palkka.spec.mjs:632:1 › R3-05: restore on atominen jos toinen IndexedDB-kirjoitus epäonnistuu
+2026-10-11T10:24:34.6385245Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:34.6385617Z 
+2026-10-11T10:24:34.6456375Z 
+2026-10-11T10:24:34.6466487Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:34.6469004Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.6469397Z 
+2026-10-11T10:24:34.6653242Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.6653745Z 
+2026-10-11T10:24:34.6666616Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.6672161Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.6685258Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.6697278Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.6697723Z 
+2026-10-11T10:24:34.6735631Z 
+2026-10-11T10:24:34.6735748Z 
+2026-10-11T10:24:34.7549033Z [1A[2K[20/25] tests/e2e/palkka.spec.mjs:700:1 › R3-06: identtinen restore ei muuta updatedAt-metaa
+2026-10-11T10:24:34.7621619Z [1A[2K[21/25] tests/e2e/palkka.spec.mjs:729:1 › R3-07: käänteistä palkkakautta ei voi hyväksyä Tallenna-painikkeella muuttamatta
+2026-10-11T10:24:34.8123478Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:34.8124011Z 
+2026-10-11T10:24:34.8186277Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:34.8187307Z 
+2026-10-11T10:24:34.8253333Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8253877Z 
+2026-10-11T10:24:34.8260416Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:34.8260852Z 
+2026-10-11T10:24:34.8319947Z 
+2026-10-11T10:24:34.8330953Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:34.8347273Z 
+2026-10-11T10:24:34.8371373Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8372735Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8378084Z 
+2026-10-11T10:24:34.8388236Z 
+2026-10-11T10:24:34.8398759Z 
+2026-10-11T10:24:34.8402489Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8404199Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8405779Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8422963Z 
+2026-10-11T10:24:34.8445268Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8601703Z 
+2026-10-11T10:24:34.8612884Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8622407Z 
+2026-10-11T10:24:34.8651129Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8651620Z 
+2026-10-11T10:24:34.8696176Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8696529Z 
+2026-10-11T10:24:34.8709051Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.8710078Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:34.9554761Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:34] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:34.9555315Z 
+2026-10-11T10:24:34.9823319Z [1A[2K[22/25] tests/e2e/palkka.spec.mjs:760:1 › oppimisen roundtrip: kerran korjattu uusi rakenne täyttää seuraavan PDF:n ilman kysymystä
+2026-10-11T10:24:35.0246498Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:35.0247010Z 
+2026-10-11T10:24:35.0287045Z 
+2026-10-11T10:24:35.0303641Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:35.0345795Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:35.0346300Z 
+2026-10-11T10:24:35.0362022Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.0372486Z 
+2026-10-11T10:24:35.0446237Z 
+2026-10-11T10:24:35.0448340Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.0450018Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.0450461Z 
+2026-10-11T10:24:35.0459950Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.0460393Z 
+2026-10-11T10:24:35.0461314Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.0464342Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.0464773Z 
+2026-10-11T10:24:35.1081150Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:35.1081763Z 
+2026-10-11T10:24:35.1716953Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:35.1717551Z 
+2026-10-11T10:24:35.4248022Z [1A[2K[23/25] tests/e2e/palkka.spec.mjs:834:3 › mobiili 360px kestää pitkän PDF-tuloksen ilman vaakavieritystä
+2026-10-11T10:24:35.4665486Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:35.4666027Z 
+2026-10-11T10:24:35.4724420Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.4724892Z 
+2026-10-11T10:24:35.4733724Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:35.4734175Z 
+2026-10-11T10:24:35.4775943Z 
+2026-10-11T10:24:35.4787702Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.4788191Z 
+2026-10-11T10:24:35.4788918Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.4789298Z 
+2026-10-11T10:24:35.4790403Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.4790958Z 
+2026-10-11T10:24:35.4791707Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.4793640Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:35.5647263Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:35.5647669Z 
+2026-10-11T10:24:35.6274870Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:35] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:35.6283034Z 
+2026-10-11T10:24:36.0721291Z [1A[2K[24/25] tests/e2e/palkka.spec.mjs:834:3 › mobiili 412px kestää pitkän PDF-tuloksen ilman vaakavieritystä
+2026-10-11T10:24:36.1316087Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:36.1316843Z 
+2026-10-11T10:24:36.1449119Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:36.1449707Z 
+2026-10-11T10:24:36.1453964Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.1463412Z 
+2026-10-11T10:24:36.1584662Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.1585081Z 
+2026-10-11T10:24:36.1585748Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.1586653Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.1588460Z 
+2026-10-11T10:24:36.1592511Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.1593488Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.2210328Z [1A[2K[25/25] tests/e2e/parallel-columns.spec.mjs:55:1 › PDF.js kolmen rinnakkaisen kertymän PDF ei sekoita YTD- ja kauden arvoja
+2026-10-11T10:24:36.2417948Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:36.2418520Z 
+2026-10-11T10:24:36.2875340Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:36.2876073Z 
+2026-10-11T10:24:36.2972063Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:36.2972862Z 
+2026-10-11T10:24:36.3005295Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.3005785Z 
+2026-10-11T10:24:36.3206171Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.3206848Z 
+2026-10-11T10:24:36.3270558Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.3270998Z 
+2026-10-11T10:24:36.3274888Z 
+2026-10-11T10:24:36.3283341Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.3284176Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.3285444Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:36.3331580Z 
+2026-10-11T10:24:36.3360524Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:36.3995268Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:36.3996029Z 
+2026-10-11T10:24:36.4622239Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:36] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:36.4623015Z 
+2026-10-11T10:24:36.8667349Z [1A[2K  25 passed (10.8s)
+2026-10-11T10:24:36.9153934Z ##[group]Run npm run test:staging
+2026-10-11T10:24:36.9154203Z [36;1mnpm run test:staging[0m
+2026-10-11T10:24:36.9212408Z shell: /usr/bin/bash -e {0}
+2026-10-11T10:24:36.9212874Z ##[endgroup]
+2026-10-11T10:24:37.0068194Z 
+2026-10-11T10:24:37.0068789Z > palkka-pwa-qa@0.4.1 test:staging
+2026-10-11T10:24:37.0069877Z > STAGING_ORIGIN=http://127.0.0.1:4175 npm run build:staging && playwright test --config playwright.staging.config.mjs
+2026-10-11T10:24:37.0070555Z 
+2026-10-11T10:24:37.0848086Z 
+2026-10-11T10:24:37.0848912Z > palkka-pwa-qa@0.4.1 build:staging
+2026-10-11T10:24:37.0849574Z > npm run prepare:pdfjs && node scripts/build-staging.mjs
+2026-10-11T10:24:37.0849936Z 
+2026-10-11T10:24:37.1710345Z 
+2026-10-11T10:24:37.1710731Z > palkka-pwa-qa@0.4.1 prepare:pdfjs
+2026-10-11T10:24:37.1711073Z > node scripts/prepare-pdfjs.mjs
+2026-10-11T10:24:37.1711241Z 
+2026-10-11T10:24:37.1996209Z Prepared local PDF.js runtime in vendor/pdfjs.
+2026-10-11T10:24:37.2465792Z Staging build: f7786cac443f915a01dc6bb0923352ca65a9358e / fc6e171c7e135ecf / http://127.0.0.1:4175
+2026-10-11T10:24:38.1203505Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:38] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:38.1203855Z 
+2026-10-11T10:24:38.2290227Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:38] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:38.2290575Z 
+2026-10-11T10:24:38.3381865Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:38] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:38.3382363Z 
+2026-10-11T10:24:38.4174735Z 
+2026-10-11T10:24:38.4175379Z Running 4 tests using 1 worker
+2026-10-11T10:24:38.4175654Z 
+2026-10-11T10:24:38.9875318Z [1A[2K[1/4] tests/staging/isolation.spec.mjs:39:1 › two origins isolate actual records, IndexedDB settings, localStorage and CacheStorage
+2026-10-11T10:24:39.1983039Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:39.1983531Z 
+2026-10-11T10:24:39.2086075Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:39.2086591Z 
+2026-10-11T10:24:39.2086804Z 
+2026-10-11T10:24:39.2087535Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.2184946Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.2185484Z 
+2026-10-11T10:24:39.2192361Z 
+2026-10-11T10:24:39.2193500Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.2210847Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.2211337Z 
+2026-10-11T10:24:39.2212693Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.2213216Z 
+2026-10-11T10:24:39.2256675Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.2257110Z 
+2026-10-11T10:24:39.2714438Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.2714931Z 
+2026-10-11T10:24:39.2878020Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:39.2878526Z 
+2026-10-11T10:24:39.2930573Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:39.2931122Z 
+2026-10-11T10:24:39.2934254Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:39.2934660Z 
+2026-10-11T10:24:39.2944087Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:39.2944640Z 
+2026-10-11T10:24:39.3004649Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:39.3005178Z 
+2026-10-11T10:24:39.3112987Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:39.3113542Z 
+2026-10-11T10:24:39.3213248Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.3213836Z 
+2026-10-11T10:24:39.3434961Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.3435559Z 
+2026-10-11T10:24:39.4608284Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.4608914Z 
+2026-10-11T10:24:39.5528416Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.5529042Z 
+2026-10-11T10:24:39.8565893Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:39.8566361Z 
+2026-10-11T10:24:39.8624797Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:39.8625302Z 
+2026-10-11T10:24:39.8634622Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /staging-entry.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:39.8635112Z 
+2026-10-11T10:24:39.8762994Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.8763493Z 
+2026-10-11T10:24:39.8853421Z 
+2026-10-11T10:24:39.8869418Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.8871039Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.8875038Z 
+2026-10-11T10:24:39.8888520Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.8889060Z 
+2026-10-11T10:24:39.8899828Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.8900303Z 
+2026-10-11T10:24:39.8908548Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.8914128Z 
+2026-10-11T10:24:39.9164046Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:39.9164524Z 
+2026-10-11T10:24:39.9237571Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:39.9237946Z 
+2026-10-11T10:24:39.9250141Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:39.9250660Z 
+2026-10-11T10:24:39.9255556Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.9256059Z 
+2026-10-11T10:24:39.9290797Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:39.9291263Z 
+2026-10-11T10:24:39.9305197Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9305654Z 
+2026-10-11T10:24:39.9313389Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9313839Z 
+2026-10-11T10:24:39.9340701Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9341531Z 
+2026-10-11T10:24:39.9373908Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /index.html HTTP/1.1" 304 -
+2026-10-11T10:24:39.9374387Z 
+2026-10-11T10:24:39.9380101Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.9380877Z 
+2026-10-11T10:24:39.9382461Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:39.9382995Z 
+2026-10-11T10:24:39.9386110Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:39.9386492Z 
+2026-10-11T10:24:39.9400743Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9401172Z 
+2026-10-11T10:24:39.9401807Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9440207Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9440731Z 
+2026-10-11T10:24:39.9440774Z 
+2026-10-11T10:24:39.9441577Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9452791Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9453306Z 
+2026-10-11T10:24:39.9458352Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9458747Z 
+2026-10-11T10:24:39.9468188Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:39.9468697Z 
+2026-10-11T10:24:39.9490992Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:39.9491557Z 
+2026-10-11T10:24:39.9496902Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:39.9510862Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:39.9529413Z 
+2026-10-11T10:24:39.9529701Z 
+2026-10-11T10:24:39.9550470Z 
+2026-10-11T10:24:39.9551781Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9572769Z 
+2026-10-11T10:24:39.9574804Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:39.9585019Z 
+2026-10-11T10:24:39.9591356Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9601946Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:39.9602449Z 
+2026-10-11T10:24:39.9602456Z 
+2026-10-11T10:24:39.9603415Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /manifest.webmanifest HTTP/1.1" 304 -
+2026-10-11T10:24:39.9612677Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /icon-192.png HTTP/1.1" 304 -
+2026-10-11T10:24:39.9613434Z 
+2026-10-11T10:24:39.9617281Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /icon-512.png HTTP/1.1" 304 -
+2026-10-11T10:24:39.9617759Z 
+2026-10-11T10:24:39.9684643Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.9685200Z 
+2026-10-11T10:24:39.9722973Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:39] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:39.9723640Z 
+2026-10-11T10:24:40.0959503Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:40.0960140Z 
+2026-10-11T10:24:40.1816850Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:40.1817418Z 
+2026-10-11T10:24:40.4721873Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:40.4722327Z 
+2026-10-11T10:24:40.4815421Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:40.4816279Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:40.4816712Z 
+2026-10-11T10:24:40.5004622Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.5005093Z 
+2026-10-11T10:24:40.5109972Z 
+2026-10-11T10:24:40.5113180Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.5120275Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.5120750Z 
+2026-10-11T10:24:40.5159452Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.5159912Z 
+2026-10-11T10:24:40.5174016Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.5174488Z 
+2026-10-11T10:24:40.5175544Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.5420691Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:40.5421071Z 
+2026-10-11T10:24:40.7282140Z [1A[2K[2/4] tests/staging/isolation.spec.mjs:63:1 › staging banner, manifest, mobile navigation, offline history and local PDF.js
+2026-10-11T10:24:40.7882030Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:40.7882516Z 
+2026-10-11T10:24:40.7984953Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:40.7985445Z 
+2026-10-11T10:24:40.7985469Z 
+2026-10-11T10:24:40.8009326Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /staging-entry.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:40.8182992Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:40.8184106Z 
+2026-10-11T10:24:40.8336129Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:40.8336663Z 
+2026-10-11T10:24:40.8357174Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:40.8358594Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:40.8359540Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:40.8360528Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:40.8360959Z 
+2026-10-11T10:24:40.8600334Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:40.8600909Z 
+2026-10-11T10:24:40.8729532Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:40.8730036Z 
+2026-10-11T10:24:40.8749912Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:40.8751112Z 
+2026-10-11T10:24:40.8752030Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:40.8752922Z 
+2026-10-11T10:24:40.8762257Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:40.8762814Z 
+2026-10-11T10:24:40.8873369Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.8874313Z 
+2026-10-11T10:24:40.8895319Z 
+2026-10-11T10:24:40.8916085Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.8927953Z 
+2026-10-11T10:24:40.8935287Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:40.8936400Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.8945739Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:40.8950949Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /index.html HTTP/1.1" 304 -
+2026-10-11T10:24:40.8951452Z 
+2026-10-11T10:24:40.8951902Z 
+2026-10-11T10:24:40.8969575Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.8970060Z 
+2026-10-11T10:24:40.9009148Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9011616Z 
+2026-10-11T10:24:40.9017262Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9017748Z 
+2026-10-11T10:24:40.9025432Z 
+2026-10-11T10:24:40.9029020Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9031688Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:40.9032137Z 
+2026-10-11T10:24:40.9035447Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9035877Z 
+2026-10-11T10:24:40.9052074Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9052745Z 
+2026-10-11T10:24:40.9075858Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:40.9076728Z 
+2026-10-11T10:24:40.9089529Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:40.9090797Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9119159Z 
+2026-10-11T10:24:40.9120573Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:40.9129080Z 
+2026-10-11T10:24:40.9130158Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:40.9138252Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9138731Z 
+2026-10-11T10:24:40.9139576Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:40.9148923Z 
+2026-10-11T10:24:40.9149957Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /manifest.webmanifest HTTP/1.1" 304 -
+2026-10-11T10:24:40.9191461Z 
+2026-10-11T10:24:40.9194193Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:40.9200985Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /icon-192.png HTTP/1.1" 304 -
+2026-10-11T10:24:40.9201446Z 
+2026-10-11T10:24:40.9269601Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:40.9270137Z 
+2026-10-11T10:24:40.9285114Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /icon-512.png HTTP/1.1" 304 -
+2026-10-11T10:24:40.9390577Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:40] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:40.9393664Z 
+2026-10-11T10:24:41.0786497Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /manifest.webmanifest HTTP/1.1" 304 -
+2026-10-11T10:24:41.0787042Z 
+2026-10-11T10:24:41.1031705Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:41.1032942Z 
+2026-10-11T10:24:41.1712217Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:41.1723448Z 
+2026-10-11T10:24:41.8128540Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:41.8129024Z 
+2026-10-11T10:24:41.8273628Z 
+2026-10-11T10:24:41.8301031Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:41.8309744Z 
+2026-10-11T10:24:41.8355275Z 
+2026-10-11T10:24:41.8381244Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:41.8381743Z 
+2026-10-11T10:24:41.8383893Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:41.8384370Z 
+2026-10-11T10:24:41.8385459Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:41.8386860Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:41.9604090Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:41] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:41.9606897Z 
+2026-10-11T10:24:42.0136065Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:42.0153251Z 
+2026-10-11T10:24:42.3522276Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /icon-192.png HTTP/1.1" 304 -
+2026-10-11T10:24:42.3522983Z 
+2026-10-11T10:24:42.3524337Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /icon-512.png HTTP/1.1" 304 -
+2026-10-11T10:24:42.3524837Z 
+2026-10-11T10:24:42.3947343Z [1A[2K[3/4] tests/staging/isolation.spec.mjs:90:1 › staging copied to an unapproved origin refuses app and service worker startup
+2026-10-11T10:24:42.4348583Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:42.4349253Z 
+2026-10-11T10:24:42.4395895Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /staging-entry.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:42.4396453Z 
+2026-10-11T10:24:42.4398521Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:42.4398956Z 
+2026-10-11T10:24:42.5118479Z [1A[2K[4/4] tests/staging/isolation.spec.mjs:99:1 › staging worker update preserves records and other cache namespaces
+2026-10-11T10:24:42.5512838Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET / HTTP/1.1" 200 -
+2026-10-11T10:24:42.5513286Z 
+2026-10-11T10:24:42.5564880Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /styles.css HTTP/1.1" 200 -
+2026-10-11T10:24:42.5565451Z 
+2026-10-11T10:24:42.5566983Z 
+2026-10-11T10:24:42.5569844Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /staging-entry.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:42.5687879Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /app.js HTTP/1.1" 200 -
+2026-10-11T10:24:42.5688380Z 
+2026-10-11T10:24:42.5831966Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /pdf-reader.js HTTP/1.1" 200 -
+2026-10-11T10:24:42.5832474Z 
+2026-10-11T10:24:42.5839303Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /model.js HTTP/1.1" 200 -
+2026-10-11T10:24:42.5839717Z 
+2026-10-11T10:24:42.5854908Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /learning.js HTTP/1.1" 200 -
+2026-10-11T10:24:42.5857269Z 
+2026-10-11T10:24:42.5859945Z 
+2026-10-11T10:24:42.5859952Z 
+2026-10-11T10:24:42.5860667Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /parser.js HTTP/1.1" 200 -
+2026-10-11T10:24:42.5861702Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /storage.js HTTP/1.1" 200 -
+2026-10-11T10:24:42.6010964Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:42.6011446Z 
+2026-10-11T10:24:42.6116694Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:42.6117246Z 
+2026-10-11T10:24:42.6117836Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /index.html HTTP/1.1" 200 -
+2026-10-11T10:24:42.6127436Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:42.6127723Z 
+2026-10-11T10:24:42.6127734Z 
+2026-10-11T10:24:42.6145396Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:42.6151204Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6151655Z 
+2026-10-11T10:24:42.6151975Z 
+2026-10-11T10:24:42.6176137Z 
+2026-10-11T10:24:42.6176851Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6184059Z 
+2026-10-11T10:24:42.6185365Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6192131Z 
+2026-10-11T10:24:42.6194160Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:42.6195065Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:42.6196495Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /index.html HTTP/1.1" 304 -
+2026-10-11T10:24:42.6198354Z 
+2026-10-11T10:24:42.6206851Z 
+2026-10-11T10:24:42.6211678Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6212110Z 
+2026-10-11T10:24:42.6213013Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6238918Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:42.6239421Z 
+2026-10-11T10:24:42.6248939Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6249646Z 
+2026-10-11T10:24:42.6251133Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6251679Z 
+2026-10-11T10:24:42.6259268Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6259850Z 
+2026-10-11T10:24:42.6270077Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6270558Z 
+2026-10-11T10:24:42.6302416Z 
+2026-10-11T10:24:42.6304467Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /manifest.webmanifest HTTP/1.1" 200 -
+2026-10-11T10:24:42.6312929Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:42.6313442Z 
+2026-10-11T10:24:42.6331461Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 200 -
+2026-10-11T10:24:42.6333065Z 
+2026-10-11T10:24:42.6342518Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6343196Z 
+2026-10-11T10:24:42.6352188Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /icon-192.png HTTP/1.1" 200 -
+2026-10-11T10:24:42.6352902Z 
+2026-10-11T10:24:42.6354476Z 
+2026-10-11T10:24:42.6358714Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6361332Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:42.6362283Z 
+2026-10-11T10:24:42.6388428Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /manifest.webmanifest HTTP/1.1" 304 -
+2026-10-11T10:24:42.6388984Z 
+2026-10-11T10:24:42.6392966Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /icon-512.png HTTP/1.1" 200 -
+2026-10-11T10:24:42.6393452Z 
+2026-10-11T10:24:42.6433122Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /icon-192.png HTTP/1.1" 304 -
+2026-10-11T10:24:42.6434666Z 
+2026-10-11T10:24:42.6436620Z 
+2026-10-11T10:24:42.6437507Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:42.6438177Z 
+2026-10-11T10:24:42.6438933Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /icon-512.png HTTP/1.1" 304 -
+2026-10-11T10:24:42.6493327Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:42.6493883Z 
+2026-10-11T10:24:42.7439769Z 
+2026-10-11T10:24:42.7445849Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:42.8229552Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:42] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:42.8230114Z 
+2026-10-11T10:24:43.1193348Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /sw.js HTTP/1.1" 200 -
+2026-10-11T10:24:43.1193928Z 
+2026-10-11T10:24:43.1320288Z 
+2026-10-11T10:24:43.1322251Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /index.html HTTP/1.1" 304 -
+2026-10-11T10:24:43.1324106Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /staging-entry.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:43.1344622Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:43.1391125Z 
+2026-10-11T10:24:43.1392201Z 
+2026-10-11T10:24:43.1394603Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /parser.js HTTP/1.1" 304 -
+2026-10-11T10:24:43.1395660Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /styles.css HTTP/1.1" 304 -
+2026-10-11T10:24:43.1412415Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /app.js HTTP/1.1" 304 -
+2026-10-11T10:24:43.1418834Z 
+2026-10-11T10:24:43.1448091Z 
+2026-10-11T10:24:43.1454642Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /model.js HTTP/1.1" 304 -
+2026-10-11T10:24:43.1455183Z 
+2026-10-11T10:24:43.1461002Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /learning.js HTTP/1.1" 304 -
+2026-10-11T10:24:43.1462034Z [WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /storage.js HTTP/1.1" 304 -
+2026-10-11T10:24:43.1477306Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /pdf-reader.js HTTP/1.1" 304 -
+2026-10-11T10:24:43.1477835Z 
+2026-10-11T10:24:43.1495822Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /manifest.webmanifest HTTP/1.1" 304 -
+2026-10-11T10:24:43.1496400Z 
+2026-10-11T10:24:43.1514069Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /vendor/pdfjs/pdf.worker.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:43.1514669Z 
+2026-10-11T10:24:43.1515758Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /vendor/pdfjs/pdf.min.mjs HTTP/1.1" 304 -
+2026-10-11T10:24:43.1516295Z 
+2026-10-11T10:24:43.1604372Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /icon-192.png HTTP/1.1" 304 -
+2026-10-11T10:24:43.1605008Z 
+2026-10-11T10:24:43.1704005Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET /icon-512.png HTTP/1.1" 304 -
+2026-10-11T10:24:43.1704519Z 
+2026-10-11T10:24:43.1705093Z [1A[2K[WebServer] 127.0.0.1 - - [11/Oct/2026 10:24:43] "GET / HTTP/1.1" 304 -
+2026-10-11T10:24:43.1705448Z 
+2026-10-11T10:24:43.3872144Z [1A[2K  4 passed (5.4s)
+2026-10-11T10:24:43.4374339Z ##[group]Run actions/upload-artifact@v4
+2026-10-11T10:24:43.4374609Z with:
+2026-10-11T10:24:43.4374809Z   name: staging-results
+2026-10-11T10:24:43.4375020Z   path: test-results/staging.json
+2026-10-11T10:24:43.4375242Z   if-no-files-found: error
+2026-10-11T10:24:43.4375439Z   retention-days: 14
+2026-10-11T10:24:43.4375621Z   compression-level: 6
+2026-10-11T10:24:43.4375811Z   overwrite: false
+2026-10-11T10:24:43.4375999Z   include-hidden-files: false
+2026-10-11T10:24:43.4376207Z ##[endgroup]
+2026-10-11T10:24:43.5863391Z (node:3948) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T10:24:43.5864508Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T10:24:43.5916444Z With the provided path, there will be 1 file uploaded
+2026-10-11T10:24:43.5917678Z Artifact name is valid!
+2026-10-11T10:24:43.5918073Z Root directory input is valid!
+2026-10-11T10:24:43.9239410Z Beginning upload of artifact content to blob storage
+2026-10-11T10:24:43.9384373Z (node:3948) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-11T10:24:44.1501084Z Uploaded bytes 1642
+2026-10-11T10:24:44.2059093Z Finished uploading artifact content to blob storage!
+2026-10-11T10:24:44.2060106Z SHA256 digest of uploaded artifact zip is 25f0cad166705a0d6dea8c7a79ca844c7e2c3ed6136d5f01d176a3a852ef2bf4
+2026-10-11T10:24:44.2060829Z Finalizing artifact upload
+2026-10-11T10:24:44.4823979Z Artifact staging-results.zip successfully finalized. Artifact ID 11699591334
+2026-10-11T10:24:44.4825045Z Artifact staging-results has been successfully uploaded! Final size is 1642 bytes. Artifact ID is 11699591334
+2026-10-11T10:24:44.4826174Z Artifact download URL: https://github.com/naatti21/Palkan-laskenta/actions/runs/38131797498/artifacts/11699591334
+2026-10-11T10:24:44.4984823Z Post job cleanup.
+2026-10-11T10:24:44.5993547Z (node:3960) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T10:24:44.5994958Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T10:24:44.6195536Z Post job cleanup.
+2026-10-11T10:24:44.6933992Z [command]/usr/bin/git version
+2026-10-11T10:24:44.6970200Z git version 2.55.0
+2026-10-11T10:24:44.7005528Z Temporarily overriding HOME='/home/runner/work/_temp/83365188-4d08-4dbf-86bd-d825f86ec2df' before making global git config changes
+2026-10-11T10:24:44.7006947Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-11T10:24:44.7010485Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Palkan-laskenta/Palkan-laskenta
+2026-10-11T10:24:44.7049883Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-11T10:24:44.7081511Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-11T10:24:44.7337913Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-11T10:24:44.7373856Z http.https://github.com/.extraheader
+2026-10-11T10:24:44.7387384Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-11T10:24:44.7425324Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-11T10:24:44.7737574Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-11T10:24:44.7773308Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-11T10:24:44.8189752Z Cleaning up orphan processes
+2026-10-11T10:24:44.8476703Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+

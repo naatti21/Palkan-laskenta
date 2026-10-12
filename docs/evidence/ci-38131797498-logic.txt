@@ -1,0 +1,575 @@
+﻿2026-10-11T10:23:51.9901392Z Current runner version: '2.337.0'
+2026-10-11T10:23:51.9935111Z ##[group]Runner Image Provisioner
+2026-10-11T10:23:51.9936079Z Hosted Compute Agent
+2026-10-11T10:23:51.9936936Z Version: 20261002.596
+2026-10-11T10:23:51.9937577Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-11T10:23:51.9938408Z Build Date: 2026-10-02T22:28:27Z
+2026-10-11T10:23:51.9939194Z Worker ID: {fa258909-64f0-489a-9571-828432c5fd4a}
+2026-10-11T10:23:51.9939990Z Region: northcentralus
+2026-10-11T10:23:51.9940608Z Cloud: Azure
+2026-10-11T10:23:51.9941159Z ##[endgroup]
+2026-10-11T10:23:51.9942711Z ##[group]Operating System
+2026-10-11T10:23:51.9943403Z Ubuntu
+2026-10-11T10:23:51.9944006Z 24.04.5
+2026-10-11T10:23:51.9944565Z LTS
+2026-10-11T10:23:51.9945110Z ##[endgroup]
+2026-10-11T10:23:51.9945731Z ##[group]Runner Image
+2026-10-11T10:23:51.9946737Z Image: ubuntu-24.04
+2026-10-11T10:23:51.9947365Z Version: 20261004.327.1
+2026-10-11T10:23:51.9948699Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-11T10:23:51.9950257Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-11T10:23:51.9951345Z ##[endgroup]
+2026-10-11T10:23:51.9952515Z ##[group]GITHUB_TOKEN Permissions
+2026-10-11T10:23:51.9954489Z Contents: read
+2026-10-11T10:23:51.9955192Z Metadata: read
+2026-10-11T10:23:51.9955866Z ##[endgroup]
+2026-10-11T10:23:51.9958714Z Secret source: Actions
+2026-10-11T10:23:51.9959711Z Cache mode: write
+2026-10-11T10:23:51.9960529Z Prepare workflow directory
+2026-10-11T10:23:52.0352140Z Prepare all required actions
+2026-10-11T10:23:52.0420445Z Getting action download info
+2026-10-11T10:23:52.2756668Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-11T10:23:52.3486311Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-10-11T10:23:52.5927618Z Complete job name: logic-tests
+2026-10-11T10:23:52.6658894Z ##[group]Run actions/checkout@v4
+2026-10-11T10:23:52.6659736Z with:
+2026-10-11T10:23:52.6660200Z   repository: naatti21/Palkan-laskenta
+2026-10-11T10:23:52.6664367Z   token: ***
+2026-10-11T10:23:52.6664812Z   ssh-strict: true
+2026-10-11T10:23:52.6665261Z   ssh-user: git
+2026-10-11T10:23:52.6665712Z   persist-credentials: true
+2026-10-11T10:23:52.6666220Z   clean: true
+2026-10-11T10:23:52.6666846Z   sparse-checkout-cone-mode: true
+2026-10-11T10:23:52.6667381Z   fetch-depth: 1
+2026-10-11T10:23:52.6667818Z   fetch-tags: false
+2026-10-11T10:23:52.6668269Z   show-progress: true
+2026-10-11T10:23:52.6668720Z   lfs: false
+2026-10-11T10:23:52.6669137Z   submodules: false
+2026-10-11T10:23:52.6669593Z   set-safe-directory: true
+2026-10-11T10:23:52.6670108Z   allow-unsafe-pr-checkout: false
+2026-10-11T10:23:52.6670820Z ##[endgroup]
+2026-10-11T10:23:52.7704664Z Syncing repository: naatti21/Palkan-laskenta
+2026-10-11T10:23:52.7707243Z ##[group]Getting Git version info
+2026-10-11T10:23:52.7708356Z Working directory is '/home/runner/work/Palkan-laskenta/Palkan-laskenta'
+2026-10-11T10:23:52.7710022Z [command]/usr/bin/git version
+2026-10-11T10:23:52.7747487Z git version 2.55.0
+2026-10-11T10:23:52.7769130Z ##[endgroup]
+2026-10-11T10:23:52.7783243Z Temporarily overriding HOME='/home/runner/work/_temp/f381e455-14ca-405e-81b5-ac42353f14c6' before making global git config changes
+2026-10-11T10:23:52.7785239Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-11T10:23:52.7788098Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Palkan-laskenta/Palkan-laskenta
+2026-10-11T10:23:52.7834401Z Deleting the contents of '/home/runner/work/Palkan-laskenta/Palkan-laskenta'
+2026-10-11T10:23:52.7848784Z ##[group]Initializing the repository
+2026-10-11T10:23:52.7850513Z [command]/usr/bin/git init /home/runner/work/Palkan-laskenta/Palkan-laskenta
+2026-10-11T10:23:52.7931262Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-11T10:23:52.7933164Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-11T10:23:52.7935420Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-11T10:23:52.7936896Z hint: call:
+2026-10-11T10:23:52.7937450Z hint:
+2026-10-11T10:23:52.7938243Z hint: 	git config --global init.defaultBranch <name>
+2026-10-11T10:23:52.7939236Z hint:
+2026-10-11T10:23:52.7940130Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-11T10:23:52.7941218Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-11T10:23:52.7941960Z hint:
+2026-10-11T10:23:52.7942376Z hint: 	git branch -m <name>
+2026-10-11T10:23:52.7942847Z hint:
+2026-10-11T10:23:52.7943466Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-11T10:23:52.7944746Z Initialized empty Git repository in /home/runner/work/Palkan-laskenta/Palkan-laskenta/.git/
+2026-10-11T10:23:52.7947386Z [command]/usr/bin/git remote add origin https://github.com/naatti21/Palkan-laskenta
+2026-10-11T10:23:52.7991166Z ##[endgroup]
+2026-10-11T10:23:52.7991966Z ##[group]Disabling automatic garbage collection
+2026-10-11T10:23:52.7995448Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-11T10:23:52.8029119Z ##[endgroup]
+2026-10-11T10:23:52.8029866Z ##[group]Setting up auth
+2026-10-11T10:23:52.8036842Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-11T10:23:52.8073251Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-11T10:23:52.8408390Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-11T10:23:52.8453179Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-11T10:23:52.8710638Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-11T10:23:52.8749385Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-11T10:23:52.8992903Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-11T10:23:52.9036163Z ##[endgroup]
+2026-10-11T10:23:52.9037176Z ##[group]Fetching the repository
+2026-10-11T10:23:52.9045730Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f7786cac443f915a01dc6bb0923352ca65a9358e:refs/remotes/origin/develop
+2026-10-11T10:23:53.1872230Z From https://github.com/naatti21/Palkan-laskenta
+2026-10-11T10:23:53.1873285Z  * [new ref]         f7786cac443f915a01dc6bb0923352ca65a9358e -> origin/develop
+2026-10-11T10:23:53.1877887Z ##[endgroup]
+2026-10-11T10:23:53.1878694Z ##[group]Determining the checkout info
+2026-10-11T10:23:53.1880504Z ##[endgroup]
+2026-10-11T10:23:53.1886271Z [command]/usr/bin/git sparse-checkout disable
+2026-10-11T10:23:53.1937251Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-11T10:23:53.1972325Z ##[group]Checking out the ref
+2026-10-11T10:23:53.1976462Z [command]/usr/bin/git checkout --progress --force -B develop refs/remotes/origin/develop
+2026-10-11T10:23:53.2079743Z Switched to a new branch 'develop'
+2026-10-11T10:23:53.2084672Z branch 'develop' set up to track 'origin/develop'.
+2026-10-11T10:23:53.2089421Z ##[endgroup]
+2026-10-11T10:23:53.2132329Z [command]/usr/bin/git log -1 --format=%H
+2026-10-11T10:23:53.2161137Z f7786cac443f915a01dc6bb0923352ca65a9358e
+2026-10-11T10:23:53.2449640Z ##[group]Run actions/setup-node@v4
+2026-10-11T10:23:53.2450191Z with:
+2026-10-11T10:23:53.2450598Z   node-version: 22
+2026-10-11T10:23:53.2451058Z   always-auth: false
+2026-10-11T10:23:53.2451503Z   check-latest: false
+2026-10-11T10:23:53.2455529Z   token: ***
+2026-10-11T10:23:53.2455946Z ##[endgroup]
+2026-10-11T10:23:53.3861422Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+2026-10-11T10:23:53.3866792Z (node:2283) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T10:23:53.3868708Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T10:23:53.3870346Z ##[group]Environment details
+2026-10-11T10:23:56.1404789Z node: v22.23.3
+2026-10-11T10:23:56.1405289Z npm: 10.9.9
+2026-10-11T10:23:56.1405547Z yarn: 1.22.22
+2026-10-11T10:23:56.1406359Z ##[endgroup]
+2026-10-11T10:23:56.1550076Z ##[group]Run node --test tests/*.test.mjs
+2026-10-11T10:23:56.1550556Z [36;1mnode --test tests/*.test.mjs[0m
+2026-10-11T10:23:56.1819492Z shell: /usr/bin/bash -e {0}
+2026-10-11T10:23:56.1819864Z ##[endgroup]
+2026-10-11T10:23:56.2802054Z TAP version 13
+2026-10-11T10:23:56.3475463Z # Subtest: A moderni: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3484401Z ok 1 - A moderni: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3485104Z   ---
+2026-10-11T10:23:56.3485480Z   duration_ms: 22.453772
+2026-10-11T10:23:56.3485793Z   type: 'test'
+2026-10-11T10:23:56.3486201Z   ...
+2026-10-11T10:23:56.3536331Z # Subtest: B kompakti: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3537963Z ok 2 - B kompakti: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3538874Z   ---
+2026-10-11T10:23:56.3539462Z   duration_ms: 5.293491
+2026-10-11T10:23:56.3542883Z   type: 'test'
+2026-10-11T10:23:56.3543919Z   ...
+2026-10-11T10:23:56.3571839Z # Subtest: C vaihtoehtoinen sanasto: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3574211Z ok 3 - C vaihtoehtoinen sanasto: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3575566Z   ---
+2026-10-11T10:23:56.3576361Z   duration_ms: 4.026369
+2026-10-11T10:23:56.3577525Z   type: 'test'
+2026-10-11T10:23:56.3578360Z   ...
+2026-10-11T10:23:56.3618135Z # Subtest: ABCD-mittari: A/B/C tarvitsevat yhteensä 0 manuaalista ydinkenttää
+2026-10-11T10:23:56.3620356Z ok 4 - ABCD-mittari: A/B/C tarvitsevat yhteensä 0 manuaalista ydinkenttää
+2026-10-11T10:23:56.3621959Z   ---
+2026-10-11T10:23:56.3622986Z   duration_ms: 5.3664
+2026-10-11T10:23:56.3623537Z   type: 'test'
+2026-10-11T10:23:56.3623882Z   ...
+2026-10-11T10:23:56.3701859Z # Subtest: D: sama palkka-aika eri luvuilla on ristiriita eikä hiljainen duplikaatti
+2026-10-11T10:23:56.3704143Z ok 5 - D: sama palkka-aika eri luvuilla on ristiriita eikä hiljainen duplikaatti
+2026-10-11T10:23:56.3704859Z   ---
+2026-10-11T10:23:56.3705388Z   duration_ms: 4.383903
+2026-10-11T10:23:56.3706017Z   type: 'test'
+2026-10-11T10:23:56.3706443Z   ...
+2026-10-11T10:23:56.3778651Z # Subtest: oppimisen roundtrip: kerran vahvistettu kenttä löytyy saman rakenteen seuraavasta laskelmasta
+2026-10-11T10:23:56.3781001Z ok 6 - oppimisen roundtrip: kerran vahvistettu kenttä löytyy saman rakenteen seuraavasta laskelmasta
+2026-10-11T10:23:56.3782692Z   ---
+2026-10-11T10:23:56.3783439Z   duration_ms: 10.477317
+2026-10-11T10:23:56.3784454Z   type: 'test'
+2026-10-11T10:23:56.3784935Z   ...
+2026-10-11T10:23:56.3785745Z # Subtest: oppiminen ei arvaa, jos sama opittu konteksti antaa kaksi eri arvoa
+2026-10-11T10:23:56.3787151Z ok 7 - oppiminen ei arvaa, jos sama opittu konteksti antaa kaksi eri arvoa
+2026-10-11T10:23:56.3787856Z   ---
+2026-10-11T10:23:56.3788264Z   duration_ms: 0.935056
+2026-10-11T10:23:56.3788708Z   type: 'test'
+2026-10-11T10:23:56.3789102Z   ...
+2026-10-11T10:23:56.3808815Z # Subtest: E yhteenvetojen järjestys vaihtunut: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3811066Z ok 8 - E yhteenvetojen järjestys vaihtunut: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3812387Z   ---
+2026-10-11T10:23:56.3813202Z   duration_ms: 2.905536
+2026-10-11T10:23:56.3814144Z   type: 'test'
+2026-10-11T10:23:56.3814621Z   ...
+2026-10-11T10:23:56.3829939Z # Subtest: F PDF-rivikatkot: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3831472Z ok 9 - F PDF-rivikatkot: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3857948Z   ---
+2026-10-11T10:23:56.3858545Z   duration_ms: 1.90335
+2026-10-11T10:23:56.3859074Z   type: 'test'
+2026-10-11T10:23:56.3859572Z   ...
+2026-10-11T10:23:56.3867204Z # Subtest: G valinnaiset kentät puuttuvat: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3868688Z ok 10 - G valinnaiset kentät puuttuvat: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3869589Z   ---
+2026-10-11T10:23:56.3870018Z   duration_ms: 1.852655
+2026-10-11T10:23:56.3870910Z   type: 'test'
+2026-10-11T10:23:56.3871391Z   ...
+2026-10-11T10:23:56.3872559Z # Subtest: H verokortti-YTD ero ja ei ylityötä: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3874193Z ok 11 - H verokortti-YTD ero ja ei ylityötä: ydinkentät hyväksytään ilman käyttäjäkysymyksiä
+2026-10-11T10:23:56.3875013Z   ---
+2026-10-11T10:23:56.3875567Z   duration_ms: 1.403454
+2026-10-11T10:23:56.3876298Z   type: 'test'
+2026-10-11T10:23:56.3877034Z   ...
+2026-10-11T10:23:56.3901258Z # Subtest: EFGH-mittari: E/F/G/H tarvitsevat yhteensä 0 manuaalista ydinkenttää
+2026-10-11T10:23:56.3903993Z ok 12 - EFGH-mittari: E/F/G/H tarvitsevat yhteensä 0 manuaalista ydinkenttää
+2026-10-11T10:23:56.3904719Z   ---
+2026-10-11T10:23:56.3905117Z   duration_ms: 3.862534
+2026-10-11T10:23:56.3905556Z   type: 'test'
+2026-10-11T10:23:56.3905939Z   ...
+2026-10-11T10:23:56.3955862Z # Subtest: H: luotettava palkkarivierittely ilman OT-rivejä tarkoittaa 0 h, ei tuntematonta
+2026-10-11T10:23:56.3958438Z ok 13 - H: luotettava palkkarivierittely ilman OT-rivejä tarkoittaa 0 h, ei tuntematonta
+2026-10-11T10:23:56.3959945Z   ---
+2026-10-11T10:23:56.3960896Z   duration_ms: 5.392568
+2026-10-11T10:23:56.3961793Z   type: 'test'
+2026-10-11T10:23:56.3962557Z   ...
+2026-10-11T10:23:56.3964006Z # Subtest: G: valinnaisten verotus-, KTA- ja PP-kenttien puuttuminen ei pakota ydinkenttien tarkistusta
+2026-10-11T10:23:56.3966104Z ok 14 - G: valinnaisten verotus-, KTA- ja PP-kenttien puuttuminen ei pakota ydinkenttien tarkistusta
+2026-10-11T10:23:56.3967692Z   ---
+2026-10-11T10:23:56.3968483Z   duration_ms: 0.947935
+2026-10-11T10:23:56.3969336Z   type: 'test'
+2026-10-11T10:23:56.3970122Z   ...
+2026-10-11T10:23:56.4078760Z # Subtest: käyttäjän vahvistuksesta opitaan vain hashatut kontekstivalitsimet
+2026-10-11T10:23:56.4080610Z ok 15 - käyttäjän vahvistuksesta opitaan vain hashatut kontekstivalitsimet
+2026-10-11T10:23:56.4081665Z   ---
+2026-10-11T10:23:56.4082422Z   duration_ms: 21.959153
+2026-10-11T10:23:56.4083149Z   type: 'test'
+2026-10-11T10:23:56.4083802Z   ...
+2026-10-11T10:23:56.4085100Z # Subtest: saman rakenteen seuraavasta laskelmasta opitut kentät vaihtuvat uusiin arvoihin
+2026-10-11T10:23:56.4087329Z ok 16 - saman rakenteen seuraavasta laskelmasta opitut kentät vaihtuvat uusiin arvoihin
+2026-10-11T10:23:56.4088560Z   ---
+2026-10-11T10:23:56.4089204Z   duration_ms: 8.808556
+2026-10-11T10:23:56.4089890Z   type: 'test'
+2026-10-11T10:23:56.4090458Z   ...
+2026-10-11T10:23:56.4091585Z # Subtest: ristiriitainen sama konteksti ei arvaa kentän arvoa
+2026-10-11T10:23:56.4092893Z ok 17 - ristiriitainen sama konteksti ei arvaa kentän arvoa
+2026-10-11T10:23:56.4093755Z   ---
+2026-10-11T10:23:56.4094307Z   duration_ms: 3.027629
+2026-10-11T10:23:56.4094933Z   type: 'test'
+2026-10-11T10:23:56.4095461Z   ...
+2026-10-11T10:23:56.4096907Z # Subtest: uusi vahvistus kasvattaa mappingin luottamusta vain kun selector osuu samaan rakenteeseen
+2026-10-11T10:23:56.4099004Z ok 18 - uusi vahvistus kasvattaa mappingin luottamusta vain kun selector osuu samaan rakenteeseen
+2026-10-11T10:23:56.4099964Z   ---
+2026-10-11T10:23:56.4100370Z   duration_ms: 3.438912
+2026-10-11T10:23:56.4100805Z   type: 'test'
+2026-10-11T10:23:56.4101214Z   ...
+2026-10-11T10:23:56.4102024Z # Subtest: mapping-sanitointi pudottaa raakatekstin ja kelvottomat selectorit
+2026-10-11T10:23:56.4103152Z ok 19 - mapping-sanitointi pudottaa raakatekstin ja kelvottomat selectorit
+2026-10-11T10:23:56.4103842Z   ---
+2026-10-11T10:23:56.4104594Z   duration_ms: 1.686998
+2026-10-11T10:23:56.4105030Z   type: 'test'
+2026-10-11T10:23:56.4105415Z   ...
+2026-10-11T10:23:56.6476882Z # Subtest: legacy-data siirtyy kanoniseen malliin ilman tunnistetietoja
+2026-10-11T10:23:56.6488666Z ok 20 - legacy-data siirtyy kanoniseen malliin ilman tunnistetietoja
+2026-10-11T10:23:56.6489923Z   ---
+2026-10-11T10:23:56.6490570Z   duration_ms: 1.72148
+2026-10-11T10:23:56.6491235Z   type: 'test'
+2026-10-11T10:23:56.6491851Z   ...
+2026-10-11T10:23:56.6493693Z # Subtest: käyttäjän korjaus säilyttää parserin alkuperäisen arvon
+2026-10-11T10:23:56.6495188Z ok 21 - käyttäjän korjaus säilyttää parserin alkuperäisen arvon
+2026-10-11T10:23:56.6496104Z   ---
+2026-10-11T10:23:56.6496946Z   duration_ms: 15.665209
+2026-10-11T10:23:56.6497736Z   type: 'test'
+2026-10-11T10:23:56.6498351Z   ...
+2026-10-11T10:23:56.6499314Z # Subtest: varmuuskopio palautuu ilman PDF-raakatekstiä
+2026-10-11T10:23:56.6500604Z ok 22 - varmuuskopio palautuu ilman PDF-raakatekstiä
+2026-10-11T10:23:56.6501539Z   ---
+2026-10-11T10:23:56.6502162Z   duration_ms: 3.693923
+2026-10-11T10:23:56.6502937Z   type: 'test'
+2026-10-11T10:23:56.6503662Z   ...
+2026-10-11T10:23:56.6504796Z # Subtest: tuleva oikea palkkalaskelma on vahvistettu tuleva eikä virhe
+2026-10-11T10:23:56.6506321Z ok 23 - tuleva oikea palkkalaskelma on vahvistettu tuleva eikä virhe
+2026-10-11T10:23:56.6507854Z   ---
+2026-10-11T10:23:56.6508544Z   duration_ms: 306.617116
+2026-10-11T10:23:56.6509287Z   type: 'test'
+2026-10-11T10:23:56.6510018Z   ...
+2026-10-11T10:23:56.6523323Z # Subtest: toinen käyttäjäkorjaus ei hukkaa parserin alkuperäistä arvoa
+2026-10-11T10:23:56.6528206Z ok 24 - toinen käyttäjäkorjaus ei hukkaa parserin alkuperäistä arvoa
+2026-10-11T10:23:56.6529253Z   ---
+2026-10-11T10:23:56.6530033Z   duration_ms: 4.463128
+2026-10-11T10:23:56.6531069Z   type: 'test'
+2026-10-11T10:23:56.6531892Z   ...
+2026-10-11T10:23:56.6534156Z # Subtest: nykyisen skeeman tuonnissa ylimääräinen henkilötietorakenne pudotetaan
+2026-10-11T10:23:56.6535895Z ok 25 - nykyisen skeeman tuonnissa ylimääräinen henkilötietorakenne pudotetaan
+2026-10-11T10:23:56.6537413Z   ---
+2026-10-11T10:23:56.6547320Z   duration_ms: 0.415979
+2026-10-11T10:23:56.6548029Z   type: 'test'
+2026-10-11T10:23:56.6548700Z   ...
+2026-10-11T10:23:56.6587999Z # Subtest: varmuuskopio voi sisältää vain tunnisteettomat opitut rakenneprofiilit
+2026-10-11T10:23:56.6613217Z ok 26 - varmuuskopio voi sisältää vain tunnisteettomat opitut rakenneprofiilit
+2026-10-11T10:23:56.6640281Z   ---
+2026-10-11T10:23:56.6641088Z   duration_ms: 4.864268
+2026-10-11T10:23:56.6641866Z   type: 'test'
+2026-10-11T10:23:56.6642523Z   ...
+2026-10-11T10:23:56.6644015Z # Subtest: sama palkkakausi ja maksupäivä muodostavat saman palkkatapahtuman eri netosta huolimatta
+2026-10-11T10:23:56.6646140Z ok 27 - sama palkkakausi ja maksupäivä muodostavat saman palkkatapahtuman eri netosta huolimatta
+2026-10-11T10:23:56.6647625Z   ---
+2026-10-11T10:23:56.6648325Z   duration_ms: 0.683772
+2026-10-11T10:23:56.6649057Z   type: 'test'
+2026-10-11T10:23:56.6649763Z   ...
+2026-10-11T10:23:56.6651039Z # Subtest: sama brutto/netto/YTD ei peitä muuta saman palkkatapahtuman ristiriitaa
+2026-10-11T10:23:56.6652667Z ok 28 - sama brutto/netto/YTD ei peitä muuta saman palkkatapahtuman ristiriitaa
+2026-10-11T10:23:56.6653575Z   ---
+2026-10-11T10:23:56.6654123Z   duration_ms: 0.630021
+2026-10-11T10:23:56.6654721Z   type: 'test'
+2026-10-11T10:23:56.6655282Z   ...
+2026-10-11T10:23:56.6656424Z # Subtest: täsmälleen sama palkkatapahtuma luokitellaan duplikaatiksi eikä ristiriidaksi
+2026-10-11T10:23:56.6658223Z ok 29 - täsmälleen sama palkkatapahtuma luokitellaan duplikaatiksi eikä ristiriidaksi
+2026-10-11T10:23:56.6659272Z   ---
+2026-10-11T10:23:56.6659954Z   duration_ms: 0.680028
+2026-10-11T10:23:56.6660662Z   type: 'test'
+2026-10-11T10:23:56.6661294Z   ...
+2026-10-11T10:23:56.6662556Z # Subtest: ristiriitahaku ei vertaa muokattavaa tietuetta itseensä
+2026-10-11T10:23:56.6663987Z ok 30 - ristiriitahaku ei vertaa muokattavaa tietuetta itseensä
+2026-10-11T10:23:56.6665394Z   ---
+2026-10-11T10:23:56.6666069Z   duration_ms: 0.269746
+2026-10-11T10:23:56.6666999Z   type: 'test'
+2026-10-11T10:23:56.6667675Z   ...
+2026-10-11T10:23:56.6669020Z # Subtest: rakenneprofiilin havainto- ja automaattitulkintalaskurit säilyvät backupissa
+2026-10-11T10:23:56.6670837Z ok 31 - rakenneprofiilin havainto- ja automaattitulkintalaskurit säilyvät backupissa
+2026-10-11T10:23:56.6671917Z   ---
+2026-10-11T10:23:56.6672478Z   duration_ms: 3.302387
+2026-10-11T10:23:56.6673123Z   type: 'test'
+2026-10-11T10:23:56.6673687Z   ...
+2026-10-11T10:23:56.6679946Z # Subtest: R2-03: uuden tuonnin sama generoitu id ei saa ohittaa tapahtumaristiriitaa
+2026-10-11T10:23:56.6681800Z ok 32 - R2-03: uuden tuonnin sama generoitu id ei saa ohittaa tapahtumaristiriitaa
+2026-10-11T10:23:56.6682888Z   ---
+2026-10-11T10:23:56.6707304Z   duration_ms: 0.728862
+2026-10-11T10:23:56.6723438Z   type: 'test'
+2026-10-11T10:23:56.6724193Z   ...
+2026-10-11T10:23:56.6725524Z # Subtest: R3-04: väärän sovelluksen tai tuntemattoman skeeman backup hylätään
+2026-10-11T10:23:56.6727585Z ok 33 - R3-04: väärän sovelluksen tai tuntemattoman skeeman backup hylätään
+2026-10-11T10:23:56.6728654Z   ---
+2026-10-11T10:23:56.6729323Z   duration_ms: 0.82589
+2026-10-11T10:23:56.6730022Z   type: 'test'
+2026-10-11T10:23:56.6730652Z   ...
+2026-10-11T10:23:56.6731936Z # Subtest: R3-04: virheelliset backupin ydintyypit hylätään ennen migraatiota
+2026-10-11T10:23:56.6733609Z ok 34 - R3-04: virheelliset backupin ydintyypit hylätään ennen migraatiota
+2026-10-11T10:23:56.6734682Z   ---
+2026-10-11T10:23:56.6735396Z   duration_ms: 0.85666
+2026-10-11T10:23:56.6736130Z   type: 'test'
+2026-10-11T10:23:56.6736991Z   ...
+2026-10-11T10:23:56.6811958Z # Subtest: uusi sanasto normalisoituu ilman käsin syötettäviä ydinkenttiä
+2026-10-11T10:23:56.6813648Z ok 35 - uusi sanasto normalisoituu ilman käsin syötettäviä ydinkenttiä
+2026-10-11T10:23:56.6814576Z   ---
+2026-10-11T10:23:56.6815184Z   duration_ms: 7.581585
+2026-10-11T10:23:56.6815823Z   type: 'test'
+2026-10-11T10:23:56.6816453Z   ...
+2026-10-11T10:23:56.6818428Z # Subtest: välilyönti- ja rivivaihtelut eivät muuta ydintulkintaa
+2026-10-11T10:23:56.6819749Z ok 36 - välilyönti- ja rivivaihtelut eivät muuta ydintulkintaa
+2026-10-11T10:23:56.6820597Z   ---
+2026-10-11T10:23:56.6821189Z   duration_ms: 2.025152
+2026-10-11T10:23:56.6821829Z   type: 'test'
+2026-10-11T10:23:56.6822414Z   ...
+2026-10-11T10:23:56.6823393Z # Subtest: erittelyssä varmasti puuttuva ylityö on 0 h eikä null
+2026-10-11T10:23:56.6824736Z ok 37 - erittelyssä varmasti puuttuva ylityö on 0 h eikä null
+2026-10-11T10:23:56.6825833Z   ---
+2026-10-11T10:23:56.6826740Z   duration_ms: 4.219037
+2026-10-11T10:23:56.6827473Z   type: 'test'
+2026-10-11T10:23:56.6828073Z   ...
+2026-10-11T10:23:56.6829410Z # Subtest: ilman luotettavasti luettua palkkarivierittelyä ylityö jää tuntemattomaksi
+2026-10-11T10:23:56.6831132Z ok 38 - ilman luotettavasti luettua palkkarivierittelyä ylityö jää tuntemattomaksi
+2026-10-11T10:23:56.6832245Z   ---
+2026-10-11T10:23:56.6832894Z   duration_ms: 0.807746
+2026-10-11T10:23:56.6833741Z   type: 'test'
+2026-10-11T10:23:56.6834424Z   ...
+2026-10-11T10:23:56.6835452Z # Subtest: semanttisesti uusi formaatti tuottaa neutraalit rakennesignaalit
+2026-10-11T10:23:56.6837116Z ok 39 - semanttisesti uusi formaatti tuottaa neutraalit rakennesignaalit
+2026-10-11T10:23:56.6838148Z   ---
+2026-10-11T10:23:56.6838773Z   duration_ms: 0.491574
+2026-10-11T10:23:56.6839436Z   type: 'test'
+2026-10-11T10:23:56.6840040Z   ...
+2026-10-11T10:23:56.6841020Z # Subtest: variant-a.txt normalisoituu odotettuihin ydinkenttiin
+2026-10-11T10:23:56.6842272Z ok 40 - variant-a.txt normalisoituu odotettuihin ydinkenttiin
+2026-10-11T10:23:56.6843126Z   ---
+2026-10-11T10:23:56.6843732Z   duration_ms: 14.457497
+2026-10-11T10:23:56.6844405Z   type: 'test'
+2026-10-11T10:23:56.6844989Z   ...
+2026-10-11T10:23:56.6845935Z # Subtest: variant-b.txt normalisoituu odotettuihin ydinkenttiin
+2026-10-11T10:23:56.6847305Z ok 41 - variant-b.txt normalisoituu odotettuihin ydinkenttiin
+2026-10-11T10:23:56.6848529Z   ---
+2026-10-11T10:23:56.6849138Z   duration_ms: 2.901942
+2026-10-11T10:23:56.6849782Z   type: 'test'
+2026-10-11T10:23:56.6850407Z   ...
+2026-10-11T10:23:56.6851347Z # Subtest: molemmat PDF-rakenteet antavat saman normalisoidun datan
+2026-10-11T10:23:56.6852642Z ok 42 - molemmat PDF-rakenteet antavat saman normalisoidun datan
+2026-10-11T10:23:56.6853526Z   ---
+2026-10-11T10:23:56.6854136Z   duration_ms: 2.201796
+2026-10-11T10:23:56.6854787Z   type: 'test'
+2026-10-11T10:23:56.6855404Z   ...
+2026-10-11T10:23:56.6859662Z # Subtest: muu dokumentti ei muutu palkkalaskelmaksi
+2026-10-11T10:23:56.6878063Z ok 43 - muu dokumentti ei muutu palkkalaskelmaksi
+2026-10-11T10:23:56.6927254Z   ---
+2026-10-11T10:23:56.6947444Z   duration_ms: 3.85284
+2026-10-11T10:23:56.6948388Z   type: 'test'
+2026-10-11T10:23:56.6956291Z   ...
+2026-10-11T10:23:56.6957590Z # Subtest: tuntematon palkkarivi säilytetään rakenteisena
+2026-10-11T10:23:56.6958791Z ok 44 - tuntematon palkkarivi säilytetään rakenteisena
+2026-10-11T10:23:56.6959598Z   ---
+2026-10-11T10:23:56.6960167Z   duration_ms: 1.679696
+2026-10-11T10:23:56.6960727Z   type: 'test'
+2026-10-11T10:23:56.6961277Z   ...
+2026-10-11T10:23:56.6962309Z # Subtest: ylityörivin prosenttiluku jää osaksi nimikettä eikä määräksi
+2026-10-11T10:23:56.6963670Z ok 45 - ylityörivin prosenttiluku jää osaksi nimikettä eikä määräksi
+2026-10-11T10:23:56.6964481Z   ---
+2026-10-11T10:23:56.6965048Z   duration_ms: 1.861368
+2026-10-11T10:23:56.6965597Z   type: 'test'
+2026-10-11T10:23:56.6966144Z   ...
+2026-10-11T10:23:56.6967154Z # Subtest: legacy-taulukkopohja 2024 tunnistuu palkkalaskelmaksi
+2026-10-11T10:23:56.6968297Z ok 46 - legacy-taulukkopohja 2024 tunnistuu palkkalaskelmaksi
+2026-10-11T10:23:56.6969059Z   ---
+2026-10-11T10:23:56.6969612Z   duration_ms: 2.354334
+2026-10-11T10:23:56.6970175Z   type: 'test'
+2026-10-11T10:23:56.6970721Z   ...
+2026-10-11T10:23:56.6971531Z # Subtest: legacy-palkkarivit normalisoituvat kategorioihin
+2026-10-11T10:23:56.6972612Z ok 47 - legacy-palkkarivit normalisoituvat kategorioihin
+2026-10-11T10:23:56.6973365Z   ---
+2026-10-11T10:23:56.6973930Z   duration_ms: 1.618265
+2026-10-11T10:23:56.6974495Z   type: 'test'
+2026-10-11T10:23:56.6975056Z   ...
+2026-10-11T10:23:56.6976077Z # Subtest: epäuskottavan pieni verokortin kertymä vaatii tarkistuksen
+2026-10-11T10:23:56.6977784Z ok 48 - epäuskottavan pieni verokortin kertymä vaatii tarkistuksen
+2026-10-11T10:23:56.6978595Z   ---
+2026-10-11T10:23:56.6979179Z   duration_ms: 1.786136
+2026-10-11T10:23:56.6979763Z   type: 'test'
+2026-10-11T10:23:56.6980330Z   ...
+2026-10-11T10:23:56.6981542Z # Subtest: pieni verokortin kertymä ei yksin laukaise estoa vuoden ensimmäisellä palkalla
+2026-10-11T10:23:56.6983177Z ok 49 - pieni verokortin kertymä ei yksin laukaise estoa vuoden ensimmäisellä palkalla
+2026-10-11T10:23:56.6984095Z   ---
+2026-10-11T10:23:56.6984727Z   duration_ms: 1.067063
+2026-10-11T10:23:56.6985279Z   type: 'test'
+2026-10-11T10:23:56.6985842Z   ...
+2026-10-11T10:23:56.6987060Z # Subtest: 2025 kahden 90000-rivin rakenne valitsee oikean verokortin kertymän
+2026-10-11T10:23:56.6988675Z ok 50 - 2025 kahden 90000-rivin rakenne valitsee oikean verokortin kertymän
+2026-10-11T10:23:56.6989533Z   ---
+2026-10-11T10:23:56.6990097Z   duration_ms: 2.791726
+2026-10-11T10:23:56.6990689Z   type: 'test'
+2026-10-11T10:23:56.6991239Z   ...
+2026-10-11T10:23:56.6992210Z # Subtest: 90000-päivä-/määräriviä ei tulkita verokortin kertymäksi
+2026-10-11T10:23:56.6993456Z ok 51 - 90000-päivä-/määräriviä ei tulkita verokortin kertymäksi
+2026-10-11T10:23:56.6994216Z   ---
+2026-10-11T10:23:56.6994824Z   duration_ms: 0.603811
+2026-10-11T10:23:56.6995390Z   type: 'test'
+2026-10-11T10:23:56.6995938Z   ...
+2026-10-11T10:23:56.6997723Z # Subtest: kompakti B-formaatti ei joudu väärään legacy-parseriin
+2026-10-11T10:23:56.6999062Z ok 52 - kompakti B-formaatti ei joudu väärään legacy-parseriin
+2026-10-11T10:23:56.6999839Z   ---
+2026-10-11T10:23:56.7000392Z   duration_ms: 2.479741
+2026-10-11T10:23:56.7000921Z   type: 'test'
+2026-10-11T10:23:56.7001378Z   ...
+2026-10-11T10:23:56.7003259Z # Subtest: QA-02: puuttuva kauden brutto ei lainaa vuoden kertymää
+2026-10-11T10:23:56.7004551Z ok 53 - QA-02: puuttuva kauden brutto ei lainaa vuoden kertymää
+2026-10-11T10:23:56.7005197Z   ---
+2026-10-11T10:23:56.7005600Z   duration_ms: 10.643976
+2026-10-11T10:23:56.7006062Z   type: 'test'
+2026-10-11T10:23:56.7006450Z   ...
+2026-10-11T10:23:56.7007476Z # Subtest: QA-03: ristiriitaiset nettoarvot eivät saa korkeaa confidencea
+2026-10-11T10:23:56.7008615Z ok 54 - QA-03: ristiriitaiset nettoarvot eivät saa korkeaa confidencea
+2026-10-11T10:23:56.7009559Z   ---
+2026-10-11T10:23:56.7009969Z   duration_ms: 4.253789
+2026-10-11T10:23:56.7010429Z   type: 'test'
+2026-10-11T10:23:56.7010822Z   ...
+2026-10-11T10:23:56.7011591Z # Subtest: QA-03: sama netto kahdessa luotettavassa paikassa ei ole ristiriita
+2026-10-11T10:23:56.7012672Z ok 55 - QA-03: sama netto kahdessa luotettavassa paikassa ei ole ristiriita
+2026-10-11T10:23:56.7013374Z   ---
+2026-10-11T10:23:56.7013770Z   duration_ms: 0.486166
+2026-10-11T10:23:56.7014241Z   type: 'test'
+2026-10-11T10:23:56.7014634Z   ...
+2026-10-11T10:23:56.7015460Z # Subtest: QA-04: mahdoton maksupäivä ei kelpaa kalenteripäiväksi
+2026-10-11T10:23:56.7017354Z ok 56 - QA-04: mahdoton maksupäivä ei kelpaa kalenteripäiväksi
+2026-10-11T10:23:56.7018051Z   ---
+2026-10-11T10:23:56.7018456Z   duration_ms: 1.340881
+2026-10-11T10:23:56.7018913Z   type: 'test'
+2026-10-11T10:23:56.7019345Z   ...
+2026-10-11T10:23:56.7020021Z # Subtest: QA-04: oikea karkauspäivä hyväksytään
+2026-10-11T10:23:56.7020869Z ok 57 - QA-04: oikea karkauspäivä hyväksytään
+2026-10-11T10:23:56.7021410Z   ---
+2026-10-11T10:23:56.7021795Z   duration_ms: 0.433147
+2026-10-11T10:23:56.7022231Z   type: 'test'
+2026-10-11T10:23:56.7022621Z   ...
+2026-10-11T10:23:56.7023212Z # Subtest: M09: en dash toimii palkkakauden erottimena
+2026-10-11T10:23:56.7023982Z ok 58 - M09: en dash toimii palkkakauden erottimena
+2026-10-11T10:23:56.7024542Z   ---
+2026-10-11T10:23:56.7024941Z   duration_ms: 2.430387
+2026-10-11T10:23:56.7025406Z   type: 'test'
+2026-10-11T10:23:56.7025810Z   ...
+2026-10-11T10:23:56.7026774Z # Subtest: R2-04: kaksi vuosiyhteenvetoa ei saa muuttua kauden brutoksi
+2026-10-11T10:23:56.7027773Z ok 59 - R2-04: kaksi vuosiyhteenvetoa ei saa muuttua kauden brutoksi
+2026-10-11T10:23:56.7028430Z   ---
+2026-10-11T10:23:56.7028817Z   duration_ms: 0.437523
+2026-10-11T10:23:56.7029255Z   type: 'test'
+2026-10-11T10:23:56.7029651Z   ...
+2026-10-11T10:23:56.7030427Z # Subtest: R2-05: kaksi eri bruttoarvoa samassa kausiosiossa vaatii tarkistuksen
+2026-10-11T10:23:56.7031559Z ok 60 - R2-05: kaksi eri bruttoarvoa samassa kausiosiossa vaatii tarkistuksen
+2026-10-11T10:23:56.7032258Z   ---
+2026-10-11T10:23:56.7032641Z   duration_ms: 0.44266
+2026-10-11T10:23:56.7033078Z   type: 'test'
+2026-10-11T10:23:56.7033475Z   ...
+2026-10-11T10:23:56.7034244Z # Subtest: R2-05: sama brutto kahdesti samassa kausiosiossa ei ole ristiriita
+2026-10-11T10:23:56.7035309Z ok 61 - R2-05: sama brutto kahdesti samassa kausiosiossa ei ole ristiriita
+2026-10-11T10:23:56.7036000Z   ---
+2026-10-11T10:23:56.7036381Z   duration_ms: 0.93125
+2026-10-11T10:23:56.7036989Z   type: 'test'
+2026-10-11T10:23:56.7037380Z   ...
+2026-10-11T10:23:56.7038275Z # Subtest: rinnakkaiset kolmen vuoden kertymäsarakkeet erotetaan oikein
+2026-10-11T10:23:56.7039430Z ok 62 - rinnakkaiset kolmen vuoden kertymäsarakkeet erotetaan oikein
+2026-10-11T10:23:56.7040112Z   ---
+2026-10-11T10:23:56.7040511Z   duration_ms: 1.057598
+2026-10-11T10:23:56.7040964Z   type: 'test'
+2026-10-11T10:23:56.7041358Z   ...
+2026-10-11T10:23:56.7042271Z # Subtest: puuttuva rinnakkaisen sarakkeen arvo jätetään tarkistettavaksi
+2026-10-11T10:23:56.7043451Z ok 63 - puuttuva rinnakkaisen sarakkeen arvo jätetään tarkistettavaksi
+2026-10-11T10:23:56.7044123Z   ---
+2026-10-11T10:23:56.7044386Z   duration_ms: 0.470902
+2026-10-11T10:23:56.7044671Z   type: 'test'
+2026-10-11T10:23:56.7044926Z   ...
+2026-10-11T10:23:56.7045440Z # Subtest: kaksi rinnakkaista kertymäsaraketta tuottaa oikean YTD:n
+2026-10-11T10:23:56.7046067Z ok 64 - kaksi rinnakkaista kertymäsaraketta tuottaa oikean YTD:n
+2026-10-11T10:23:56.7047076Z   ---
+2026-10-11T10:23:56.7047335Z   duration_ms: 0.30149
+2026-10-11T10:23:56.7047614Z   type: 'test'
+2026-10-11T10:23:56.7047860Z   ...
+2026-10-11T10:23:56.7830057Z # Subtest: staging refuses unsafe or absent origin: (missing)
+2026-10-11T10:23:56.7831929Z ok 65 - staging refuses unsafe or absent origin: (missing)
+2026-10-11T10:23:56.7832579Z   ---
+2026-10-11T10:23:56.7833008Z   duration_ms: 37.910981
+2026-10-11T10:23:56.7833469Z   type: 'test'
+2026-10-11T10:23:56.7833876Z   ...
+2026-10-11T10:23:56.7841028Z # Subtest: staging refuses unsafe or absent origin: https://naatti21.github.io
+2026-10-11T10:23:56.7855105Z ok 66 - staging refuses unsafe or absent origin: https://naatti21.github.io
+2026-10-11T10:23:56.7855753Z   ---
+2026-10-11T10:23:56.7856024Z   duration_ms: 33.226489
+2026-10-11T10:23:56.7856333Z   type: 'test'
+2026-10-11T10:23:56.7856791Z   ...
+2026-10-11T10:23:56.7857571Z # Subtest: staging refuses unsafe or absent origin: https://naatti21.github.io/staging
+2026-10-11T10:23:56.7858349Z ok 67 - staging refuses unsafe or absent origin: https://naatti21.github.io/staging
+2026-10-11T10:23:56.7858815Z   ---
+2026-10-11T10:23:56.7859144Z   duration_ms: 34.598432
+2026-10-11T10:23:56.7859437Z   type: 'test'
+2026-10-11T10:23:56.7859689Z   ...
+2026-10-11T10:23:56.7860165Z # Subtest: staging refuses unsafe or absent origin: http://example.pages.dev
+2026-10-11T10:23:56.7860814Z ok 68 - staging refuses unsafe or absent origin: http://example.pages.dev
+2026-10-11T10:23:56.7861232Z   ---
+2026-10-11T10:23:56.7861490Z   duration_ms: 52.095125
+2026-10-11T10:23:56.7861781Z   type: 'test'
+2026-10-11T10:23:56.7862039Z   ...
+2026-10-11T10:23:56.7862576Z # Subtest: staging refuses unsafe or absent origin: https://example.pages.dev/path
+2026-10-11T10:23:56.7863290Z ok 69 - staging refuses unsafe or absent origin: https://example.pages.dev/path
+2026-10-11T10:23:56.7863729Z   ---
+2026-10-11T10:23:56.7863977Z   duration_ms: 44.692117
+2026-10-11T10:23:56.7864273Z   type: 'test'
+2026-10-11T10:23:56.7864526Z   ...
+2026-10-11T10:23:56.7864973Z # Subtest: Cloudflare refuses to build staging from main
+2026-10-11T10:23:56.7865464Z ok 70 - Cloudflare refuses to build staging from main
+2026-10-11T10:23:56.7865812Z   ---
+2026-10-11T10:23:56.7866066Z   duration_ms: 34.931859
+2026-10-11T10:23:56.7866362Z   type: 'test'
+2026-10-11T10:23:56.7866826Z   ...
+2026-10-11T10:23:56.7931270Z 1..70
+2026-10-11T10:23:56.7931716Z # tests 70
+2026-10-11T10:23:56.7932129Z # suites 0
+2026-10-11T10:23:56.7932475Z # pass 70
+2026-10-11T10:23:56.7932847Z # fail 0
+2026-10-11T10:23:56.7933188Z # cancelled 0
+2026-10-11T10:23:56.7933561Z # skipped 0
+2026-10-11T10:23:56.7933906Z # todo 0
+2026-10-11T10:23:56.7934189Z # duration_ms 547.81364
+2026-10-11T10:23:56.8098989Z Post job cleanup.
+2026-10-11T10:23:56.9317356Z (node:2433) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T10:23:56.9318847Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T10:23:56.9590789Z Post job cleanup.
+2026-10-11T10:23:57.0483903Z [command]/usr/bin/git version
+2026-10-11T10:23:57.0562021Z git version 2.55.0
+2026-10-11T10:23:57.0602941Z Temporarily overriding HOME='/home/runner/work/_temp/8232a4f9-60fc-4cfe-99a0-b43a99bba482' before making global git config changes
+2026-10-11T10:23:57.0603980Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-11T10:23:57.0608420Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Palkan-laskenta/Palkan-laskenta
+2026-10-11T10:23:57.0651019Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-11T10:23:57.0688648Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-11T10:23:57.0955264Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-11T10:23:57.0987456Z http.https://github.com/.extraheader
+2026-10-11T10:23:57.1000208Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-11T10:23:57.1040021Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-11T10:23:57.1302104Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-11T10:23:57.1351456Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-11T10:23:57.1756041Z Cleaning up orphan processes
+2026-10-11T10:23:57.2122852Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+

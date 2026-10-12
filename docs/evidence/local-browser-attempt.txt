@@ -1,0 +1,869 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> palkka-pwa-qa@0.4.1 test
+> node --test tests/*.test.mjs && npm run test:e2e && npm run test:staging
+
+✔ A moderni: ydinkentät hyväksytään ilman käyttäjäkysymyksiä (16.99042ms)
+✔ B kompakti: ydinkentät hyväksytään ilman käyttäjäkysymyksiä (4.68064ms)
+✔ C vaihtoehtoinen sanasto: ydinkentät hyväksytään ilman käyttäjäkysymyksiä (2.383393ms)
+✔ ABCD-mittari: A/B/C tarvitsevat yhteensä 0 manuaalista ydinkenttää (5.468036ms)
+✔ D: sama palkka-aika eri luvuilla on ristiriita eikä hiljainen duplikaatti (6.503088ms)
+✔ oppimisen roundtrip: kerran vahvistettu kenttä löytyy saman rakenteen seuraavasta laskelmasta (7.942419ms)
+✔ oppiminen ei arvaa, jos sama opittu konteksti antaa kaksi eri arvoa (0.931303ms)
+✔ E yhteenvetojen järjestys vaihtunut: ydinkentät hyväksytään ilman käyttäjäkysymyksiä (1.697963ms)
+✔ F PDF-rivikatkot: ydinkentät hyväksytään ilman käyttäjäkysymyksiä (1.975592ms)
+✔ G valinnaiset kentät puuttuvat: ydinkentät hyväksytään ilman käyttäjäkysymyksiä (2.652381ms)
+✔ H verokortti-YTD ero ja ei ylityötä: ydinkentät hyväksytään ilman käyttäjäkysymyksiä (1.784391ms)
+✔ EFGH-mittari: E/F/G/H tarvitsevat yhteensä 0 manuaalista ydinkenttää (2.674553ms)
+✔ H: luotettava palkkarivierittely ilman OT-rivejä tarkoittaa 0 h, ei tuntematonta (0.794802ms)
+✔ G: valinnaisten verotus-, KTA- ja PP-kenttien puuttuminen ei pakota ydinkenttien tarkistusta (0.785418ms)
+✔ käyttäjän vahvistuksesta opitaan vain hashatut kontekstivalitsimet (20.380317ms)
+✔ saman rakenteen seuraavasta laskelmasta opitut kentät vaihtuvat uusiin arvoihin (11.099294ms)
+✔ ristiriitainen sama konteksti ei arvaa kentän arvoa (7.25125ms)
+✔ uusi vahvistus kasvattaa mappingin luottamusta vain kun selector osuu samaan rakenteeseen (6.776661ms)
+✔ mapping-sanitointi pudottaa raakatekstin ja kelvottomat selectorit (1.218347ms)
+✔ legacy-data siirtyy kanoniseen malliin ilman tunnistetietoja (4.389611ms)
+✔ käyttäjän korjaus säilyttää parserin alkuperäisen arvon (17.03115ms)
+✔ varmuuskopio palautuu ilman PDF-raakatekstiä (3.963494ms)
+✔ tuleva oikea palkkalaskelma on vahvistettu tuleva eikä virhe (23.491054ms)
+✔ toinen käyttäjäkorjaus ei hukkaa parserin alkuperäistä arvoa (2.098904ms)
+✔ nykyisen skeeman tuonnissa ylimääräinen henkilötietorakenne pudotetaan (0.408623ms)
+✔ varmuuskopio voi sisältää vain tunnisteettomat opitut rakenneprofiilit (3.772912ms)
+✔ sama palkkakausi ja maksupäivä muodostavat saman palkkatapahtuman eri netosta huolimatta (0.735124ms)
+✔ sama brutto/netto/YTD ei peitä muuta saman palkkatapahtuman ristiriitaa (0.34603ms)
+✔ täsmälleen sama palkkatapahtuma luokitellaan duplikaatiksi eikä ristiriidaksi (0.648526ms)
+✔ ristiriitahaku ei vertaa muokattavaa tietuetta itseensä (0.287123ms)
+✔ rakenneprofiilin havainto- ja automaattitulkintalaskurit säilyvät backupissa (2.111713ms)
+✔ R2-03: uuden tuonnin sama generoitu id ei saa ohittaa tapahtumaristiriitaa (0.419128ms)
+✔ R3-04: väärän sovelluksen tai tuntemattoman skeeman backup hylätään (0.626644ms)
+✔ R3-04: virheelliset backupin ydintyypit hylätään ennen migraatiota (0.707803ms)
+✔ uusi sanasto normalisoituu ilman käsin syötettäviä ydinkenttiä (7.394702ms)
+✔ välilyönti- ja rivivaihtelut eivät muuta ydintulkintaa (2.088089ms)
+✔ erittelyssä varmasti puuttuva ylityö on 0 h eikä null (3.564616ms)
+✔ ilman luotettavasti luettua palkkarivierittelyä ylityö jää tuntemattomaksi (0.929801ms)
+✔ semanttisesti uusi formaatti tuottaa neutraalit rakennesignaalit (0.60346ms)
+✔ variant-a.txt normalisoituu odotettuihin ydinkenttiin (16.461169ms)
+✔ variant-b.txt normalisoituu odotettuihin ydinkenttiin (2.315394ms)
+✔ molemmat PDF-rakenteet antavat saman normalisoidun datan (2.587234ms)
+✔ muu dokumentti ei muutu palkkalaskelmaksi (2.350185ms)
+✔ tuntematon palkkarivi säilytetään rakenteisena (1.403359ms)
+✔ ylityörivin prosenttiluku jää osaksi nimikettä eikä määräksi (1.799403ms)
+✔ legacy-taulukkopohja 2024 tunnistuu palkkalaskelmaksi (1.97387ms)
+✔ legacy-palkkarivit normalisoituvat kategorioihin (1.976905ms)
+✔ epäuskottavan pieni verokortin kertymä vaatii tarkistuksen (1.354787ms)
+✔ pieni verokortin kertymä ei yksin laukaise estoa vuoden ensimmäisellä palkalla (0.354563ms)
+✔ 2025 kahden 90000-rivin rakenne valitsee oikean verokortin kertymän (1.127503ms)
+✔ 90000-päivä-/määräriviä ei tulkita verokortin kertymäksi (0.387151ms)
+✔ kompakti B-formaatti ei joudu väärään legacy-parseriin (1.225367ms)
+✔ QA-02: puuttuva kauden brutto ei lainaa vuoden kertymää (7.673023ms)
+✔ QA-03: ristiriitaiset nettoarvot eivät saa korkeaa confidencea (2.393289ms)
+✔ QA-03: sama netto kahdessa luotettavassa paikassa ei ole ristiriita (0.348604ms)
+✔ QA-04: mahdoton maksupäivä ei kelpaa kalenteripäiväksi (0.406129ms)
+✔ QA-04: oikea karkauspäivä hyväksytään (0.307784ms)
+✔ M09: en dash toimii palkkakauden erottimena (1.734527ms)
+✔ R2-04: kaksi vuosiyhteenvetoa ei saa muuttua kauden brutoksi (0.357007ms)
+✔ R2-05: kaksi eri bruttoarvoa samassa kausiosiossa vaatii tarkistuksen (1.459592ms)
+✔ R2-05: sama brutto kahdesti samassa kausiosiossa ei ole ristiriita (0.390035ms)
+✔ rinnakkaiset kolmen vuoden kertymäsarakkeet erotetaan oikein (0.895871ms)
+✔ puuttuva rinnakkaisen sarakkeen arvo jätetään tarkistettavaksi (0.319882ms)
+✔ kaksi rinnakkaista kertymäsaraketta tuottaa oikean YTD:n (0.705951ms)
+ℹ tests 64
+ℹ suites 0
+ℹ pass 64
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 163.248312
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> palkka-pwa-qa@0.4.1 test:e2e
+> npm run prepare:pdfjs && playwright test
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> palkka-pwa-qa@0.4.1 prepare:pdfjs
+> node scripts/prepare-pdfjs.mjs
+
+Prepared local PDF.js runtime in vendor/pdfjs.
+[1A[2K[2m[WebServer] [22m127.0.0.1 - - [11/Oct/2026 13:20:01] "GET /index.html HTTP/1.1" 200 -
+
+
+Running 25 tests using 4 workers
+
+[1A[2K(node:145) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:146) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:147) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:145) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:147) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:146) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/25] tests/e2e/install.spec.mjs:5:1 › PWA-asennusmanifesti ja kuvakkeet löytyvät myös offline-välimuistista
+[1A[2K[2/25] tests/e2e/offline.spec.mjs:65:1 › offline reload säilyttää historian ja uusi PDF tunnistuu ilman verkkoa
+[1A[2K[3/25] tests/e2e/offline.spec.mjs:117:1 › uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:iden dataa
+[1A[2K  1) tests/e2e/install.spec.mjs:5:1 › PWA-asennusmanifesti ja kuvakkeet löytyvät myös offline-välimuistista 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/install-PWA-asennusmanifes-59bb8--myös-offline-välimuistista/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/install-PWA-asennusmanifes-59bb8--myös-offline-välimuistista/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[4/25] tests/e2e/offline.spec.mjs:43:1 › service worker cache sisältää sovelluksen ja paikallisen PDF.js-runtimen
+[1A[2K  2) tests/e2e/offline.spec.mjs:65:1 › offline reload säilyttää historian ja uusi PDF tunnistuu ilman verkkoa 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/offline-offline-reload-säi-59d2e-PDF-tunnistuu-ilman-verkkoa/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/offline-offline-reload-säi-59d2e-PDF-tunnistuu-ilman-verkkoa/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  3) tests/e2e/offline.spec.mjs:117:1 › uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:iden dataa 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/offline-uusi-service-worke-8f5ff-oista-muiden-PWA-iden-dataa/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/offline-uusi-service-worke-8f5ff-oista-muiden-PWA-iden-dataa/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  4) tests/e2e/offline.spec.mjs:43:1 › service worker cache sisältää sovelluksen ja paikallisen PDF.js-runtimen 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/offline-service-worker-cac-cdba8-paikallisen-PDF-js-runtimen/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/offline-service-worker-cac-cdba8-paikallisen-PDF-js-runtimen/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:197) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:211) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:218) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:197) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:211) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:218) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[5/25] tests/e2e/palkka.spec.mjs:21:1 › @smoke mobiilin ydinpolku avautuu ilman vaakavieritystä
+[1A[2K[6/25] tests/e2e/palkka.spec.mjs:58:1 › Historia-välilehti toimii oikean navigaatiopolun kautta
+[1A[2K[7/25] tests/e2e/palkka.spec.mjs:42:1 › Data-välilehti kertoo paikallisen tallennuksen ja tietosuojan
+[1A[2K  5) tests/e2e/palkka.spec.mjs:21:1 › @smoke mobiilin ydinpolku avautuu ilman vaakavieritystä ──────
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka--smoke-mobiilin-ydi-20183-autuu-ilman-vaakavieritystä/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka--smoke-mobiilin-ydi-20183-autuu-ilman-vaakavieritystä/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[8/25] tests/e2e/palkka.spec.mjs:70:1 › reload ei kadota paikallisen tietokannan käyttövalmiutta
+[1A[2K  6) tests/e2e/palkka.spec.mjs:42:1 › Data-välilehti kertoo paikallisen tallennuksen ja tietosuojan 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-Data-välilehti-kert-6e49f-tallennuksen-ja-tietosuojan/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-Data-välilehti-kert-6e49f-tallennuksen-ja-tietosuojan/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  7) tests/e2e/palkka.spec.mjs:58:1 › Historia-välilehti toimii oikean navigaatiopolun kautta ──────
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-Historia-välilehti--1a0b9-kean-navigaatiopolun-kautta/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-Historia-välilehti--1a0b9-kean-navigaatiopolun-kautta/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  8) tests/e2e/palkka.spec.mjs:70:1 › reload ei kadota paikallisen tietokannan käyttövalmiutta ─────
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-reload-ei-kadota-pa-04e9f-tietokannan-käyttövalmiutta/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-reload-ei-kadota-pa-04e9f-tietokannan-käyttövalmiutta/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:249) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:258) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:256) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:269) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:249) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:258) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:256) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:269) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[9/25] tests/e2e/palkka.spec.mjs:79:1 › saman palkkatapahtuman ristiriita voidaan säilyttää erillisenä ilman hiljaista mergeä
+[1A[2K[10/25] tests/e2e/palkka.spec.mjs:190:1 › Data-välilehti näyttää tunnistetut rakenteet ja opitut kentät
+[1A[2K  9) tests/e2e/palkka.spec.mjs:79:1 › saman palkkatapahtuman ristiriita voidaan säilyttää erillisenä ilman hiljaista mergeä 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-saman-palkkatapahtu-896d5-senä-ilman-hiljaista-mergeä/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-saman-palkkatapahtu-896d5-senä-ilman-hiljaista-mergeä/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[11/25] tests/e2e/palkka.spec.mjs:133:1 › korvaa aiempi -polku pitää yhden tietueen ja vaihtaa arvot
+[1A[2K[12/25] tests/e2e/palkka.spec.mjs:217:1 › QA-01: backup-palautus säilyttää erillisiksi hyväksytyt ristiriitaversiot
+[1A[2K  10) tests/e2e/palkka.spec.mjs:190:1 › Data-välilehti näyttää tunnistetut rakenteet ja opitut kentät 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-Data-välilehti-näyt-9ce2a--rakenteet-ja-opitut-kentät/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-Data-välilehti-näyt-9ce2a--rakenteet-ja-opitut-kentät/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  11) tests/e2e/palkka.spec.mjs:133:1 › korvaa aiempi -polku pitää yhden tietueen ja vaihtaa arvot ─
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-korvaa-aiempi--polk-7d81a-n-tietueen-ja-vaihtaa-arvot/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-korvaa-aiempi--polk-7d81a-n-tietueen-ja-vaihtaa-arvot/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  12) tests/e2e/palkka.spec.mjs:217:1 › QA-01: backup-palautus säilyttää erillisiksi hyväksytyt ristiriitaversiot 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-QA-01-backup-palaut-67d67-yväksytyt-ristiriitaversiot/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-QA-01-backup-palaut-67d67-yväksytyt-ristiriitaversiot/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:301) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:316) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:315) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:316) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:301) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:315) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[13/25] tests/e2e/palkka.spec.mjs:375:1 › R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo säilyy
+[1A[2K[14/25] tests/e2e/palkka.spec.mjs:497:1 › R3-01: legacy-migraatio säilyttää saman tapahtuman ristiriitaversiot ennen lähteen poistoa
+[1A[2K[15/25] tests/e2e/palkka.spec.mjs:295:1 › R2-01: fingerprintittömän konfliktibackupin toinen palautus säilyttää molemmat arvot
+[1A[2K[16/25] tests/e2e/palkka.spec.mjs:426:1 › oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa
+[1A[2K  13) tests/e2e/palkka.spec.mjs:295:1 › R2-01: fingerprintittömän konfliktibackupin toinen palautus säilyttää molemmat arvot 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R2-01-fingerprintit-32bb2-us-säilyttää-molemmat-arvot/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R2-01-fingerprintit-32bb2-us-säilyttää-molemmat-arvot/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  14) tests/e2e/palkka.spec.mjs:497:1 › R3-01: legacy-migraatio säilyttää saman tapahtuman ristiriitaversiot ennen lähteen poistoa 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R3-01-legacy-migraa-9a4f2-rsiot-ennen-lähteen-poistoa/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R3-01-legacy-migraa-9a4f2-rsiot-ennen-lähteen-poistoa/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  15) tests/e2e/palkka.spec.mjs:375:1 › R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo säilyy 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R2-02-toinen-käyttä-51a75-en-mutta-parseriarvo-säilyy/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R2-02-toinen-käyttä-51a75-en-mutta-parseriarvo-säilyy/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  16) tests/e2e/palkka.spec.mjs:426:1 › oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa ──────
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-oikea-PDF-upload-toimii-ilman-ulkoista-PDF-js-verkkoa/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-oikea-PDF-upload-toimii-ilman-ulkoista-PDF-js-verkkoa/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:354) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:353) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:360) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:353) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:354) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:360) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[17/25] tests/e2e/palkka.spec.mjs:535:1 › R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei tee kopiota
+[1A[2K[18/25] tests/e2e/palkka.spec.mjs:564:1 › R3-03: sama saman-id:n konfliktibackup kahdesti lisää variantin vain kerran
+[1A[2K[19/25] tests/e2e/palkka.spec.mjs:684:1 › R3-06: identtinen restore ei muuta updatedAt-metaa
+[1A[2K[20/25] tests/e2e/palkka.spec.mjs:588:1 › R3-05: restore on atominen jos toinen IndexedDB-kirjoitus epäonnistuu
+[1A[2K  17) tests/e2e/palkka.spec.mjs:564:1 › R3-03: sama saman-id:n konfliktibackup kahdesti lisää variantin vain kerran 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R3-03-sama-saman-id-5c53f-lisää-variantin-vain-kerran/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R3-03-sama-saman-id-5c53f-lisää-variantin-vain-kerran/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  18) tests/e2e/palkka.spec.mjs:535:1 › R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei tee kopiota 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R3-02-saman-jo-säil-1d835-ytä-molemmat-ei-tee-kopiota/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R3-02-saman-jo-säil-1d835-ytä-molemmat-ei-tee-kopiota/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  19) tests/e2e/palkka.spec.mjs:588:1 › R3-05: restore on atominen jos toinen IndexedDB-kirjoitus epäonnistuu 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R3-05-restore-on-at-6860c-xedDB-kirjoitus-epäonnistuu/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R3-05-restore-on-at-6860c-xedDB-kirjoitus-epäonnistuu/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  20) tests/e2e/palkka.spec.mjs:684:1 › R3-06: identtinen restore ei muuta updatedAt-metaa ─────────
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R3-06-identtinen-restore-ei-muuta-updatedAt-metaa/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R3-06-identtinen-restore-ei-muuta-updatedAt-metaa/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:406) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:405) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:418) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:417) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:406) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:405) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:417) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:418) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[21/25] tests/e2e/palkka.spec.mjs:744:1 › oppimisen roundtrip: kerran korjattu uusi rakenne täyttää seuraavan PDF:n ilman kysymystä
+[1A[2K[22/25] tests/e2e/palkka.spec.mjs:724:1 › R3-07: käänteistä palkkakautta ei voi hyväksyä Tallenna-painikkeella muuttamatta
+[1A[2K  21) tests/e2e/palkka.spec.mjs:744:1 › oppimisen roundtrip: kerran korjattu uusi rakenne täyttää seuraavan PDF:n ilman kysymystä 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-oppimisen-roundtrip-661d5-aavan-PDF-n-ilman-kysymystä/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-oppimisen-roundtrip-661d5-aavan-PDF-n-ilman-kysymystä/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[23/25] tests/e2e/palkka.spec.mjs:788:3 › mobiili 360px kestää pitkän PDF-tuloksen ilman vaakavieritystä
+[1A[2K[24/25] tests/e2e/palkka.spec.mjs:788:3 › mobiili 412px kestää pitkän PDF-tuloksen ilman vaakavieritystä
+[1A[2K  22) tests/e2e/palkka.spec.mjs:724:1 › R3-07: käänteistä palkkakautta ei voi hyväksyä Tallenna-painikkeella muuttamatta 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-R3-07-käänteistä-pa-5de71-na-painikkeella-muuttamatta/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-R3-07-käänteistä-pa-5de71-na-painikkeella-muuttamatta/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  23) tests/e2e/palkka.spec.mjs:788:3 › mobiili 360px kestää pitkän PDF-tuloksen ilman vaakavieritystä 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-mobiili-360px-kestä-6c0df-oksen-ilman-vaakavieritystä/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-mobiili-360px-kestä-6c0df-oksen-ilman-vaakavieritystä/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  24) tests/e2e/palkka.spec.mjs:788:3 › mobiili 412px kestää pitkän PDF-tuloksen ilman vaakavieritystä 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/palkka-mobiili-412px-kestä-a950a-oksen-ilman-vaakavieritystä/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/palkka-mobiili-412px-kestä-a950a-oksen-ilman-vaakavieritystä/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:453) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:453) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[25/25] tests/e2e/parallel-columns.spec.mjs:22:1 › PDF.js kolmen rinnakkaisen kertymän PDF ei sekoita YTD- ja kauden arvoja
+[1A[2K  25) tests/e2e/parallel-columns.spec.mjs:22:1 › PDF.js kolmen rinnakkaisen kertymän PDF ei sekoita YTD- ja kauden arvoja 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/parallel-columns-PDF-js-ko-d958e-koita-YTD--ja-kauden-arvoja/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/parallel-columns-PDF-js-ko-d958e-koita-YTD--ja-kauden-arvoja/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  25 failed
+    tests/e2e/install.spec.mjs:5:1 › PWA-asennusmanifesti ja kuvakkeet löytyvät myös offline-välimuistista 
+    tests/e2e/offline.spec.mjs:43:1 › service worker cache sisältää sovelluksen ja paikallisen PDF.js-runtimen 
+    tests/e2e/offline.spec.mjs:65:1 › offline reload säilyttää historian ja uusi PDF tunnistuu ilman verkkoa 
+    tests/e2e/offline.spec.mjs:117:1 › uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:iden dataa 
+    tests/e2e/palkka.spec.mjs:21:1 › @smoke mobiilin ydinpolku avautuu ilman vaakavieritystä ───────
+    tests/e2e/palkka.spec.mjs:42:1 › Data-välilehti kertoo paikallisen tallennuksen ja tietosuojan ─
+    tests/e2e/palkka.spec.mjs:58:1 › Historia-välilehti toimii oikean navigaatiopolun kautta ───────
+    tests/e2e/palkka.spec.mjs:70:1 › reload ei kadota paikallisen tietokannan käyttövalmiutta ──────
+    tests/e2e/palkka.spec.mjs:79:1 › saman palkkatapahtuman ristiriita voidaan säilyttää erillisenä ilman hiljaista mergeä 
+    tests/e2e/palkka.spec.mjs:133:1 › korvaa aiempi -polku pitää yhden tietueen ja vaihtaa arvot ───
+    tests/e2e/palkka.spec.mjs:190:1 › Data-välilehti näyttää tunnistetut rakenteet ja opitut kentät 
+    tests/e2e/palkka.spec.mjs:217:1 › QA-01: backup-palautus säilyttää erillisiksi hyväksytyt ristiriitaversiot 
+    tests/e2e/palkka.spec.mjs:295:1 › R2-01: fingerprintittömän konfliktibackupin toinen palautus säilyttää molemmat arvot 
+    tests/e2e/palkka.spec.mjs:375:1 › R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo säilyy 
+    tests/e2e/palkka.spec.mjs:426:1 › oikea PDF-upload toimii ilman ulkoista PDF.js-verkkoa ────────
+    tests/e2e/palkka.spec.mjs:497:1 › R3-01: legacy-migraatio säilyttää saman tapahtuman ristiriitaversiot ennen lähteen poistoa 
+    tests/e2e/palkka.spec.mjs:535:1 › R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei tee kopiota 
+    tests/e2e/palkka.spec.mjs:564:1 › R3-03: sama saman-id:n konfliktibackup kahdesti lisää variantin vain kerran 
+    tests/e2e/palkka.spec.mjs:588:1 › R3-05: restore on atominen jos toinen IndexedDB-kirjoitus epäonnistuu 
+    tests/e2e/palkka.spec.mjs:684:1 › R3-06: identtinen restore ei muuta updatedAt-metaa ───────────
+    tests/e2e/palkka.spec.mjs:724:1 › R3-07: käänteistä palkkakautta ei voi hyväksyä Tallenna-painikkeella muuttamatta 
+    tests/e2e/palkka.spec.mjs:744:1 › oppimisen roundtrip: kerran korjattu uusi rakenne täyttää seuraavan PDF:n ilman kysymystä 
+    tests/e2e/palkka.spec.mjs:788:3 › mobiili 360px kestää pitkän PDF-tuloksen ilman vaakavieritystä 
+    tests/e2e/palkka.spec.mjs:788:3 › mobiili 412px kestää pitkän PDF-tuloksen ilman vaakavieritystä 
+    tests/e2e/parallel-columns.spec.mjs:22:1 › PDF.js kolmen rinnakkaisen kertymän PDF ei sekoita YTD- ja kauden arvoja 

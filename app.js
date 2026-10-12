@@ -48,6 +48,7 @@ const fieldLabels = {
   grossPay: "Brutto / veronalainen palkka",
   netPay: "Netto",
   ytdTaxableIncome: "Veronalainen YTD",
+  previousYearTaxableIncome: "Edellisen vuoden veronalainen",
   taxCardAccumulatedIncome: "Verokortin kertymä",
   withholdingPeriod: "Ennakonpidätys / jakso",
   withholdingYtd: "Ennakonpidätys YTD",
@@ -70,7 +71,7 @@ const fieldLabels = {
 const requiredFields = ["payDate", "grossPay", "netPay", "ytdTaxableIncome"];
 const dateFields = new Set(["payPeriodStart", "payPeriodEnd", "payDate"]);
 const moneyFields = new Set([
-  "grossPay", "netPay", "ytdTaxableIncome", "taxCardAccumulatedIncome",
+  "grossPay", "netPay", "ytdTaxableIncome", "previousYearTaxableIncome", "taxCardAccumulatedIncome",
   "withholdingPeriod", "withholdingYtd", "taxLimit", "kta", "pp", "overtimeCompensation"
 ]);
 const percentFields = new Set(["taxRate", "additionalRate"]);
@@ -175,7 +176,7 @@ async function applyProfileMappings(parsed, rawText, profile) {
   for (const [field, value] of Object.entries(learnedValues)) {
     const meta = parsed.fields?.[field];
     // Learned mappings must not suppress parser-detected value conflicts.
-    if (meta?.conflict) continue;
+    if (meta?.conflict || meta?.evidenceIssue) continue;
     if (!meta || meta.value == null || Number(meta.confidence || 0) < 0.95) {
       parsed.fields[field] = {
         value,
@@ -441,7 +442,9 @@ function renderReview(parsed, keys = null, manual = false) {
     wrapper.append(title, input);
     if (!manual && (meta.value == null || (meta.confidence > 0 && meta.confidence < .9))) {
       const hint = document.createElement("small");
-      hint.textContent = meta.source ? `Lähde: ${meta.source}` : "Ei tunnistettu";
+      hint.textContent = Array.isArray(meta.candidates) && meta.candidates.length > 1
+        ? `Havaitut vaihtoehdot: ${meta.candidates.map(value => fmtFieldValue(key, value)).join(" / ")}. Vahvista oikea arvo.`
+        : meta.source ? `Lähde: ${meta.source}` : "Ei tunnistettu";
       wrapper.append(hint);
     }
     grid.append(wrapper);

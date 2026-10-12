@@ -1,0 +1,12 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> palkka-pwa-qa@0.4.1 build:staging
+> npm run prepare:pdfjs && node scripts/build-staging.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> palkka-pwa-qa@0.4.1 prepare:pdfjs
+> node scripts/prepare-pdfjs.mjs
+
+Prepared local PDF.js runtime in vendor/pdfjs.
+Staging build: 607a74a7334ce7130cb1261c009c08056c9e3b6d / fc6e171c7e135ecf / http://127.0.0.1:4175
