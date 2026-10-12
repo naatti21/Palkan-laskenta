@@ -21,8 +21,14 @@ function makeColumnsPdf(order = ["period", "ytd", "previous"], options = {}) {
     ...(options.periodSectionTaxable
       ? [[40, 470, "Kauden tiedot"], [40, 447, `Ver.al.ans ${options.periodSectionTaxable}`]]
       : []),
+    ...(options.periodSectionSecondTaxable
+      ? [[40, 425, `Ver.al.ans ${options.periodSectionSecondTaxable}`]]
+      : []),
     ...(options.yearSectionTaxable
       ? [[40, 411, "Vuoden tiedot"], [40, 388, `Ver.al.ans ${options.yearSectionTaxable}`]]
+      : []),
+    ...(options.yearSectionSecondTaxable
+      ? [[40, 365, `Ver.al.ans ${options.yearSectionSecondTaxable}`]]
       : []),
     ...(options.explicitPeriodTaxable
       ? [[40, 350, `Veronalainen palkka / kausi ${options.explicitPeriodTaxable}`]]
@@ -235,4 +241,69 @@ test("QA A903-P0-01: matching explicit and cumulative salary is not a false conf
   const records = await page.evaluate(async () => await (await import("/storage.js")).getAllRecords());
   expect(records).toHaveLength(1);
   expect(records[0].values.grossPay).toBe(3240.50);
+});
+
+test("QA IMPORT-P0-02: two conflicting period-section gross rows cannot autosave or persist on reload", async ({page}) => {
+  await page.goto("/index.html");
+  const fixture=makeColumnsPdf(["previous","period","ytd"],{
+    periodSectionTaxable:"3 240,50",periodSectionSecondTaxable:"3 600,00"
+  });
+  await page.locator("#pdfInput").setInputFiles({name:"qa-duplicate-section-gross.pdf",mimeType:"application/pdf",buffer:fixture});
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator("#reviewGrid")).toContainText("3 240,50");
+  await expect(page.locator("#reviewGrid")).toContainText("3 600,00");
+  let records=await page.evaluate(async()=>(await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(0);
+  await page.reload();
+  records=await page.evaluate(async()=>(await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(0);
+});
+
+test("QA IMPORT-P0-02: equal period-section observations permit normal valid PDF import", async ({page}) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name:"qa-duplicate-section-equal.pdf",mimeType:"application/pdf",
+    buffer:makeColumnsPdf(["previous","period","ytd"],{
+      periodSectionTaxable:"3 240,50",periodSectionSecondTaxable:"3 240,50"
+    })
+  });
+  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
+  const saved=await page.evaluate(async()=>(await import("/storage.js")).getAllRecords());
+  expect(saved).toHaveLength(1);
+  expect(saved[0].values.grossPay).toBe(3240.5);
+});
+
+test("QA IMPORT-P0-02: two conflicting year-section YTD rows require review", async ({page}) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name:"qa-duplicate-section-ytd.pdf",mimeType:"application/pdf",
+    buffer:makeColumnsPdf(["previous","period","ytd"],{
+      yearSectionTaxable:"48 905,75",yearSectionSecondTaxable:"49 905,75"
+    })
+  });
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator("#reviewGrid")).toContainText("48 905,75");
+  await expect(page.locator("#reviewGrid")).toContainText("49 905,75");
+  const saved=await page.evaluate(async()=>(await import("/storage.js")).getAllRecords());
+  expect(saved).toHaveLength(0);
+});
+
+test("QA IMPORT-P0-02: manual decision for duplicate period conflict is retained across reload", async ({page}) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name:"qa-duplicate-section-choose.pdf",mimeType:"application/pdf",
+    buffer:makeColumnsPdf(["previous","period","ytd"],{
+      periodSectionTaxable:"3 240,50",periodSectionSecondTaxable:"3 600,00"
+    })
+  });
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await page.locator('[data-key="grossPay"]').fill("3600,00");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText("Korjaus tallennettu");
+  await page.reload();
+  const records=await page.evaluate(async()=>(await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(1);
+  expect(records[0].values.grossPay).toBe(3600);
+  expect(records[0].corrections.grossPay.parserValue).toBe(3240.5);
 });
