@@ -161,3 +161,81 @@ test("new analytical modules load in offline beta cache", async ({ page }) => {
   await page.getByRole("button",{name:"Analyysi"}).click();
   await expect(page.getByRole("heading",{name:"Työn ja palkan aikajana"})).toBeVisible();
 });
+
+test("tax-card 100 euro net, bend and weekend crossover from synthetic local backup", async ({page})=>{
+ await page.setViewportSize({width:360,height:780});
+ await page.goto("/index.html");
+ const backup=await page.evaluate(async()=>{
+  const m=await import("/model.js");
+  const x=m.migrateLegacyRecord({recordSchemaVersion:1,id:"synthetic-tax",
+   kind:"payslip",values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
+    grossPay:3000,netPay:2000,ytdTaxableIncome:12000,
+    taxRate:30,additionalRate:47,taxLimit:6000,taxCardAccumulatedIncome:5500,
+    overtimeHours:null},payLines:[],fingerprints:["fake-tax"],
+   fieldMeta:{},corrections:{},notices:[],
+   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"test"}});
+  return JSON.stringify(m.makeBackup([x]));
+ });
+ await page.getByRole("button",{name:"Data"}).click();
+ await page.locator("#backupInput").setInputFiles({
+  name:"synthetic-tax.json",mimeType:"application/json",buffer:Buffer.from(backup,"utf8")});
+ await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+ await page.getByRole("button",{name:"Analyysi"}).click();
+ await expect(page.getByRole("heading",{name:"Milloin seuraavasta eurosta jää vähemmän?"})).toBeVisible();
+ await expect(page.locator("#scenarioBaseRate")).toHaveValue("30");
+ await expect(page.locator("#scenarioExtraRate")).toHaveValue("47");
+ await expect(page.locator("#scenarioRemaining")).toHaveValue("500");
+ await expect(page.locator("#scenarioHundred")).toContainText("70,00");
+ await expect(page.locator("#scenarioTaxChart svg")).toBeVisible();
+ await expect(page.locator("#scenarioWeekendChart svg")).toBeVisible();
+ const overview=await page.locator("#scenarioWeekendMetrics").innerText();
+ expect(overview).toContain("350,00");
+ await page.locator("#scenarioFreeValue").fill("20");
+ await expect(page.locator("#scenarioWeekendExplanation")).toContainText("viikonloppuna 2");
+ await page.locator("#scenarioRemaining").fill("50");
+ await expect(page.locator("#scenarioHundred")).toContainText("61,50");
+ await expect(page.locator("#scenarioTaxStatus")).toContainText("50,00");
+ await page.locator("#scenarioOtherRate").fill("7");
+ await expect(page.locator("#scenarioHundred")).toContainText("54,50");
+ await expect.poll(async()=>page.evaluate(async()=>(await import("/storage.js")).getSetting("scenario:v1:2026"))).toMatchObject({scenarioRemaining:50,scenarioOtherRate:7,scenarioFreeValue:20});
+ await page.reload();
+ await page.getByRole("button",{name:"Analyysi"}).click();
+ await expect(page.locator("#scenarioRemaining")).toHaveValue("50");
+ await expect(page.locator("#scenarioOtherRate")).toHaveValue("7");
+ await expect(page.locator("#scenarioHundred")).toContainText("54,50");
+ const recordCount=await page.evaluate(async()=>(await (await import("/storage.js")).getAllRecords()).length);
+ expect(recordCount).toBe(1);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+ await expect(page.locator("#pdfInput")).toBeDisabled();
+});
+test("missing explicit tax card accumulation prevents guessing from unrelated YTD",async({page})=>{
+ await page.goto("/index.html");
+ const backup=await page.evaluate(async()=>{
+  const m=await import("/model.js");
+  return JSON.stringify(m.makeBackup([m.migrateLegacyRecord({recordSchemaVersion:1,id:"missing-tax",
+   kind:"payslip",values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
+    grossPay:5000,netPay:3500,ytdTaxableIncome:90000,
+    taxRate:32.5,additionalRate:47,taxLimit:40000,taxCardAccumulatedIncome:null},
+   payLines:[],fingerprints:["fake-not-real"],fieldMeta:{},corrections:{},notices:[],
+   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"test"}})]));
+ });
+ await page.getByRole("button",{name:"Data"}).click();
+ await page.locator("#backupInput").setInputFiles({name:"missing-card.json",mimeType:"application/json",buffer:Buffer.from(backup,"utf8")});
+ await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+ await page.getByRole("button",{name:"Analyysi"}).click();
+ await expect(page.locator("#scenarioRemaining")).toHaveValue("");
+ await expect(page.locator("#scenarioTaxStatus")).toContainText("Ilman näitä en arvaa");
+ await expect(page.locator("#scenarioTaxChart svg")).toHaveCount(0);
+ await page.locator("#scenarioRemaining").fill("0");
+ await expect(page.locator("#scenarioHundred")).toContainText("53,00");
+ await expect(page.locator("#scenarioTaxChart svg")).toBeVisible();
+});
+test("beta offline service worker caches explanatory simulations locally",async({page})=>{
+ await page.goto("/index.html");
+ await expect.poll(async()=>page.evaluate(async()=>{
+   await navigator.serviceWorker.ready;
+   const keys=await caches.keys();
+   const cache=await caches.open(keys.find(x=>x.startsWith("palkka-beta-v")));
+   return (await cache.keys()).map(req=>new URL(req.url).pathname);
+ })).toEqual(expect.arrayContaining(["/scenario-model.js","/scenario-ui.js"]));
+});

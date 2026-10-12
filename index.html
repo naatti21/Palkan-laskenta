@@ -199,6 +199,82 @@
       </section>
 
       <section class="card">
+        <p class="eyebrow">KOKEILE ITSE · VEROKORTTIENNAKOINTI</p>
+        <h2>Milloin seuraavasta eurosta jää vähemmän?</h2>
+        <p class="muted">Kokeile, miten verokortin tuloraja vaikuttaa <strong>arvioituun lisänettoon</strong>. Tämä ei ole todellinen veroennuste eikä muuta palkkatietojasi.</p>
+        <details class="scenario-explain">
+          <summary>Mitä tarkoittavat tuloraja, lisäprosentti ja taitos?</summary>
+          <p><strong>Tuloraja:</strong> tähän asti palkasta pidätetään veroa perusprosentin mukaan. <strong>Lisäprosentti:</strong> suurempi pidätys tulorajan ylittävästä osasta. <strong>Taitos:</strong> kohta, jossa kuvion suunta muuttuu, koska seuraavasta eurosta jää vähemmän käteen. Jo ansaittu netto ei katoa.</p>
+        </details>
+        <p id="taxCardSource" class="muted"></p>
+        <div class="input-grid">
+          <label class="insight-label">Perusprosentti (%)
+            <input id="scenarioBaseRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="verokortilta" />
+          </label>
+          <label class="insight-label">Lisäprosentti (%)
+            <input id="scenarioExtraRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="verokortilta" />
+          </label>
+          <label class="insight-label">Tulorajaa jäljellä (€)
+            <input id="scenarioRemaining" type="number" inputmode="decimal" min="0" max="1000000" step="1" placeholder="täydennä tarvittaessa" />
+          </label>
+          <label class="insight-label">Muut vähennykset lisäpalkasta, oletus (%)
+            <input id="scenarioOtherRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="0" />
+          </label>
+        </div>
+        <p class="muted">Jos muut maksut ovat 0 %, niitä <strong>ei ole huomioitu</strong>. Perus- ja lisäprosentti voivat muuttua muutosverokortilla. Työajan ja palkan vuosi määräytyvät eri tavoin.</p>
+        <div id="scenarioTaxStatus" class="scenario-note" role="status"></div>
+        <div id="scenarioHundred" class="metrics"></div>
+        <div class="scenario-legend">
+          <span class="scenario-legend-main">Arvioitu lisänetto</span>
+          <span class="scenario-legend-compare">Vertailu ilman prosentinvaihtoa</span>
+        </div>
+        <div id="scenarioTaxChart" class="scenario-chart"></div>
+        <p id="scenarioTaxExplanation" class="muted"></p>
+        <details class="scenario-explain">
+          <summary>Mitä tämä kuva oikeasti kertoo?</summary>
+          <p>Vaaka-akseli näyttää lisää maksettua bruttopalkkaa. Pystyakseli näyttää, paljonko siitä jäisi näillä prosenttioletuksilla käteen. Toinen viiva on pelkkä vertailu: mitä jos perusprosentti jatkuisi. Jos viivat erkanevat, suurempi pidätys hidastaa nettotulojen kasvua. <strong>Tulorajan ylittäminen ei vie aiemmin ansaittua rahaa.</strong> Tämä kuva ei laske lopullista verotusta, verokortin muutoksia eikä muita tuloja.</p>
+        </details>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">TYÖVIIKONLOPPU KOKONAISUUTENA · KOKEILU</p>
+        <h2>Mitä seuraavat viikonloput tuottaisivat?</h2>
+        <p class="muted">Emme vertaa lauantaita ja sunnuntaita erillisinä vaihtoehtoina. Anna <strong>koko työviikonlopun</strong> arvioitu lisäbrutto, jossa on mukana kaikki siihen kuuluvat korvaukset. Esimerkkiluvut voi muuttaa.</p>
+        <div class="input-grid">
+          <label class="insight-label">Koko viikonlopun lisäbrutto (€) · esimerkki
+            <input id="scenarioWeekendGross" type="number" inputmode="decimal" min="1" max="10000" step="10" value="500" />
+          </label>
+          <label class="insight-label">Viikonlopun työ- ja matka-aika yhteensä (h) · arvio
+            <input id="scenarioWeekendHours" type="number" inputmode="decimal" min="1" max="80" step="0.5" value="16" />
+          </label>
+          <label class="insight-label">Montako viikonloppua vertaillaan?
+            <select id="scenarioWeekendCount" class="year-select">
+              <option value="2">2</option><option value="4" selected>4</option><option value="6">6</option><option value="8">8</option>
+            </select>
+          </label>
+          <label class="insight-label">Oman vapaa-ajan arvo (€/h) · oma arvio
+            <input id="scenarioFreeValue" type="number" inputmode="decimal" min="0" max="200" step="1" value="15" />
+          </label>
+        </div>
+        <details class="scenario-explain">
+          <summary>Mitä tarkoittaa vapaa-ajan arvo?</summary>
+          <p>Tämä on <strong>sinun oma vertailulukusi</strong>, ei rahasumma jonka saisit vapaapäivästä. Jos vapaa-ajalla on esimerkiksi 15 €/h arvo ja työviikonloppu vie 16 tuntia, vertailuarvo on 240 €. Pidätys muuttuu oletuksessa, jos verokortin tuloraja ylittyy.</p>
+        </details>
+        <div id="scenarioWeekendStatus" class="scenario-note" role="status"></div>
+        <div id="scenarioWeekendMetrics" class="metrics"></div>
+        <div class="scenario-legend">
+          <span class="scenario-legend-main">Lisänetto / viikonloppu</span>
+          <span class="scenario-legend-free">Oma vapaa-ajan vertailuarvo</span>
+        </div>
+        <div id="scenarioWeekendChart" class="scenario-chart"></div>
+        <p id="scenarioWeekendExplanation" class="muted"></p>
+        <details class="scenario-explain">
+          <summary>Mitä tarkoittaa leikkauspiste?</summary>
+          <p>Tässä se tarkoittaa ensimmäistä työviikonloppua, jonka arvioitu lisänetto jää oman vapaa-ajan vertailuarvon alle. Jos sellaista ei ole, rajaa ei löydy näillä oletuksilla. Vapaa-ajan arvo ei ole vero tai lasku, vaan itse valitsemasi vertailukohta. Palkkarivien tuntiyksiköt eivät todista todellisia tehtyjä tunteja.</p>
+        </details>
+      </section>
+
+      <section class="card">
         <p class="eyebrow">50 / 30 / 20 · SUUNNITTELUTYÖKALU</p>
         <h2>Mitä nettopalkasta voisi tehdä?</h2>
         <label class="insight-label">Valitse maksettu kuukausi

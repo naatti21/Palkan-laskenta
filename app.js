@@ -1,6 +1,7 @@
 import { extractPdfText } from "./pdf-reader.js";
 import { buildYearAnalysis } from "./analytics.js";
 import { initInsightsUi, renderInsightsUi } from "./insights-ui.js";
+import {initScenarioUi,renderScenarioUi} from "./scenario-ui.js";
 import { parsePayslip, validate } from "./parser.js";
 import {
   applyLearnedMappings,
@@ -525,6 +526,7 @@ async function renderAll() {
   renderDashboard(records);
   renderAnalysis(records);
   renderInsightsUi(records, selectedYear);
+  await renderScenarioUi(records, selectedYear);
   renderHistory(records);
   renderDataSummary(records);
   await renderLearnedProfileSummary();
@@ -978,6 +980,7 @@ el("installButton").addEventListener("click", async () => {
 async function init() {
   try {
     await initInsightsUi();
+    initScenarioUi();
     const migration = await migrateLegacyLocalStorage();
     if (migration.migrated) el("status").textContent = `Vanha paikallinen historia siirrettiin uuteen tietokantaan (${migration.migrated} laskelmaa).`;
     await renderAll();

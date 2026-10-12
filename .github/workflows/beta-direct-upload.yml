@@ -63,11 +63,13 @@ jobs:
           assert.match(sw, /analytics\.js/);
           assert.match(sw, /insights\.js/);
           assert.match(sw, /insights-ui\.js/);
+          assert.match(sw, /scenario-model\.js/);
+          assert.match(sw, /scenario-ui\.js/);
           assert.doesNotMatch(sw, /palkka-staging-v/);
           const manifest = JSON.parse(await readFile(root + 'manifest.webmanifest', 'utf8'));
           assert.equal(manifest.short_name, 'Palkka BETA');
           for (const p of [
-            'index.html', 'beta-entry.mjs', 'app.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'parser.js',
+            'index.html', 'beta-entry.mjs', 'app.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'parser.js',
             'model.js', 'storage.js', 'learning.js', 'styles.css', 'sw.js',
             'manifest.webmanifest', 'build-info.json', '_headers', 'pdf-reader.js',
             'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs',

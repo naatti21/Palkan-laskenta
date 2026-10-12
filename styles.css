@@ -111,3 +111,23 @@ button.danger { background:rgba(248,113,113,.08); color:#fecaca; border:1px soli
 .insight-label input,.insight-label select { min-width:0; width:100%; box-sizing:border-box; border-radius:10px; padding:11px 12px; background:#121a2a; color:#f8fafc; border:1px solid rgba(148,163,184,.35); font:inherit; font-size:1rem; }
 .insight-label input:focus-visible,.insight-label select:focus-visible { outline:2px solid #60a5fa; outline-offset:2px; }
 @media(max-width:390px){.input-grid{grid-template-columns:minmax(0,1fr)} .insight-line strong{text-align:left}}
+
+/* Mobile-first salary simulation. Plain-language details and source warnings. */
+.scenario-explain { border:1px solid rgba(148,163,184,.22);border-radius:10px;margin:12px 0;
+  padding:11px 13px;color:#cbd5e1;background:#151d2c; }
+.scenario-explain summary { font-size:.83rem;font-weight:600;cursor:pointer;line-height:1.45; }
+.scenario-explain p { font-size:.83rem;line-height:1.62;margin:11px 0 2px;color:#bac9dd; }
+.scenario-chart { max-width:100%;width:100%;overflow:hidden;margin:12px 0;min-height:88px; }
+.scenario-svg { display:block;width:100%;height:auto;max-height:270px; }
+.scenario-note { margin:12px 0;padding:9px 11px;border-left:3px solid #fbbf24;background:#1f2937;
+ color:#f6e6c1;border-radius:5px;font-size:.81rem;line-height:1.55; }
+.scenario-legend { display:flex;flex-wrap:wrap;gap:8px 18px;margin:15px 0 2px;color:#cbd5e1;font-size:.77rem; }
+.scenario-legend span::before{content:"";display:inline-block;width:11px;height:4px;vertical-align:middle;
+ border-radius:2px;margin-right:6px;background:#60a5fa; }
+.scenario-legend-compare::before {background:#a78bfa!important}
+.scenario-legend-free::before {background:#a78bfa!important}
+@media(max-width:410px){
+ .scenario-chart {margin-left:-5px;width:calc(100% + 10px);}
+ .scenario-legend{font-size:.72rem}
+ .scenario-svg {min-height:180px}
+}
