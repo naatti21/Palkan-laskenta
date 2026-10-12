@@ -18,6 +18,10 @@ test("49h15 in time-system is exact integer minutes and independent of pay day",
  assert.equal(formatBalanceMinutes(2955),"49 h 15 min");
  assert.equal(formatBalanceMinutes(-15),"−0 h 15 min");
  assert.equal(parseBalanceMinutes("0:00"),0);
+ assert.equal(parseBalanceMinutes("-0:30"),-30);
+ assert.equal(parseBalanceMinutes("-12:45"),-765);
+ assert.equal(parseBalanceMinutes("-0,5"),-30);
+ assert.equal(formatBalanceMinutes(parseBalanceMinutes("-0:30")),"−0 h 30 min");
  assert.equal(formatBalanceMinutes(null),"Ei vahvistettua saldoa");
 });
 test("invalid dates, malformed clock and NaN cannot be saved",()=>{

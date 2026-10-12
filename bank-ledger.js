@@ -16,7 +16,7 @@ export function parseBalanceMinutes(raw) {
   const clock=/^(-?)(\d{1,5}):(\d{2})$/.exec(s);
   if(clock) {
     if(Number(clock[3])>59) throw new Error("Minuutit ovat 00–59.");
-    minutes=(Number(clock[2])*60+Number(clock[3]))*(clock[1]?"-":1);
+    minutes=(Number(clock[2])*60+Number(clock[3]))*(clock[1] ? -1 : 1);
   } else if(/^-?\d{1,5}(?:[,.]\d{1,4})?$/.test(s)) {
     minutes=Math.round(Number(s.replace(",","."))*60);
   } else {
