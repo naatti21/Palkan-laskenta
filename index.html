@@ -58,6 +58,17 @@
         </div>
       </section>
 
+      <section id="bankPrompt" class="card bank-prompt hidden" aria-label="Työaikapankin vapaaehtoinen saldokysely">
+        <p class="eyebrow">VAPAAEHTOINEN · TYÖAIKAPANKKI</p>
+        <h2>Tiedätkö pankkisi tämänhetkisen saldon?</h2>
+        <p class="muted">Uusin palkkakausi päättyi <strong id="bankPromptPeriod"></strong>. Palkkalaskelma tulee viiveellä, joten saldo kirjataan <strong>sen todellisen tarkistuspäivän</strong> mukaan — ei automaattisesti palkkakauden päivälle.</p>
+        <div class="actions">
+          <button id="bankPromptSave" type="button">Kirjaa saldo</button>
+          <button id="bankPromptLater" class="secondary" type="button">Myöhemmin</button>
+          <button id="bankPromptMute" class="secondary" type="button">Älä kysy uudelleen</button>
+        </div>
+      </section>
+
       <section id="unknownSection" class="card error-card hidden">
         <div class="section-heading">
           <div>
@@ -137,6 +148,47 @@
     </section>
 
     <section data-view="data" class="hidden">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">OMAT SALDOHAVAINNOT</p>
+            <h2>Työaikapankin saldo</h2>
+          </div>
+        </div>
+        <p id="bankLatest" class="bank-current">Ei vielä vahvistettua työaikapankin saldoa.</p>
+        <p class="muted">Saldon päivämäärä tarkoittaa sitä päivää, jolloin tarkistit saldon työaikajärjestelmästä. Se voi olla paljon uudempi kuin viimeisen palkkalaskelman maksupäivä. Tunteja ei päätellä palkkariveistä.</p>
+        <div class="actions">
+          <button id="bankOpenForm" type="button">Kirjaa saldo käsin</button>
+          <button id="bankUnmute" class="secondary hidden" type="button">Ota saldokysely takaisin käyttöön</button>
+        </div>
+        <p id="bankSaveStatus" class="muted" aria-live="polite"></p>
+        <div id="bankFormPanel" class="hidden bank-form-panel">
+          <h2 id="bankFormHeading">Kirjaa vahvistettu saldo</h2>
+          <form id="bankForm">
+            <label class="bank-label" for="bankBalanceInput">Saldo, tunnit ja minuutit</label>
+            <input id="bankBalanceInput" class="bank-input" placeholder="Esim. 49:15 tai 49,25" inputmode="decimal" required />
+            <small>49:15 tarkoittaa 49 tuntia 15 minuuttia; 49,25 tarkoittaa 49,25 desimaalituntia.</small>
+            <label class="bank-label" for="bankDateInput">Saldon tarkistuspäivä</label>
+            <input id="bankDateInput" class="bank-input" type="date" required />
+            <label class="bank-label" for="bankSourceInput">Mistä saldo on saatu?</label>
+            <select id="bankSourceInput" class="bank-input">
+              <option value="time-system">Työaikajärjestelmästä</option>
+              <option value="self">Oma kirjaus</option>
+              <option value="other">Muu lähde</option>
+            </select>
+            <label class="bank-label" for="bankNoteInput">Lisätieto (valinnainen)</label>
+            <input id="bankNoteInput" class="bank-input" maxlength="160" placeholder="Esim. saldon tarkistus vuoron jälkeen" />
+            <p id="bankEntryStatus" class="status" role="status"></p>
+            <div class="actions">
+              <button id="bankSaveButton" type="submit">Tallenna saldo</button>
+              <button id="bankFormCancel" class="secondary" type="button">Peruuta</button>
+            </div>
+          </form>
+        </div>
+        <h2>Kirjaushistoria</h2>
+        <div id="bankHistory" class="bank-history"></div>
+      </section>
+
       <section class="card">
         <div class="section-heading">
           <div>

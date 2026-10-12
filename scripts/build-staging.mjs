@@ -16,7 +16,7 @@ if (process.env.CF_PAGES && process.env.CF_PAGES_BRANCH !== 'develop') {
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const files = ['index.html', 'styles.css', 'app.js', 'parser.js', 'model.js', 'storage.js',
-  'learning.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
+  'learning.js', 'bank-ledger.js', 'bank-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs'];
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
@@ -46,11 +46,11 @@ manifest.short_name = 'Palkka TESTI';
 manifest.description = 'Erillinen testiversio. Käytä vain keinotekoisia testitietoja.';
 await writeFile(`${output}/manifest.webmanifest`, JSON.stringify(manifest, null, 2) + '\n');
 let sw = await readFile('sw.js', 'utf8');
-if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const CACHE = `${CACHE_PREFIX}16`;')) {
+if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const CACHE = `${CACHE_PREFIX}17`;')) {
   throw new Error('Service worker changed; inspect staging cache transformation.');
 }
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-staging-v";')
-  .replace('const CACHE = `${CACHE_PREFIX}16`;', `const CACHE = '${'palkka-staging-v' + revision}';`)
+  .replace('const CACHE = `${CACHE_PREFIX}17`;', `const CACHE = '${'palkka-staging-v' + revision}';`)
   .replace('"./", "./index.html",', '"./", "./index.html", "./staging-entry.mjs",');
 // Enforce the same origin before any worker event handlers can register.
 sw = `if (self.location.origin !== ${JSON.stringify(rawOrigin)}) throw new Error('Staging origin mismatch');\n` + sw;

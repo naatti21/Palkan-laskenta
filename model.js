@@ -1,3 +1,4 @@
+import {validateBankAnchors} from "./bank-ledger.js";
 export const RECORD_SCHEMA_VERSION = 1;
 export const BACKUP_SCHEMA_VERSION = 2;
 
@@ -523,8 +524,9 @@ export function makeBackup(records, options = {}) {
     backupSchemaVersion: BACKUP_SCHEMA_VERSION,
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
     exportedAt: nowIso(),
-    privacy: "Backup contains structured salary data and non-identifying learned layout signals only. Original PDFs, filenames and raw extracted text are not included.",
+    privacy: "Backup contains structured salary data, manual dated worktime-bank balance snapshots and non-identifying learned layout signals. No original PDFs or extracted raw text.",
     learnedProfiles: safeLearnedProfiles(options.learnedProfiles),
+    bankSnapshots: validateBankAnchors(options.bankSnapshots ?? []),
     records: records.map(record => migrateLegacyRecord(record)).filter(Boolean)
   };
 }
@@ -554,4 +556,11 @@ export function parseBackup(payload) {
 export function parseBackupLearnedProfiles(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
   return safeLearnedProfiles(payload.learnedProfiles);
+}
+
+export function parseBackupBankSnapshots(payload) {
+  // Legacy arrays and backups created before bank support contain no balance snapshots.
+  // Never invent a 0-hour anchor when a backup has no bank information.
+  if (!payload || Array.isArray(payload) || payload.bankSnapshots === undefined) return [];
+  return validateBankAnchors(payload.bankSnapshots);
 }
