@@ -462,10 +462,6 @@ function parseGeneric(text, payLines) {
     ? (parallel.taxable.values ? [parallel.taxable.values.period] : [])
     : sectionMoneyCandidates(text, /Kertymä\s+palkkakaudelta/i, taxableLabel);
   const periodCumulativeTaxable = periodCumulativeCandidates[0] ?? null;
-  // Multiple sources describing the same period must agree to the cent.
-  // A section-level amount must never silently override a cumulative one.
-  const periodGrossCandidates = uniqueMoneyValues([periodSectionTaxable, ...periodCumulativeCandidates]);
-  const periodCumulativeConflict = periodGrossCandidates.length > 1;
 
   const yearCumulativeCandidates = parallel
     ? (parallel.taxable.values ? [parallel.taxable.values.ytd] : [])
@@ -486,6 +482,19 @@ function parseGeneric(text, payLines) {
   const explicitPreviousYearTaxable = matchOne(text, [
     new RegExp(`(?:Edellisen\\s+vuoden\\s+veronalainen\\s+(?:tulo|ansio)|Veronalainen\\s+edellinen\\s+vuosi)\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
+
+  // Gather ALL independently labeled pay-period observations. In particular,
+  // "Veronalainen palkka / kausi" was being parsed but silently ignored by
+  // the earlier cross-source consistency gate. Do not use an unqualified
+  // "Ver.al.ans" here: that label may belong to a separate YTD section.
+  const explicitPeriodGrossCandidates = uniqueMoneyValues(allNumbersAfterLabel(
+    text,
+    /(?:Veronalainen\s+(?:palkka|ansio)\s*(?:\/\s*kausi|palkkakaudelta)|Kauden\s+veronalainen\s+(?:palkka|ansio))/i
+  ));
+  const periodGrossCandidates = uniqueMoneyValues([
+    periodSectionTaxable, ...periodCumulativeCandidates, ...explicitPeriodGrossCandidates
+  ]);
+  const periodCumulativeConflict = periodGrossCandidates.length > 1;
 
   const yearTaxableCandidates = uniqueMoneyValues([
     yearSectionTaxable, ...yearCumulativeCandidates, explicitYtdTaxable
@@ -656,7 +665,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.8",
+    parserVersion: "0.4.9",
     sourceProfile,
     fields,
     payLines,

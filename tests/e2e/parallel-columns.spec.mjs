@@ -23,6 +23,9 @@ function makeColumnsPdf(order = ["period", "ytd", "previous"], options = {}) {
       : []),
     ...(options.yearSectionTaxable
       ? [[40, 411, "Vuoden tiedot"], [40, 388, `Ver.al.ans ${options.yearSectionTaxable}`]]
+      : []),
+    ...(options.explicitPeriodTaxable
+      ? [[40, 350, `Veronalainen palkka / kausi ${options.explicitPeriodTaxable}`]]
       : [])
   ];
 
@@ -187,4 +190,49 @@ test("QA RC-P0-01: conflicting YTD section and cumulative never autosave", async
   await expect(page.locator("#reviewGrid")).toContainText("48 905,75");
   const records = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
   expect(records).toHaveLength(0);
+});
+
+test("QA A903-P0-01: explicit salary 3600 contradicts period column 3240.50, no automatic DB write", async ({ page }) => {
+  await page.goto("/index.html");
+  const pdf = makeColumnsPdf(["previous", "period", "ytd"], { explicitPeriodTaxable: "3 600,00" });
+  await page.locator("#pdfInput").setInputFiles({ name: "explicit-gross-conflict.pdf", mimeType: "application/pdf", buffer: pdf });
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator("#reviewGrid")).toContainText("3 240,50");
+  await expect(page.locator("#reviewGrid")).toContainText("3 600,00");
+  let records = await page.evaluate(async () => await (await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(0);
+  await page.reload();
+  records = await page.evaluate(async () => await (await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(0);
+});
+
+test("QA A903-P0-01: explicit conflicting salary only saves after user corrects and preserves original", async ({ page }) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name: "explicit-gross-user-choice.pdf", mimeType: "application/pdf",
+    buffer: makeColumnsPdf(["previous", "period", "ytd"], { explicitPeriodTaxable: "3 600,00" })
+  });
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await page.locator('[data-key="grossPay"]').fill("3600,00");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText("Korjaus tallennettu");
+  await page.reload();
+  const records = await page.evaluate(async () => await (await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(1);
+  expect(records[0].values.grossPay).toBe(3600);
+  expect(records[0].corrections.grossPay.parserValue).toBe(3240.50);
+  expect(records[0].values.ytdTaxableIncome).toBe(48905.75);
+});
+
+test("QA A903-P0-01: matching explicit and cumulative salary is not a false conflict", async ({ page }) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name: "explicit-gross-matching.pdf", mimeType: "application/pdf",
+    buffer: makeColumnsPdf(["previous", "period", "ytd"], { explicitPeriodTaxable: "3 240,50" })
+  });
+  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
+  const records = await page.evaluate(async () => await (await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(1);
+  expect(records[0].values.grossPay).toBe(3240.50);
 });
