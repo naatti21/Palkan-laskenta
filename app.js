@@ -13,6 +13,7 @@ import {
   makeRecordFromParsed,
   parseBackup,
   parseBackupLearnedProfiles,
+  parseBackupBankSnapshots,
   paymentState,
   findRecordConflict
 } from "./model.js";
@@ -27,6 +28,8 @@ import {
   getSetting,
   setSetting
 } from "./storage.js";
+import {BANK_KEY, BANK_PROMPT_KEY, mergeBankAnchors} from "./bank-ledger.js";
+import {initBankUi,renderBankUi,offerBankPrompt,loadBankAnchors} from "./bank-ui.js";
 
 let currentParsed = null;
 let currentRawText = "";
@@ -656,6 +659,7 @@ async function processPdf(file) {
   el("resultSection").classList.add("hidden");
   el("reviewSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
+  el("bankPrompt").classList.add("hidden");
   currentRecord = null;
   currentLearnedProfile = null;
   currentReviewWasManualConfirmation = false;
@@ -695,10 +699,12 @@ async function processPdf(file) {
       return;
     }
 
+    const existingRecords = await getAllRecords();
     const result = await upsertRecord(record);
     await rememberCurrentStructure({ autoParsed: true });
     renderSuccess(result.record, result.mergedDuplicate);
     await renderAll();
+    await offerBankPrompt(existingRecords,result.record,{mergedDuplicate:result.mergedDuplicate});
     el("status").textContent = result.mergedDuplicate
       ? "Sama palkka löytyi historiasta. Tiedot yhdistettiin ilman tuplaa."
       : "Palkkalaskelma tunnistettiin varmasti ja tallennettiin automaattisesti.";
@@ -747,6 +753,7 @@ el("saveButton").addEventListener("click", async () => {
     return;
   }
 
+  const existingRecords = await getAllRecords();
   const result = await upsertRecord(record);
   const confirmed = currentReviewWasManualConfirmation || Object.keys(record.corrections || {}).length > 0;
   const mappingUpdates = confirmed
@@ -755,6 +762,7 @@ el("saveButton").addEventListener("click", async () => {
   const learned = await rememberCurrentStructure({ confirmed, autoParsed: false, mappingUpdates });
   renderSuccess(result.record, result.mergedDuplicate);
   await renderAll();
+  await offerBankPrompt(existingRecords,result.record,{mergedDuplicate:result.mergedDuplicate});
   el("status").textContent = learned
     ? "Korjaus tallennettu. Palkkalaskelman rakennehavainto päivitettiin paikallisesti."
     : "Korjaus tallennettu.";
@@ -834,7 +842,8 @@ for (const id of ["dashboardYear", "historyYear"]) {
 el("exportButton").addEventListener("click", async () => {
   const records = await getAllRecords();
   const learnedProfiles = await getLearnedProfiles();
-  const backup = makeBackup(records, { learnedProfiles });
+  const bankSnapshots = await loadBankAnchors();
+  const backup = makeBackup(records, { learnedProfiles, bankSnapshots });
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -852,13 +861,18 @@ el("backupInput").addEventListener("change", async event => {
     const payload = JSON.parse(await file.text());
     const records = parseBackup(payload);
     const learnedProfiles = parseBackupLearnedProfiles(payload);
+    const bankSnapshots = parseBackupBankSnapshots(payload);
+    const existingBankSnapshots = await loadBankAnchors();
+    const nextBankSnapshots = mergeBankAnchors(existingBankSnapshots,bankSnapshots);
     const result = await mergeManyRecords(records);
+    if(bankSnapshots.length) await setSetting(BANK_KEY,nextBankSnapshots);
+    await renderBankUi();
     if (learnedProfiles.length) await mergeLearnedProfiles(learnedProfiles);
     await renderAll();
     const preserved = result.conflictsPreserved
       ? `, ${result.conflictsPreserved} ristiriitaversiota säilytetty erillään`
       : "";
-    el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa${preserved}${learnedProfiles.length ? `, ${learnedProfiles.length} tunnistettua rakennetta` : ""}.`;
+    el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa${preserved}${learnedProfiles.length ? `, ${learnedProfiles.length} tunnistettua rakennetta` : ""}${bankSnapshots.length ? `, ${bankSnapshots.length} pankkisaldon havaintoa` : ""}.`;
   } catch (err) {
     el("backupStatus").textContent = `Palautus epäonnistui: ${err.message}`;
   } finally {
@@ -878,6 +892,9 @@ el("clearButton").addEventListener("click", async () => {
   if (!confirm("Poistetaanko kaikki tämän laitteen paikallisesti tallentamat palkkatiedot? Tätä ei voi perua ilman varmuuskopiota.")) return;
   await clearAllRecords();
   await setLearnedProfiles([]);
+  await setSetting(BANK_KEY,null);
+  await setSetting(BANK_PROMPT_KEY,null);
+  await renderBankUi();
   currentRecord = null;
   currentParsed = null;
   el("resultSection").classList.add("hidden");
@@ -906,6 +923,7 @@ async function init() {
     const migration = await migrateLegacyLocalStorage();
     if (migration.migrated) el("status").textContent = `Vanha paikallinen historia siirrettiin uuteen tietokantaan (${migration.migrated} laskelmaa).`;
     await renderAll();
+    await initBankUi(setView);
   } catch (err) {
     console.error(err);
     el("status").textContent = `Paikallisen tietokannan avaaminen epäonnistui: ${err.message}`;
