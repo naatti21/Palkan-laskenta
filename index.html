@@ -24,6 +24,7 @@
 
     <nav class="tabs" aria-label="Päänavigaatio">
       <button class="tab active" data-view-target="tracking">Seuranta</button>
+      <button class="tab" data-view-target="analysis">Analyysi</button>
       <button class="tab" data-view-target="history">Historia</button>
       <button class="tab" data-view-target="data">Data</button>
     </nav>
@@ -119,6 +120,35 @@
         </div>
         <div id="dashboard" class="metrics"></div>
         <p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>
+      </section>
+    </section>
+
+    <section data-view="analysis" class="hidden">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">JO TALLENNETUISTA PALKKALASKELMISTA</p>
+            <h2>Ansiot ja työaika</h2>
+          </div>
+          <select id="analysisYear" class="year-select" aria-label="Analyysin vuosi"></select>
+        </div>
+        <p id="analysisNote" class="muted">Lasketaan vain vahvistetuista palkkalaskelmista.</p>
+        <div id="analysisMetrics" class="metrics"></div>
+      </section>
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MAKSUPÄIVÄN MUKAAN</p>
+            <h2>Kuukausittainen palkkakehitys</h2>
+          </div>
+        </div>
+        <div class="chart-legend"><span class="legend-gross">Brutto</span><span class="legend-net">Netto</span></div>
+        <div id="monthlyChart" class="monthly-chart" role="img" aria-label="Maksettujen brutto- ja nettopalkkojen kuukausivertailu"></div>
+        <p class="muted">Tyhjät kuukaudet eivät tarkoita 0 € tuloja. Kuukausi määräytyy todellisen maksupäivän mukaan.</p>
+      </section>
+      <section class="card">
+        <h2>Mitä tämä analyysi ei vielä kerro?</h2>
+        <p class="muted">Ylityötunnit ovat palkkalaskelmissa maksettuja tai kirjattuja tunteja, eivät välttämättä kaikkia tehtyjä työtunteja. TES-tulkinta, työaikapankin todellinen saldo ja ylityön lisänetto suhteessa menetettyyn vapaa-aikaan tulevat myöhemmin erillisinä tarkistettavina laskureina.</p>
       </section>
     </section>
 

@@ -1,4 +1,5 @@
 import { extractPdfText } from "./pdf-reader.js";
+import { buildYearAnalysis } from "./analytics.js";
 import { parsePayslip, validate } from "./parser.js";
 import {
   applyLearnedMappings,
@@ -495,7 +496,7 @@ function availableYears(records) {
 function syncYearSelectors(records) {
   const years = availableYears(records);
   if (!selectedYear || !years.includes(selectedYear)) selectedYear = years[0] ?? new Date().getFullYear();
-  for (const id of ["dashboardYear", "historyYear"]) {
+  for (const id of ["dashboardYear", "historyYear", "analysisYear"]) {
     const select = el(id);
     select.innerHTML = "";
     if (!years.length) {
@@ -519,6 +520,7 @@ async function renderAll() {
   const records = await getAllRecords();
   syncYearSelectors(records);
   renderDashboard(records);
+  renderAnalysis(records);
   renderHistory(records);
   renderDataSummary(records);
   await renderLearnedProfileSummary();
@@ -565,6 +567,76 @@ function renderDashboard(records) {
   const state = paymentState(latest);
   const stateText = state === "confirmed_future" ? " Viimeisin laskelma on vahvistettu tuleva palkka." : "";
   el("dashboardNote").textContent = `${status.text}. Tulorajaa verrataan vain verokortin omaan kertymään.${stateText}`;
+}
+
+
+function renderAnalysis(records) {
+  const info = buildYearAnalysis(records, selectedYear);
+  const metrics = el("analysisMetrics");
+  metrics.replaceChildren();
+  function metric(label, value) {
+    const box = document.createElement("div");
+    box.className = "metric";
+    const title = document.createElement("span");
+    title.textContent = label;
+    const amount = document.createElement("strong");
+    amount.textContent = value;
+    box.append(title, amount);
+    metrics.append(box);
+  }
+  const warning = info.conflictingRecords
+    ? `Huomio: ${info.conflictingRecords} ristiriitaista tietuetta ei lasketa yhteissummiin. Tarkista ne Historiasta.`
+    : "Mukana vain tallennetut laskelmat, ei arvioita puuttuvilta kuukausilta.";
+  el("analysisNote").textContent = info.payslips
+    ? `${info.payslips} palkkalaskelmaa. ${warning}`
+    : "Ei tallennettuja palkkalaskelmia valitulle vuodelle.";
+  metric("Tallennettujen laskelmien brutto", fmtMoney(info.totalGross));
+  metric("Tallennettujen laskelmien netto", fmtMoney(info.totalNet));
+  metric("Viimeisimmän laskelman YTD", fmtMoney(info.latestYtd));
+  const overtime = info.overtime;
+  metric("Maksetut ylityötunnit / kirjattu", overtime.recordsWithHours
+    ? `${fmtNumber(overtime.knownHours)} h ${overtime.complete ? "" : "(osittainen)"}`
+    : "Ei tietoa");
+  const coverage = document.createElement("p");
+  coverage.className = "muted analysis-coverage";
+  coverage.textContent = `Ylityötietoa ${overtime.recordsWithHours}/${overtime.recordsTotal - overtime.excludedConflicts} yksiselitteisestä laskelmasta.`
+    + (overtime.complete ? "" : " Puuttuva tieto ei ole nolla.");
+  metrics.append(coverage);
+
+  const host = el("monthlyChart");
+  host.replaceChildren();
+  const validMonths = info.months.filter(m => m.payslips > 0);
+  if (!validMonths.length) {
+    host.textContent = "Ei kuukausitietoja.";
+    return;
+  }
+  const max = Math.max(1, ...validMonths.map(m => Math.max(m.gross || 0, m.net || 0)));
+  for (const month of validMonths) {
+    const row = document.createElement("div");
+    row.className = "chart-row";
+    const monthLabel = document.createElement("span");
+    monthLabel.className = "chart-month-label";
+    monthLabel.textContent = month.label;
+    const bars = document.createElement("div");
+    bars.className = "chart-bars";
+    const amount = document.createElement("span");
+    amount.className = "chart-amount";
+    if (!month.complete) {
+      bars.textContent = "Tarkistettavaa";
+      amount.textContent = "–";
+    } else {
+      for (const [kind, value] of [["gross", month.gross], ["net", month.net]]) {
+        const bar = document.createElement("div");
+        bar.className = `chart-bar chart-bar-${kind}`;
+        bar.style.width = `${Math.max(0, Math.min(100, value / max * 100))}%`;
+        bar.title = `${kind === "gross" ? "Brutto" : "Netto"}: ${fmtMoney(value)}`;
+        bars.append(bar);
+      }
+      amount.textContent = fmtMoney(month.net);
+    }
+    row.append(monthLabel, bars, amount);
+    host.append(row);
+  }
 }
 
 function renderHistory(records) {
@@ -822,7 +894,7 @@ for (const button of document.querySelectorAll("[data-view-target]")) {
   button.addEventListener("click", () => setView(button.dataset.viewTarget));
 }
 
-for (const id of ["dashboardYear", "historyYear"]) {
+for (const id of ["dashboardYear", "historyYear", "analysisYear"]) {
   el(id).addEventListener("change", async event => {
     selectedYear = Number(event.target.value);
     await renderAll();
