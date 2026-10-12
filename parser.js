@@ -182,11 +182,24 @@ function inlineTaxableTriple(text, labelPattern) {
   return null;
 }
 
+function moneyCandidatesInNearbySection(text, sectionPattern, labelPattern, maxChars = 900) {
+  // Keep every observation of the same semantic field, not just the first one.
+  // A section must end at the next named section: a YTD value following
+  // "Vuoden tiedot" must never be mistaken for pay-period gross.
+  const results = [];
+  const headers = new RegExp(sectionPattern.source, "gi");
+  const nextHeader = /(?:^|\n)\s*(?:Kauden\s+tiedot|Vuoden\s+tiedot|Kertymä\s+(?:palkkakaudelta|vuoden\s+alusta|edelliseltä\s+vuodelta))\b/i;
+  for (const match of text.matchAll(headers)) {
+    const from = match.index + match[0].length;
+    const after = text.slice(from, from + maxChars);
+    const stop = after.search(nextHeader);
+    const section = stop >= 0 ? after.slice(0, stop) : after;
+    results.push(...allNumbersAfterLabel(section, labelPattern));
+  }
+  return uniqueMoneyValues(results);
+}
 function moneyInNearbySection(text, sectionPattern, labelPattern, maxChars = 900) {
-  const sectionStart = text.search(sectionPattern);
-  if (sectionStart < 0) return null;
-  const section = text.slice(sectionStart, sectionStart + maxChars);
-  return matchOne(section, [new RegExp(`${labelPattern.source}\\s+(${MONEY_RE})`, "i")], fiNumber);
+  return moneyCandidatesInNearbySection(text, sectionPattern, labelPattern, maxChars)[0] ?? null;
 }
 
 
@@ -456,8 +469,10 @@ function parseGeneric(text, payLines) {
   const parallel = parallelCumulativeSummary(text, taxableLabel);
   const taxable = allNumbersAfterLabel(text, taxableLabel);
   const inlineTaxable = inlineTaxableTriple(text, taxableLabel);
-  const periodSectionTaxable = moneyInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
-  const yearSectionTaxable = moneyInNearbySection(text, /Vuoden\s+tiedot/i, /Ver\.al\.ans/i);
+  const periodSectionCandidates = moneyCandidatesInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
+  const yearSectionCandidates = moneyCandidatesInNearbySection(text, /Vuoden\s+tiedot/i, /Ver\.al\.ans/i);
+  const periodSectionTaxable = periodSectionCandidates[0] ?? null;
+  const yearSectionTaxable = yearSectionCandidates[0] ?? null;
   const periodCumulativeCandidates = parallel
     ? (parallel.taxable.values ? [parallel.taxable.values.period] : [])
     : sectionMoneyCandidates(text, /Kertymä\s+palkkakaudelta/i, taxableLabel);
@@ -492,17 +507,17 @@ function parseGeneric(text, payLines) {
     /(?:Veronalainen\s+(?:palkka|ansio)\s*(?:\/\s*kausi|palkkakaudelta)|Kauden\s+veronalainen\s+(?:palkka|ansio))/i
   ));
   const periodGrossCandidates = uniqueMoneyValues([
-    periodSectionTaxable, ...periodCumulativeCandidates, ...explicitPeriodGrossCandidates
+    ...periodSectionCandidates, ...periodCumulativeCandidates, ...explicitPeriodGrossCandidates
   ]);
   const periodCumulativeConflict = periodGrossCandidates.length > 1;
 
   const yearTaxableCandidates = uniqueMoneyValues([
-    yearSectionTaxable, ...yearCumulativeCandidates, explicitYtdTaxable
+    ...yearSectionCandidates, ...yearCumulativeCandidates, explicitYtdTaxable
   ]);
   const yearCumulativeConflict = yearTaxableCandidates.length > 1;
 
   const semanticallyAttributed = new Set(
-    [periodSectionTaxable, periodCumulativeTaxable, yearSectionTaxable, yearCumulativeTaxable, previousYearCumulativeTaxable, explicitGrossPay, explicitYtdTaxable, explicitPreviousYearTaxable]
+    [...periodSectionCandidates, periodCumulativeTaxable, ...yearSectionCandidates, yearCumulativeTaxable, previousYearCumulativeTaxable, explicitGrossPay, explicitYtdTaxable, explicitPreviousYearTaxable]
       .filter(value => value != null)
       .map(value => Number(value).toFixed(2))
   );
@@ -665,7 +680,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.9",
+    parserVersion: "0.4.10",
     sourceProfile,
     fields,
     payLines,
