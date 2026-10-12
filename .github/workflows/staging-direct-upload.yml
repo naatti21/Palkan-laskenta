@@ -1,4 +1,4 @@
-name: Prepare Palkka Staging ZIP
+name: Build and deploy Palkka staging
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: staging-package-${{ github.ref }}
+  group: staging-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -72,10 +72,93 @@ jobs:
           console.log('Staging package contents and exact origin verified:', meta);
           NODE
 
-      - name: Upload staging ZIP as GitHub artifact (no deployment)
+      - name: Archive tested staging build for fallback
         uses: actions/upload-artifact@v4
         with:
           name: palkka-staging-direct-upload
           path: _staging/
           if-no-files-found: error
           retention-days: 14
+
+      # No Cloudflare token is ever stored in this repository.
+      - name: Check whether Cloudflare publishing is authorized
+        id: auth
+        shell: bash
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ]; then
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo '### Cloudflare staging not deployed: configure both Actions secrets' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify exact Cloudflare Pages target and production branch
+        if: steps.auth.outputs.enabled == 'true'
+        id: target
+        shell: bash
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          account = os.environ['CF_ACCOUNT_ID']
+          assert re.fullmatch(r'[a-fA-F0-9]{32}', account), 'Invalid Cloudflare account ID'
+          url = 'https://api.cloudflare.com/client/v4/accounts/' + account + '/pages/projects/palkka-staging'
+          req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['CF_API_TOKEN']})
+          with urllib.request.urlopen(req, timeout=20) as response:
+              data = json.load(response)
+          assert data.get('success') is True, 'Cloudflare target lookup failed'
+          project = data['result']
+          assert project['name'] == 'palkka-staging', 'Wrong Pages project'
+          assert project['subdomain'] == 'palkka-staging.pages.dev', 'Wrong Pages domain'
+          assert (project.get('source') or {}).get('type') not in ('github', 'gitlab'), 'Expected Direct Upload Pages'
+          branch = project.get('production_branch')
+          assert isinstance(branch, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*', branch), 'Invalid production branch'
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf8') as output:
+              output.write('production_branch=' + branch + '\n')
+          print('Verified the exact staging project and its production branch.')
+          PY
+
+      - name: Deploy tested assets only to Palkka staging
+        if: steps.auth.outputs.enabled == 'true'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _staging --project-name=palkka-staging --branch=${{ steps.target.outputs.production_branch }} --commit-hash=${{ github.sha }}
+
+      - name: Verify live staging SHA and origin
+        if: steps.auth.outputs.enabled == 'true'
+        shell: bash
+        env:
+          STAGING_ORIGIN: https://palkka-staging.pages.dev
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          expected, origin = os.environ['GITHUB_SHA'], os.environ['STAGING_ORIGIN']
+          url = origin + '/build-info.json?verify=' + expected
+          last = 'No response'
+          for attempt in range(15):
+              try:
+                  req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+                  with urllib.request.urlopen(req, timeout=15) as response:
+                      info = json.load(response)
+                  last = 'Observed ' + str(info.get('commit'))
+                  if info.get('commit') == expected and info.get('origin') == origin and info.get('environment') == 'staging':
+                      with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf8') as report:
+                          report.write('### Staging deployment verified\n- URL: ' + origin + '\n- Commit: ' + expected + '\n- Independent QA: not performed\n')
+                      print('Verified live staging:', expected)
+                      break
+              except Exception as error:
+                  last = str(error)
+              time.sleep(4)
+          else:
+              raise RuntimeError('Staging root did not serve expected SHA: ' + last)
+          PY
