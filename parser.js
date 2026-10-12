@@ -462,13 +462,16 @@ function parseGeneric(text, payLines) {
     ? (parallel.taxable.values ? [parallel.taxable.values.period] : [])
     : sectionMoneyCandidates(text, /Kertymä\s+palkkakaudelta/i, taxableLabel);
   const periodCumulativeTaxable = periodCumulativeCandidates[0] ?? null;
-  const periodCumulativeConflict = periodCumulativeCandidates.length > 1;
+  // Multiple sources describing the same period must agree to the cent.
+  // A section-level amount must never silently override a cumulative one.
+  const periodGrossCandidates = uniqueMoneyValues([periodSectionTaxable, ...periodCumulativeCandidates]);
+  const periodCumulativeConflict = periodGrossCandidates.length > 1;
 
   const yearCumulativeCandidates = parallel
     ? (parallel.taxable.values ? [parallel.taxable.values.ytd] : [])
     : sectionMoneyCandidates(text, /Kertymä\s+vuoden alusta/i, taxableLabel);
   const yearCumulativeTaxable = yearCumulativeCandidates[0] ?? null;
-  const yearCumulativeConflict = yearCumulativeCandidates.length > 1;
+  // Compare other YTD observations after explicit values have been extracted.
 
   const previousYearCumulativeTaxable = parallel
     ? (parallel.taxable.values?.previous ?? null)
@@ -483,6 +486,11 @@ function parseGeneric(text, payLines) {
   const explicitPreviousYearTaxable = matchOne(text, [
     new RegExp(`(?:Edellisen\\s+vuoden\\s+veronalainen\\s+(?:tulo|ansio)|Veronalainen\\s+edellinen\\s+vuosi)\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
+
+  const yearTaxableCandidates = uniqueMoneyValues([
+    yearSectionTaxable, ...yearCumulativeCandidates, explicitYtdTaxable
+  ]);
+  const yearCumulativeConflict = yearTaxableCandidates.length > 1;
 
   const semanticallyAttributed = new Set(
     [periodSectionTaxable, periodCumulativeTaxable, yearSectionTaxable, yearCumulativeTaxable, previousYearCumulativeTaxable, explicitGrossPay, explicitYtdTaxable, explicitPreviousYearTaxable]
@@ -578,8 +586,8 @@ function parseGeneric(text, payLines) {
     grossPay: field(
       grossPay,
       (periodCumulativeConflict || (parallel && (!parallel.headerValid || parallel.taxable.uncertain))) ? 0.50 : 0.97,
-      periodCumulativeConflict ? "Ristiriitaiset veronalaiset ansiot / palkkakausi" : parallel?.taxable.uncertain ? `Epäselvä kertymärivi, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / palkkakausi",
-      periodCumulativeConflict ? { conflict: true, candidates: periodCumulativeCandidates } : parallel?.taxable.uncertain ? { evidenceIssue: true, candidates: parallel.taxable.observations.flat() } : {}
+      periodCumulativeConflict ? "Ristiriitaiset kauden bruttohavainnot" : parallel?.taxable.uncertain ? `Epäselvä kertymärivi, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / palkkakausi",
+      periodCumulativeConflict ? { conflict: true, candidates: periodGrossCandidates } : parallel?.taxable.uncertain ? { evidenceIssue: true, candidates: parallel.taxable.observations.flat() } : {}
     ),
     netPay: field(
       netPay,
@@ -591,7 +599,7 @@ function parseGeneric(text, payLines) {
       ytdTaxable,
       (yearCumulativeConflict || (parallel && (!parallel.headerValid || parallel.taxable.uncertain))) ? 0.50 : 0.96,
       yearCumulativeConflict ? "Ristiriitaiset veronalaiset ansiot / vuoden alusta" : parallel?.taxable.uncertain ? `Epäselvä kertymärivi, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / vuoden alusta",
-      yearCumulativeConflict ? { conflict: true, candidates: yearCumulativeCandidates } : parallel?.taxable.uncertain ? { evidenceIssue: true, candidates: parallel.taxable.observations.flat() } : {}
+      yearCumulativeConflict ? { conflict: true, candidates: yearTaxableCandidates } : parallel?.taxable.uncertain ? { evidenceIssue: true, candidates: parallel.taxable.observations.flat() } : {}
     ),
     previousYearTaxableIncome: field(previousYearTaxable, parallel?.taxable.uncertain ? 0.50 : 0.85, parallel?.taxable.uncertain ? `Epäselvä edellisen vuoden kertymä, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / edellinen vuosi"),
     taxCardAccumulatedIncome: field(taxCardAccumulatedIncome, 0.97, "Verokortin kertymä / 90000 Ennakonpidätys"),
@@ -648,7 +656,7 @@ export function parsePayslip(inputText) {
 
   return {
     documentType,
-    parserVersion: "0.4.7",
+    parserVersion: "0.4.8",
     sourceProfile,
     fields,
     payLines,

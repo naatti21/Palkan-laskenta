@@ -17,7 +17,13 @@ function makeColumnsPdf(order = ["period", "ytd", "previous"], options = {}) {
     ...order.filter(role => !(options.missingTaxableYtd && role === "ytd"))
       .map(role => [positions[order.indexOf(role)], 558, `Ennakonpid. al. tul ${definitions[role].taxable}`]),
     ...order.filter(role => !(options.missingWithholdingYtd && role === "ytd"))
-      .map(role => [positions[order.indexOf(role)], 536, `Ennakonpidätys ${definitions[role].withholding}`])
+      .map(role => [positions[order.indexOf(role)], 536, `Ennakonpidätys ${definitions[role].withholding}`]),
+    ...(options.periodSectionTaxable
+      ? [[40, 470, "Kauden tiedot"], [40, 447, `Ver.al.ans ${options.periodSectionTaxable}`]]
+      : []),
+    ...(options.yearSectionTaxable
+      ? [[40, 411, "Vuoden tiedot"], [40, 388, `Ver.al.ans ${options.yearSectionTaxable}`]]
+      : [])
   ];
 
   const escape = value => value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -128,4 +134,57 @@ test("QA F3: previous year value is editable in the review UI", async ({ page })
   expect(records).toHaveLength(1);
   expect(records[0].values.previousYearTaxableIncome).toBe(60000);
   expect(records[0].corrections.previousYearTaxableIncome.parserValue).toBe(60123.12);
+});
+
+test("QA RC-P0-01: conflicting period gross cannot autosave; both candidates visible; manual correction persists", async ({ page }) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name: "qa-p0-conflicting-period-gross.pdf", mimeType: "application/pdf",
+    buffer: makeColumnsPdf(["previous", "period", "ytd"], { periodSectionTaxable: "3 600,00" })
+  });
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator("#reviewGrid")).toContainText("3 240,50");
+  await expect(page.locator("#reviewGrid")).toContainText("3 600,00");
+
+  let records = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
+  expect(records).toHaveLength(0);
+  await page.reload();
+  records = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
+  expect(records).toHaveLength(0);
+
+  // Only an explicit user decision in the review UI can create a record.
+  await page.locator("#pdfInput").setInputFiles({
+    name: "qa-p0-conflicting-period-gross.pdf", mimeType: "application/pdf",
+    buffer: makeColumnsPdf(["previous", "period", "ytd"], { periodSectionTaxable: "3 600,00" })
+  });
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await page.locator('[data-key="grossPay"]').fill("3240,50");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText("Korjaus tallennettu");
+  const saved = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
+  expect(saved).toHaveLength(1);
+  expect(saved[0].values.grossPay).toBe(3240.5);
+  expect(saved[0].values.ytdTaxableIncome).toBe(48905.75);
+  expect(saved[0].corrections.grossPay.parserValue).toBe(3600);
+  await page.reload();
+  const reloaded = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
+  expect(reloaded[0].values.grossPay).toBe(3240.5);
+});
+
+test("QA RC-P0-01: conflicting YTD section and cumulative never autosave", async ({ page }) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name: "qa-conflicting-ytd.pdf", mimeType: "application/pdf",
+    buffer: makeColumnsPdf(["previous", "period", "ytd"], {
+      periodSectionTaxable: "3 240,50",
+      yearSectionTaxable: "49 905,75"
+    })
+  });
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator('[data-key="ytdTaxableIncome"]')).toBeVisible();
+  await expect(page.locator("#reviewGrid")).toContainText("49 905,75");
+  await expect(page.locator("#reviewGrid")).toContainText("48 905,75");
+  const records = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
+  expect(records).toHaveLength(0);
 });

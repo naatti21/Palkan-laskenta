@@ -442,7 +442,9 @@ function renderReview(parsed, keys = null, manual = false) {
     wrapper.append(title, input);
     if (!manual && (meta.value == null || (meta.confidence > 0 && meta.confidence < .9))) {
       const hint = document.createElement("small");
-      hint.textContent = meta.source ? `Lähde: ${meta.source}` : "Ei tunnistettu";
+      hint.textContent = Array.isArray(meta.candidates) && meta.candidates.length > 1
+        ? `Havaitut vaihtoehdot: ${meta.candidates.map(value => fmtFieldValue(key, value)).join(" / ")}. Vahvista oikea arvo.`
+        : meta.source ? `Lähde: ${meta.source}` : "Ei tunnistettu";
       wrapper.append(hint);
     }
     grid.append(wrapper);
