@@ -160,7 +160,7 @@ async function setDefaults(records,chosenYear){
   :"Lähtöarvot haettu tallennetun laskelman verokorttikentistä. Voit muuttaa niitä vain tätä kokeilua varten.")
   +" Muut maksut 0 % tarkoittaa, ettei niitä ole laskettu mukaan.";
  loadedYear=chosenYear;
- lastSource=source.sourceDate;
+ lastSource=JSON.stringify(source);
  repaint();
 }
 export function initScenarioUi() {
@@ -177,6 +177,9 @@ export function initScenarioUi() {
  }
 }
 export async function renderScenarioUi(records,chosenYear) {
- if(chosenYear!==loadedYear)await setDefaults(records,chosenYear);
+ // After a backup import in the SAME year, refresh source-derived tax fields.
+ // Preserve year-specific user overrides from IndexedDB when recomputing defaults.
+ const signature=JSON.stringify(deriveTaxDefaults(records,chosenYear));
+ if(chosenYear!==loadedYear||signature!==lastSource)await setDefaults(records,chosenYear);
  else repaint();
 }
