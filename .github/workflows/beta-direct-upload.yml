@@ -61,8 +61,8 @@ jobs:
           assert.match(sw, /palkka-beta-v/);
           assert.match(sw, /beta-entry\.mjs/);
           assert.match(sw, /analytics\.js/);
-          assert.match(sw, /insights\\.js/);
-          assert.match(sw, /insights-ui\\.js/);
+          assert.match(sw, /insights\.js/);
+          assert.match(sw, /insights-ui\.js/);
           assert.doesNotMatch(sw, /palkka-staging-v/);
           const manifest = JSON.parse(await readFile(root + 'manifest.webmanifest', 'utf8'));
           assert.equal(manifest.short_name, 'Palkka BETA');
