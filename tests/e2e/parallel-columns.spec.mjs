@@ -123,6 +123,7 @@ test("QA F3: previous year value is editable in the review UI", async ({ page })
   await expect(page.locator('[data-key="previousYearTaxableIncome"]')).toBeVisible();
   await page.locator('[data-key="previousYearTaxableIncome"]').fill("60000,00");
   await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText(/Korjaus tallennettu|rakennehavainto päivitettiin/i);
   const records = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
   expect(records).toHaveLength(1);
   expect(records[0].values.previousYearTaxableIncome).toBe(60000);
