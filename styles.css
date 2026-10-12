@@ -97,3 +97,17 @@ button.danger { background:rgba(248,113,113,.08); color:#fecaca; border:1px soli
   .chart-row { grid-template-columns:38px minmax(0,1fr) 83px; gap:6px; }
   .chart-amount { font-size:.72rem; }
 }
+
+/* Beta insights · accessible expandable detail and local-only scenario inputs */
+.insight-rows { display:grid; gap:8px; margin:12px 0; min-width:0; }
+.insight-line { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; padding:9px 0; border-bottom:1px solid rgba(160,174,192,.13); font-size:.84rem; line-height:1.45; }
+.insight-line span { color:#aab4ca; flex:1 1 45%; min-width:120px; overflow-wrap:anywhere; }
+.insight-line strong { font-weight:600; text-align:right; flex:0 1 auto; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.month-expand { border:1px solid rgba(160,174,192,.2); border-radius:10px; padding:11px 12px; min-width:0; background:rgba(255,255,255,.018); }
+.month-expand summary { cursor:pointer; font-weight:600; font-size:.85rem; line-height:1.5; overflow-wrap:anywhere; }
+.month-expand[open] summary { margin-bottom:9px; }
+.input-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:12px; margin:12px 0 14px; min-width:0; }
+.insight-label { display:grid; gap:7px; margin:10px 0; font-size:.82rem; color:#cbd5e1; }
+.insight-label input,.insight-label select { min-width:0; width:100%; box-sizing:border-box; border-radius:10px; padding:11px 12px; background:#121a2a; color:#f8fafc; border:1px solid rgba(148,163,184,.35); font:inherit; font-size:1rem; }
+.insight-label input:focus-visible,.insight-label select:focus-visible { outline:2px solid #60a5fa; outline-offset:2px; }
+@media(max-width:390px){.input-grid{grid-template-columns:minmax(0,1fr)} .insight-line strong{text-align:left}}

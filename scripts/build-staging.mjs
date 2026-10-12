@@ -16,7 +16,7 @@ if (process.env.CF_PAGES && process.env.CF_PAGES_BRANCH !== 'develop') {
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const files = ['index.html', 'styles.css', 'app.js', 'parser.js', 'model.js', 'storage.js',
-  'learning.js', 'analytics.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
+  'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs'];
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
@@ -51,7 +51,8 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 }
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-staging-v";')
   .replace('const CACHE = `${CACHE_PREFIX}17`;', `const CACHE = '${'palkka-staging-v' + revision}';`)
-  .replace('"./", "./index.html",', '"./", "./index.html", "./staging-entry.mjs",');
+  .replace('"./", "./index.html",', '"./", "./index.html", "./staging-entry.mjs",')
+  .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js",');
 // Enforce the same origin before any worker event handlers can register.
 sw = `if (self.location.origin !== ${JSON.stringify(rawOrigin)}) throw new Error('Staging origin mismatch');\n` + sw;
 await writeFile(`${output}/sw.js`, sw);
