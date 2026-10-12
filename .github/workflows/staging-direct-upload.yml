@@ -133,32 +133,49 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy _staging --project-name=palkka-staging --branch=${{ steps.target.outputs.production_branch }} --commit-hash=${{ github.sha }}
 
-      - name: Verify live staging SHA and origin
+      - name: Verify production deployment with authenticated Cloudflare API
         if: steps.auth.outputs.enabled == 'true'
         shell: bash
         env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STAGING_ORIGIN: https://palkka-staging.pages.dev
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import json, os, time, urllib.request
-          expected, origin = os.environ['GITHUB_SHA'], os.environ['STAGING_ORIGIN']
-          url = origin + '/build-info.json?verify=' + expected
-          last = 'No response'
-          for attempt in range(15):
-              try:
-                  req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
-                  with urllib.request.urlopen(req, timeout=15) as response:
-                      info = json.load(response)
-                  last = 'Observed ' + str(info.get('commit'))
-                  if info.get('commit') == expected and info.get('origin') == origin and info.get('environment') == 'staging':
+          expected = os.environ['GITHUB_SHA']
+          base = ('https://api.cloudflare.com/client/v4/accounts/'
+                  + os.environ['CF_ACCOUNT_ID'] + '/pages/projects/palkka-staging/deployments')
+          url = base + '?env=production&per_page=1'
+          last = 'No deployment found'
+          for attempt in range(12):
+              req = urllib.request.Request(url, headers={
+                  'Authorization': 'Bearer ' + os.environ['CF_API_TOKEN'],
+                  'Cache-Control': 'no-cache'
+              })
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  payload = json.load(response)
+              assert payload.get('success') is True, 'Cloudflare deployment API error'
+              deployments = payload.get('result') or []
+              if deployments:
+                  deployment = deployments[0]
+                  commit = ((deployment.get('deployment_trigger') or {}).get('metadata') or {}).get('commit_hash')
+                  status = (deployment.get('latest_stage') or {}).get('status')
+                  environment = deployment.get('environment')
+                  last = 'Latest production deployment: commit=' + str(commit) + ' status=' + str(status)
+                  if commit == expected and environment == 'production' and status == 'success':
                       with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf8') as report:
-                          report.write('### Staging deployment verified\n- URL: ' + origin + '\n- Commit: ' + expected + '\n- Independent QA: not performed\n')
-                      print('Verified live staging:', expected)
+                          report.write('### Cloudflare production-branch staging deployment verified\n')
+                          report.write('- Target project: palkka-staging\n')
+                          report.write('- Target origin: ' + os.environ['STAGING_ORIGIN'] + '\n')
+                          report.write('- Commit: ' + expected + '\n')
+                          report.write('- Cloudflare deployment: ' + str(deployment.get('url')) + '\n')
+                          report.write('- Browser availability: **not verified; HTTP 403 from GitHub runner previously**\n')
+                          report.write('- Independent QA: **not performed**\n')
+                      print('Cloudflare deployment API verified', expected)
                       break
-              except Exception as error:
-                  last = str(error)
-              time.sleep(4)
+              time.sleep(5)
           else:
-              raise RuntimeError('Staging root did not serve expected SHA: ' + last)
+              raise RuntimeError('Expected staging deployment not verified: ' + last)
           PY
