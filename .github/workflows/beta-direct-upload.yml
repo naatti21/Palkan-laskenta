@@ -1,0 +1,181 @@
+name: Publish isolated Palkka Beta
+
+on:
+  push:
+    branches: ["release/beta-preview-v1"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: palkka-beta-direct-upload
+  cancel-in-progress: true
+
+jobs:
+  beta:
+    if: github.ref == 'refs/heads/release/beta-preview-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BETA_ORIGIN: https://palkka-beta.pages.dev
+    steps:
+      - name: Check out exact beta branch commit
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run complete canonical test suite including beta backup/browser
+        run: npm test
+
+      - name: Build exclusively for the beta origin
+        run: npm run build:beta
+
+      - name: Audit beta artifact and origin lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile, stat } from 'node:fs/promises';
+          const root = '_beta/';
+          const info = JSON.parse(await readFile(root + 'build-info.json', 'utf8'));
+          assert.equal(info.environment, 'beta');
+          assert.equal(info.origin, process.env.BETA_ORIGIN);
+          assert.equal(info.commit, process.env.GITHUB_SHA);
+          const html = await readFile(root + 'index.html', 'utf8');
+          assert.match(html, /Palkka BETA/);
+          assert.match(html, /beta-entry\.mjs/);
+          assert.match(html, /BETA · Kokeiluversio/);
+          const entry = await readFile(root + 'beta-entry.mjs', 'utf8');
+          assert.ok(entry.includes(process.env.BETA_ORIGIN));
+          const sw = await readFile(root + 'sw.js', 'utf8');
+          assert.match(sw, /palkka-beta-v/);
+          assert.match(sw, /beta-entry\.mjs/);
+          assert.match(sw, /analytics\.js/);
+          assert.doesNotMatch(sw, /palkka-staging-v/);
+          const manifest = JSON.parse(await readFile(root + 'manifest.webmanifest', 'utf8'));
+          assert.equal(manifest.short_name, 'Palkka BETA');
+          for (const p of [
+            'index.html', 'beta-entry.mjs', 'app.js', 'analytics.js', 'parser.js',
+            'model.js', 'storage.js', 'learning.js', 'styles.css', 'sw.js',
+            'manifest.webmanifest', 'build-info.json', '_headers', 'pdf-reader.js',
+            'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs',
+            'icon-192.png', 'icon-512.png'
+          ]) assert.ok((await stat(root + p)).isFile(), 'Missing beta asset ' + p);
+          console.log('Beta artifact verified, source SHA:', info.commit);
+          NODE
+
+      - name: Retain exact beta build for rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: palkka-beta-tested-build
+          path: _beta/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify Cloudflare authorization
+        shell: bash
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CF_API_TOKEN" || { echo 'Missing Cloudflare token Actions secret'; exit 1; }
+          test -n "$CF_ACCOUNT_ID" || { echo 'Missing Cloudflare account Actions secret'; exit 1; }
+
+      - name: Create or verify isolated Pages Direct Upload project
+        shell: bash
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, urllib.error, urllib.request
+
+          account = os.environ['CF_ACCOUNT_ID']
+          assert re.fullmatch(r'[a-fA-F0-9]{32}', account), 'Invalid account ID'
+          root = 'https://api.cloudflare.com/client/v4/accounts/' + account + '/pages/projects'
+          headers = {'Authorization': 'Bearer ' + os.environ['CF_API_TOKEN'],
+                     'Content-Type': 'application/json'}
+
+          def call(method, url, data=None):
+              body = json.dumps(data).encode('utf8') if data is not None else None
+              req = urllib.request.Request(url, headers=headers, method=method, data=body)
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  payload = json.load(response)
+              assert payload.get('success') is True, 'Cloudflare Pages request unsuccessful'
+              return payload['result']
+
+          try:
+              project = call('GET', root + '/palkka-beta')
+              print('Existing beta project found')
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              project = call('POST', root, {'name': 'palkka-beta', 'production_branch': 'beta'})
+              print('Created isolated beta Pages project')
+
+          assert project.get('name') == 'palkka-beta', 'Incorrect Pages project'
+          assert project.get('subdomain') == 'palkka-beta.pages.dev', 'Unexpected Pages origin'
+          assert project.get('production_branch') == 'beta', 'Unexpected Pages production branch'
+          assert (project.get('source') or {}).get('type') not in ('github', 'gitlab'), 'Refusing Git-connected project'
+          print('Verified beta project, branch and exact origin')
+          PY
+
+      - name: Publish beta only, never staging or GitHub Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _beta --project-name=palkka-beta --branch=beta --commit-hash=${{ github.sha }}
+
+      - name: Verify production deployment of the beta Pages project with authenticated API
+        shell: bash
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          expected = os.environ['GITHUB_SHA']
+          origin = os.environ['BETA_ORIGIN']
+          url = ('https://api.cloudflare.com/client/v4/accounts/' +
+                 os.environ['CF_ACCOUNT_ID'] + '/pages/projects/palkka-beta/deployments?env=production&per_page=1')
+          headers = {'Authorization': 'Bearer ' + os.environ['CF_API_TOKEN'],
+                     'Cache-Control': 'no-cache'}
+          last = 'No deployment data'
+          for i in range(12):
+              req = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  payload = json.load(response)
+              assert payload.get('success'), 'Cloudflare deployments API error'
+              deployments = payload.get('result') or []
+              if deployments:
+                  item = deployments[0]
+                  commit = ((item.get('deployment_trigger') or {}).get('metadata') or {}).get('commit_hash')
+                  state = (item.get('latest_stage') or {}).get('status')
+                  env = item.get('environment')
+                  last = f'commit={commit}, stage={state}, environment={env}'
+                  if commit == expected and state == 'success' and env == 'production':
+                      with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf8') as f:
+                          f.write('### Isolated Palkka BETA successfully deployed\\n')
+                          f.write('- URL: ' + origin + '\\n- SHA: ' + expected + '\\n')
+                          f.write('- Personal data: **not uploaded**\\n')
+                          f.write('- Independent parser QA: **pending**\\n')
+                      print('Beta Pages deployment verified:', expected)
+                      break
+              time.sleep(5)
+          else:
+              raise RuntimeError('Beta Pages deployment not verified: ' + last)
+          PY

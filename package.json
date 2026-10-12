@@ -4,12 +4,14 @@
   "version": "0.4.1",
   "scripts": {
     "prepare:pdfjs": "node scripts/prepare-pdfjs.mjs",
-    "test": "node --test tests/*.test.mjs && npm run test:e2e && npm run test:staging",
+    "test": "node --test tests/*.test.mjs && npm run test:e2e && npm run test:staging && npm run test:beta",
     "test:logic": "node --test tests/*.test.mjs",
     "test:e2e": "npm run prepare:pdfjs && playwright test",
     "test:smoke": "npm run prepare:pdfjs && playwright test --grep @smoke",
     "build:staging": "npm run prepare:pdfjs && node scripts/build-staging.mjs",
-    "test:staging": "STAGING_ORIGIN=http://127.0.0.1:4175 npm run build:staging && playwright test --config playwright.staging.config.mjs"
+    "test:staging": "STAGING_ORIGIN=http://127.0.0.1:4175 npm run build:staging && playwright test --config playwright.staging.config.mjs",
+    "build:beta": "npm run prepare:pdfjs && node scripts/build-beta.mjs",
+    "test:beta": "BETA_ORIGIN=http://127.0.0.1:4177 npm run build:beta && playwright test --config playwright.beta.config.mjs"
   },
   "dependencies": {
     "pdfjs-dist": "6.4.299"
