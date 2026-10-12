@@ -137,3 +137,46 @@ test("all three explicit period labels and cumulative value are preserved on dis
   assert.deepEqual(p.fields.grossPay.candidates, [3800, 3500, 3600, 3700]);
   assert.ok(blocking(p, "grossPay"));
 });
+
+test("QA IMPORT-P0-02: two different Ver.al.ans in one period section must block silent autosave", () => {
+  const p = read("Kauden tiedot", "Ver.al.ans 3 500,00", "Ver.al.ans 3 600,00");
+  assert.equal(p.fields.grossPay.value, 3500);
+  assert.deepEqual(p.fields.grossPay.candidates, [3500, 3600]);
+  assert.equal(p.fields.grossPay.conflict, true);
+  assert.ok(p.fields.grossPay.confidence < .95);
+  assert.ok(blocking(p, "grossPay"));
+  assert.equal(p.fields.ytdTaxableIncome.value, 42000);
+  assert.equal(blocking(p, "ytdTaxableIncome"), false);
+});
+
+test("same period value repeated twice is not a false-positive conflict", () => {
+  const p = read("Kauden tiedot", "Ver.al.ans 3 500,00", "Ver.al.ans 3 500,00");
+  assert.equal(p.fields.grossPay.conflict, undefined);
+  assert.ok(!blocking(p, "grossPay"));
+});
+
+test("period section ends before year section, so YTD value does not become period candidate", () => {
+  const p = read("Kauden tiedot", "Ver.al.ans 3 500,00", "Vuoden tiedot", "Ver.al.ans 42 000,00");
+  assert.equal(p.fields.grossPay.conflict, undefined);
+  assert.equal(p.fields.ytdTaxableIncome.conflict, undefined);
+  assert.ok(!blocking(p, "grossPay"));
+  assert.ok(!blocking(p, "ytdTaxableIncome"));
+});
+
+test("QA IMPORT-P0-02 also blocks two different year-section YTD observations", () => {
+  const p = read("Vuoden tiedot", "Ver.al.ans 42 000,00", "Ver.al.ans 43 000,00");
+  assert.equal(p.fields.ytdTaxableIncome.value, 42000);
+  assert.deepEqual(p.fields.ytdTaxableIncome.candidates, [42000, 43000]);
+  assert.equal(p.fields.ytdTaxableIncome.conflict, true);
+  assert.ok(blocking(p, "ytdTaxableIncome"));
+  assert.equal(blocking(p, "grossPay"), false);
+});
+
+test("repeated named period sections also retain both semantic observations", () => {
+  const p = read("Kauden tiedot", "Ver.al.ans 3 500,00",
+    "Vuoden tiedot", "Ver.al.ans 42 000,00",
+    "Kauden tiedot", "Ver.al.ans 3 600,00");
+  assert.equal(p.fields.grossPay.conflict, true);
+  assert.deepEqual(p.fields.grossPay.candidates, [3500, 3600]);
+  assert.ok(blocking(p, "grossPay"));
+});
