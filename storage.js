@@ -5,12 +5,14 @@ import {
   recordContentKey,
   sameRecordContent
 } from "./model.js";
+import {BANK_KEY, mergeBankAnchors} from "./bank-ledger.js";
 
 const DB_NAME = "palkka-pwa";
 const DB_VERSION = 1;
 const RECORD_STORE = "payslips";
 const SETTINGS_STORE = "settings";
 const LEGACY_KEY = "palkka-pwa-proto:v1";
+const LEARNED_PROFILES_KEY = "learnedLayoutProfiles:v1";
 
 let dbPromise;
 
@@ -300,6 +302,66 @@ export async function mergeManyRecords(records) {
     merged: plan.merged,
     conflictsPreserved: plan.conflictsPreserved
   };
+}
+
+
+/**
+ * Restore is a single cross-store transaction. All validation and merge plans
+ * finish before the first write. If any request or put fails, the same
+ * transaction aborts both salary records and bank/learned settings.
+ *
+ * planLearnedProfiles is a synchronous, pure domain merge supplied by the UI
+ * to preserve its existing learned-layout matching and sanitization rules.
+ */
+export async function restoreBackupAtomically(incomingRecords, {
+  bankSnapshots = [],
+  learnedProfiles = [],
+  planLearnedProfiles
+} = {}) {
+  if (!Array.isArray(incomingRecords) || !Array.isArray(bankSnapshots) ||
+      !Array.isArray(learnedProfiles)) throw new Error("Virheellinen varmuuskopio.");
+  if (learnedProfiles.length && typeof planLearnedProfiles !== "function")
+    throw new Error("Opittujen rakenteiden yhdistäminen puuttuu.");
+
+  const db = await openDb();
+  const tx = db.transaction([RECORD_STORE, SETTINGS_STORE], "readwrite");
+  const done = transactionDone(tx);
+  const payStore = tx.objectStore(RECORD_STORE);
+  const settings = tx.objectStore(SETTINGS_STORE);
+
+  try {
+    // Queue reads together. No external/network awaits within the transaction.
+    const [storedRecords, bankRow, learnedRow] = await Promise.all([
+      requestToPromise(payStore.getAll()),
+      requestToPromise(settings.get(BANK_KEY)),
+      requestToPromise(settings.get(LEARNED_PROFILES_KEY))
+    ]);
+    const originalRecords = storedRecords.map(migrateLegacyRecord).filter(Boolean);
+    const plan = planRecordMerge(originalRecords, incomingRecords);
+    const existingBank = bankRow?.value ?? [];
+    const bankMerged = mergeBankAnchors(existingBank, bankSnapshots);
+    const existingLearned = Array.isArray(learnedRow?.value) ? learnedRow.value : [];
+    const learnedMerged = learnedProfiles.length
+      ? planLearnedProfiles(existingLearned, learnedProfiles)
+      : existingLearned;
+
+    if (JSON.stringify(originalRecords) !== JSON.stringify(plan.records)) {
+      payStore.clear();
+      for (const record of plan.records) payStore.put(record);
+    }
+    if (bankSnapshots.length && JSON.stringify(existingBank) !== JSON.stringify(bankMerged))
+      settings.put({key: BANK_KEY, value: bankMerged});
+    if (learnedProfiles.length && JSON.stringify(existingLearned) !== JSON.stringify(learnedMerged))
+      settings.put({key: LEARNED_PROFILES_KEY, value: learnedMerged});
+
+    await done;
+    return {added: plan.added, merged: plan.merged,
+      conflictsPreserved: plan.conflictsPreserved};
+  } catch (err) {
+    try { tx.abort(); } catch {}
+    try { await done; } catch {}
+    throw err;
+  }
 }
 
 export async function clearAllRecords() {
