@@ -106,53 +106,88 @@ function sectionMoney(text, sectionPattern, labelPattern) {
   return sectionMoneyCandidates(text, sectionPattern, labelPattern)[0] ?? null;
 }
 
-function parallelCumulativeSummary(text, taxableLabel) {
-  const lines = textLines(text);
-  const columnRe = /Kertymä\s+(palkkakaudelta|vuoden alusta|edelliseltä vuodelta)\b/gi;
-  const index = lines.findIndex(line =>
-    /Kertymä\s+palkkakaudelta\b/i.test(line) &&
-    /Kertymä\s+vuoden alusta\b/i.test(line)
-  );
-  if (index < 0) return null;
-
-  // PDF.js's line renderer sorts text by horizontal position. The header order,
-  // NOT the numeric position alone, decides the meaning of each column.
-  const names = {
-    "palkkakaudelta": "period",
-    "vuoden alusta": "ytd",
-    "edelliseltä vuodelta": "previous"
+function parallelCumulativeSummary(text, taxableLabel, sourceLines = []) {
+  // Evidence adapter for ALL multi-column cumulative headers, not the first.
+  // Each heading owns its rows up to the next structural heading or page.
+  const lines = String(text).split("\n");
+  const headerRegex = /Kertymä\s+(palkkakaudelta|vuoden alusta|edelliseltä vuodelta)\b/gi;
+  const roles = {
+    "palkkakaudelta": "grossPay",
+    "vuoden alusta": "ytdTaxableIncome",
+    "edelliseltä vuodelta": "previousYearTaxableIncome"
   };
-  const columns = [...lines[index].matchAll(columnRe)]
-    .map(match => names[match[1].toLocaleLowerCase("fi-FI")]);
-  const uniqueHeaders = new Set(columns);
-  const headerValid = columns.length >= 2 && columns.length <= 3 &&
-    uniqueHeaders.size === columns.length &&
-    uniqueHeaders.has("period") && uniqueHeaders.has("ytd");
-  const following = lines.slice(index + 1, index + 22);
-
-  function collect(label) {
-    const re = new RegExp(label.source + "\\s+(" + MONEY_RE + ")", "gi");
-    const observations = following.map(line => [...line.matchAll(re)]
-      .map(match => fiNumber(match[1]))
-      .filter(value => value != null)
-    ).filter(values => values.length);
-
-    if (!observations.length) return { values: null, observations: [], uncertain: false };
-    const complete = observations.filter(values => values.length === columns.length);
-    const incomplete = observations.some(values => values.length !== columns.length);
-    const key = values => values.map(value => value.toFixed(2)).join("|");
-    const inconsistent = complete.some(values => key(values) !== key(complete[0]));
-    const uncertain = !headerValid || incomplete || inconsistent || !complete.length;
-    const values = uncertain ? null : Object.fromEntries(columns.map((name, i) => [name, complete[0][i]]));
-    // Never discard observed numbers simply because a row is incomplete.
-    return { values, observations, uncertain };
+  const headers = [];
+  for (let index=0; index<lines.length; index++) {
+    const matches = [...lines[index].matchAll(headerRegex)];
+    if (matches.length < 2) continue;
+    const columns = matches.map(match => roles[match[1].toLocaleLowerCase("fi-FI")]);
+    const distinct = new Set(columns);
+    const valid = columns.length <= 3 && distinct.size === columns.length &&
+      distinct.has("grossPay") && distinct.has("ytdTaxableIncome");
+    headers.push({index,columns,valid,page:sourceLines[index]?.page ?? null});
   }
+  if (!headers.length) return null;
 
+  const makeGroup = () => ({
+    values:null, observations:[], uncertain:false,
+    byRole:{grossPay:[],ytdTaxableIncome:[],previousYearTaxableIncome:[],
+      withholdingPeriod:[],withholdingYtd:[]}
+  });
+  const taxable=makeGroup(), withholding=makeGroup();
+  const labelRegexes=[
+    [taxable,new RegExp(taxableLabel.source+"\\s+("+MONEY_RE+")","gi")],
+    [withholding,new RegExp("Ennakonpidätys\\s+("+MONEY_RE+")","gi")]
+  ];
+  const nextSection = /^\s*(?:Kauden\s+tiedot|Vuoden\s+tiedot|Kertymä\s+(?:palkkakaudelta|vuoden alusta|edelliseltä vuodelta))\b/i;
+  let headerValid=true;
+
+  for(let h=0;h<headers.length;h++){
+    const header=headers[h], seen=new Map([[taxable,false],[withholding,false]]);
+    headerValid=headerValid && header.valid;
+    const stop=headers[h+1]?.index ?? lines.length;
+    for(let index=header.index+1;index<stop;index++){
+      const line=lines[index];
+      // Do not infer cells beyond their heading's structural or page boundary.
+      if(nextSection.test(line)) break;
+      if(header.page!=null && sourceLines[index]?.page!=null &&
+          sourceLines[index].page!==header.page) break;
+      for(const [group,regex] of labelRegexes) {
+        regex.lastIndex=0;
+        const amounts=[...line.matchAll(regex)].map(m=>fiNumber(m[1]))
+          .filter(value=>value!=null);
+        if(!amounts.length) continue;
+        seen.set(group,true);
+        group.observations.push(amounts);
+        if(!header.valid || amounts.length!==header.columns.length) {
+          group.uncertain=true;
+          continue;
+        }
+        const row=Object.fromEntries(header.columns.map((role,i)=>[role,amounts[i]]));
+        if(group.values===null)group.values=row;
+        for(let i=0;i<header.columns.length;i++){
+          const role=header.columns[i];
+          const field=group===taxable?role:
+            role==="grossPay"?"withholdingPeriod":
+            role==="ytdTaxableIncome"?"withholdingYtd":null;
+          if(field===null)continue;
+          group.byRole[field].push({
+            value:amounts[i],label:"parallel-column",line:index+1,
+            ...(sourceLines[index]?.page!=null?{page:sourceLines[index].page}:{})
+          });
+        }
+      }
+    }
+    if(!header.valid || !seen.get(taxable)) taxable.uncertain=true;
+    if(!header.valid || !seen.get(withholding)) withholding.uncertain=true;
+  }
+  // Conflicting complete rows are kept separately: the shared semantic
+  // resolver compares role-specific values and blocks any disagreement.
   return {
-    columns,
+    columns:headers[0].columns,
     headerValid,
-    taxable: collect(taxableLabel),
-    withholding: collect(/Ennakonpidätys\b/i)
+    blocks:headers.length,
+    taxable,
+    withholding
   };
 }
 
