@@ -23,3 +23,17 @@ Mallin **rajan ylitys** on koko vuoden bruttoarvioon perustuva työviikonloppuje
 - **Ei riippumaton QA**; ei PDF-tuontiin liittyvä turvallisuushyväksyntä.
 
 Liittyy tuotesuuntatehtävään #16. Palkka PR #15:n riippumaton PDF-P0-06 NO-GO jatkuu. Ei muutosta `main`/`develop`/`release/beta-preview-v1`-haaroihin, stagingiin, käyttäjän asennettuun Betaan tai tuotantoon tämän Draftin perusteella. Julkaisu tai integraatio vaatii erillisen käyttäjäpäätöksen.
+
+## LAB v0.2 — palkkahistorian ehdotukset
+
+- Käyttäjä valitsee itse `Palkka PWA` -varmuuskopion (JSON, skeema 2 / tietueversio 1). Tiedosto luetaan selaimessa muistiin; ei verkkopyyntöjä, paikallistallennusta, PDF-tiedostoja tai automaattista tuontia muihin sovelluksiin.
+- `payDate` valitsee edellisen palkkavuoden 2026, jos tietoja on. `ytdTaxableIncome` käsitellään viimeisen laskelman tilannekuvana eikä lasketa yhteen.
+- Koodit 55201/55301 (lomaraha), 40000 (APP) ja 40070 (muu erä) tuottavat **havaittujen palkkarivien** summat. Ristiriitainen saman maksutapahtuman tuplatuonti pysäytetään; ilman palkkarivejä ei väitetä 0 €:n kertymää.
+- 2027 perusansio **ei ole todistettu ylityötön ansio**. Ehdotus saadaan viimeisimpien palkkiotyön ja tuotantolisän tuntihintojen mediaanista oletuksella 80 tavallista tuntia / 2 viikon jakso, 26 jaksoa vuodessa, sekä tyypillisistä iltalisistä. Ei loman, pankin, arkipyhien, muiden vuorolisien tai satunnaisten poissaolojen täydellistä mallinnusta.
+- 16 tunnin viikonlopun bruttoehdotus käyttää tunnistettuja tuntihintoja ja **oletettuja** 50/100 %, sunnuntai- sekä viikkovapaakorvauksia; TES- ja paikalliset ehdot voivat poiketa. Käyttäjä voi korjata molemmat luvut.
+- Historian APP **ei siirry automaattisesti** ensi vuoteen. Käyttäjä valitsee erikseen sisällytetäänkö se arvioon.
+- Menneen vuoden ennakonpidätysprosentit näytetään vain lähdetietona, **ei 2027 OmaVero-prosentteina**. Molempien uusien verokorttien prosentit ja vuositulorajat täytetään käyttäjän saamien arvojen mukaan.
+- UI: harvemmin tarvittavat ansioiden erät/korotuksen ajankohta piilotetaan avattaviin lisäasetuksiin. Kaikki luvut jäävät edelleen muokattaviksi.
+- **Testattu** synteettisellä varmuuskopiolla Node 8/8 ja Chromium 390px: paikallistuonti, ehdotusten hyväksyntä, bonusvalinta, 52 viikonlopun päivitys, konsolivirheet 0, vaakaylivuoto 0. GitHub CI:n tulos tarkistetaan erikseen. Tämä ei ole riippumaton QA.
+
+**EI käytetä palkkalaskelmien henkilötietoja, todellisia summaarvoja tai autenttisia varmuuskopioita julkisissa testifixtureissä.**
