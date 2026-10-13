@@ -106,53 +106,88 @@ function sectionMoney(text, sectionPattern, labelPattern) {
   return sectionMoneyCandidates(text, sectionPattern, labelPattern)[0] ?? null;
 }
 
-function parallelCumulativeSummary(text, taxableLabel) {
-  const lines = textLines(text);
-  const columnRe = /Kertymä\s+(palkkakaudelta|vuoden alusta|edelliseltä vuodelta)\b/gi;
-  const index = lines.findIndex(line =>
-    /Kertymä\s+palkkakaudelta\b/i.test(line) &&
-    /Kertymä\s+vuoden alusta\b/i.test(line)
-  );
-  if (index < 0) return null;
-
-  // PDF.js's line renderer sorts text by horizontal position. The header order,
-  // NOT the numeric position alone, decides the meaning of each column.
-  const names = {
-    "palkkakaudelta": "period",
-    "vuoden alusta": "ytd",
-    "edelliseltä vuodelta": "previous"
+function parallelCumulativeSummary(text, taxableLabel, sourceLines = []) {
+  // Evidence adapter for ALL multi-column cumulative headers, not the first.
+  // Each heading owns its rows up to the next structural heading or page.
+  const lines = String(text).split("\n");
+  const headerRegex = /Kertymä\s+(palkkakaudelta|vuoden alusta|edelliseltä vuodelta)\b/gi;
+  const roles = {
+    "palkkakaudelta": "grossPay",
+    "vuoden alusta": "ytdTaxableIncome",
+    "edelliseltä vuodelta": "previousYearTaxableIncome"
   };
-  const columns = [...lines[index].matchAll(columnRe)]
-    .map(match => names[match[1].toLocaleLowerCase("fi-FI")]);
-  const uniqueHeaders = new Set(columns);
-  const headerValid = columns.length >= 2 && columns.length <= 3 &&
-    uniqueHeaders.size === columns.length &&
-    uniqueHeaders.has("period") && uniqueHeaders.has("ytd");
-  const following = lines.slice(index + 1, index + 22);
-
-  function collect(label) {
-    const re = new RegExp(label.source + "\\s+(" + MONEY_RE + ")", "gi");
-    const observations = following.map(line => [...line.matchAll(re)]
-      .map(match => fiNumber(match[1]))
-      .filter(value => value != null)
-    ).filter(values => values.length);
-
-    if (!observations.length) return { values: null, observations: [], uncertain: false };
-    const complete = observations.filter(values => values.length === columns.length);
-    const incomplete = observations.some(values => values.length !== columns.length);
-    const key = values => values.map(value => value.toFixed(2)).join("|");
-    const inconsistent = complete.some(values => key(values) !== key(complete[0]));
-    const uncertain = !headerValid || incomplete || inconsistent || !complete.length;
-    const values = uncertain ? null : Object.fromEntries(columns.map((name, i) => [name, complete[0][i]]));
-    // Never discard observed numbers simply because a row is incomplete.
-    return { values, observations, uncertain };
+  const headers = [];
+  for (let index=0; index<lines.length; index++) {
+    const matches = [...lines[index].matchAll(headerRegex)];
+    if (matches.length < 2) continue;
+    const columns = matches.map(match => roles[match[1].toLocaleLowerCase("fi-FI")]);
+    const distinct = new Set(columns);
+    const valid = columns.length <= 3 && distinct.size === columns.length &&
+      distinct.has("grossPay") && distinct.has("ytdTaxableIncome");
+    headers.push({index,columns,valid,page:sourceLines[index]?.page ?? null});
   }
+  if (!headers.length) return null;
 
+  const makeGroup = () => ({
+    values:null, observations:[], uncertain:false,
+    byRole:{grossPay:[],ytdTaxableIncome:[],previousYearTaxableIncome:[],
+      withholdingPeriod:[],withholdingYtd:[]}
+  });
+  const taxable=makeGroup(), withholding=makeGroup();
+  const labelRegexes=[
+    [taxable,new RegExp(taxableLabel.source+"\\s+("+MONEY_RE+")","gi")],
+    [withholding,new RegExp("Ennakonpidätys\\s+("+MONEY_RE+")","gi")]
+  ];
+  const nextSection = /^\s*(?:Kauden\s+tiedot|Vuoden\s+tiedot|Kertymä\s+(?:palkkakaudelta|vuoden alusta|edelliseltä vuodelta))\b/i;
+  let headerValid=true;
+
+  for(let h=0;h<headers.length;h++){
+    const header=headers[h], seen=new Map([[taxable,false],[withholding,false]]);
+    headerValid=headerValid && header.valid;
+    const stop=headers[h+1]?.index ?? lines.length;
+    for(let index=header.index+1;index<stop;index++){
+      const line=lines[index];
+      // Do not infer cells beyond their heading's structural or page boundary.
+      if(nextSection.test(line)) break;
+      if(header.page!=null && sourceLines[index]?.page!=null &&
+          sourceLines[index].page!==header.page) break;
+      for(const [group,regex] of labelRegexes) {
+        regex.lastIndex=0;
+        const amounts=[...line.matchAll(regex)].map(m=>fiNumber(m[1]))
+          .filter(value=>value!=null);
+        if(!amounts.length) continue;
+        seen.set(group,true);
+        group.observations.push(amounts);
+        if(!header.valid || amounts.length!==header.columns.length) {
+          group.uncertain=true;
+          continue;
+        }
+        const row=Object.fromEntries(header.columns.map((role,i)=>[role,amounts[i]]));
+        if(group.values===null)group.values=row;
+        for(let i=0;i<header.columns.length;i++){
+          const role=header.columns[i];
+          const field=group===taxable?role:
+            role==="grossPay"?"withholdingPeriod":
+            role==="ytdTaxableIncome"?"withholdingYtd":null;
+          if(field===null)continue;
+          group.byRole[field].push({
+            value:amounts[i],label:"parallel-column",line:index+1,
+            ...(sourceLines[index]?.page!=null?{page:sourceLines[index].page}:{})
+          });
+        }
+      }
+    }
+    if(!header.valid || !seen.get(taxable)) taxable.uncertain=true;
+    if(!header.valid || !seen.get(withholding)) withholding.uncertain=true;
+  }
+  // Conflicting complete rows are kept separately: the shared semantic
+  // resolver compares role-specific values and blocks any disagreement.
   return {
-    columns,
+    columns:headers[0].columns,
     headerValid,
-    taxable: collect(taxableLabel),
-    withholding: collect(/Ennakonpidätys\b/i)
+    blocks:headers.length,
+    taxable,
+    withholding
   };
 }
 
@@ -468,7 +503,7 @@ function parseGeneric(text, payLines, sourceLines = []) {
   const netPayConflict = uniqueNetPayCandidates.length > 1;
 
   const taxableLabel = /Ennakonpid(?:ä|\.)?\s*\.??\s*al\.??\s*tul(?:o)?/i;
-  const parallel = parallelCumulativeSummary(text, taxableLabel);
+  const parallel = parallelCumulativeSummary(text, taxableLabel, sourceLines);
   const taxable = allNumbersAfterLabel(text, taxableLabel);
   const inlineTaxable = inlineTaxableTriple(text, taxableLabel);
   const periodSectionCandidates = moneyCandidatesInNearbySection(text, /Kauden\s+tiedot/i, /Ver\.al\.ans/i);
@@ -476,19 +511,26 @@ function parseGeneric(text, payLines, sourceLines = []) {
   const periodSectionTaxable = periodSectionCandidates[0] ?? null;
   const yearSectionTaxable = yearSectionCandidates[0] ?? null;
   const periodCumulativeCandidates = parallel
-    ? (parallel.taxable.values ? [parallel.taxable.values.period] : [])
+    ? parallel.taxable.byRole.grossPay
     : sectionMoneyCandidates(text, /Kertymä\s+palkkakaudelta/i, taxableLabel);
-  const periodCumulativeTaxable = periodCumulativeCandidates[0] ?? null;
+  const periodCumulativeTaxable = parallel
+    ? (periodCumulativeCandidates[0]?.value ?? null)
+    : (periodCumulativeCandidates[0] ?? null);
 
   const yearCumulativeCandidates = parallel
-    ? (parallel.taxable.values ? [parallel.taxable.values.ytd] : [])
+    ? parallel.taxable.byRole.ytdTaxableIncome
     : sectionMoneyCandidates(text, /Kertymä\s+vuoden alusta/i, taxableLabel);
-  const yearCumulativeTaxable = yearCumulativeCandidates[0] ?? null;
+  const yearCumulativeTaxable = parallel
+    ? (yearCumulativeCandidates[0]?.value ?? null)
+    : (yearCumulativeCandidates[0] ?? null);
   // Compare other YTD observations after explicit values have been extracted.
 
+  const previousYearCumulativeCandidates = parallel
+    ? parallel.taxable.byRole.previousYearTaxableIncome
+    : [sectionMoney(text, /Kertymä\s+edelliseltä vuodelta/i, taxableLabel)].filter(v=>v!=null);
   const previousYearCumulativeTaxable = parallel
-    ? (parallel.taxable.values?.previous ?? null)
-    : sectionMoney(text, /Kertymä\s+edelliseltä vuodelta/i, taxableLabel);
+    ? (previousYearCumulativeCandidates[0]?.value ?? null)
+    : (previousYearCumulativeCandidates[0] ?? null);
   // Collect every known independently labeled taxable observation before selecting
   // any scalar. Explicit rows, section rows and mapped cumulative columns flow
   // through the SAME role-based resolver. Duplicate equal amounts are harmless.
@@ -512,7 +554,7 @@ function parseGeneric(text, payLines, sourceLines = []) {
   const yearTaxableCandidates = yearResolution.candidates;
   const yearCumulativeConflict = yearResolution.conflict;
   const previousResolution = resolveTaxableEvidence("previousYearTaxableIncome", evidence, [
-    previousYearCumulativeTaxable, explicitPreviousYearTaxable
+    ...previousYearCumulativeCandidates, explicitPreviousYearTaxable
   ].filter(value=>value!=null));
 
   const semanticallyAttributed = new Set(
@@ -548,15 +590,25 @@ function parseGeneric(text, payLines, sourceLines = []) {
     .map(match => fiNumber(match[1]))
     .filter(value => value != null);
   const withholdingPeriod = parallel
-    ? (parallel.withholding.values?.period ?? null)
+    ? (parallel.withholding.byRole.withholdingPeriod[0]?.value ?? null)
     : (sectionMoney(text, /Kertymä\s+palkkakaudelta/i, /Ennakonpidätys/i)
       ?? moneyInNearbySection(text, /Kauden\s+tiedot/i, /(?:Enn\.pid|Ennakonpidätys)/i)
       ?? withholdingNegatives[0] ?? null);
   const withholdingYtd = parallel
-    ? (parallel.withholding.values?.ytd ?? null)
+    ? (parallel.withholding.byRole.withholdingYtd[0]?.value ?? null)
     : (sectionMoney(text, /Kertymä\s+vuoden alusta/i, /Ennakonpidätys/i)
       ?? moneyInNearbySection(text, /Vuoden\s+tiedot/i, /(?:Enn\.pid|Ennakonpidätys)/i)
       ?? withholdingNegatives[1] ?? null);
+  // Withholding rows are not required for auto-accept, but contradictory
+  // independently labeled withholding values must still block persistence.
+  const withholdingPeriodChoices = uniqueMoneyValues(
+    (parallel?.withholding.byRole.withholdingPeriod || []).map(o=>o.value));
+  const withholdingYtdChoices = uniqueMoneyValues(
+    (parallel?.withholding.byRole.withholdingYtd || []).map(o=>o.value));
+  const withholdingPeriodUncertain = Boolean(parallel &&
+    (parallel.withholding.uncertain || withholdingPeriodChoices.length>1));
+  const withholdingYtdUncertain = Boolean(parallel &&
+    (parallel.withholding.uncertain || withholdingYtdChoices.length>1));
   const explicitTaxCardAccumulation = matchOne(text, [
     new RegExp(`(?:Nykyisen\\s+)?Verokortin\\s+kertymä\\s+(${MONEY_RE})`, "i")
   ], fiNumber);
@@ -611,7 +663,7 @@ function parseGeneric(text, payLines, sourceLines = []) {
       (periodCumulativeConflict || (parallel && (!parallel.headerValid || parallel.taxable.uncertain))) ? 0.50 : 0.97,
       periodCumulativeConflict ? "Ristiriitaiset kauden bruttohavainnot" : parallel?.taxable.uncertain ? `Epäselvä kertymärivi, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / palkkakausi",
       {
-         evidenceStatus:periodResolution.conflict?"conflict":periodResolution.checked?"verified":"unverified",
+         evidenceStatus:periodResolution.conflict?"conflict":parallel?.taxable.uncertain?"unverified":periodResolution.checked?"verified":"unverified",
          evidence:periodResolution.observations,
          ...(periodCumulativeConflict?{conflict:true,candidates:periodGrossCandidates}:parallel?.taxable.uncertain
            ?{evidenceIssue:true,candidates:parallel.taxable.observations.flat()}: {})
@@ -628,20 +680,20 @@ function parseGeneric(text, payLines, sourceLines = []) {
       (yearCumulativeConflict || (parallel && (!parallel.headerValid || parallel.taxable.uncertain))) ? 0.50 : 0.96,
       yearCumulativeConflict ? "Ristiriitaiset veronalaiset ansiot / vuoden alusta" : parallel?.taxable.uncertain ? `Epäselvä kertymärivi, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / vuoden alusta",
       {
-         evidenceStatus:yearResolution.conflict?"conflict":yearResolution.checked?"verified":"unverified",
+         evidenceStatus:yearResolution.conflict?"conflict":parallel?.taxable.uncertain?"unverified":yearResolution.checked?"verified":"unverified",
          evidence:yearResolution.observations,
          ...(yearCumulativeConflict?{conflict:true,candidates:yearTaxableCandidates}:parallel?.taxable.uncertain
            ?{evidenceIssue:true,candidates:parallel.taxable.observations.flat()}: {})
        }
     ),
     previousYearTaxableIncome: field(previousYearTaxable, (previousResolution.conflict || parallel?.taxable.uncertain) ? 0.50 : 0.85, previousResolution.conflict?"Ristiriitaiset edellisen vuoden ansiohavainnot":parallel?.taxable.uncertain ? `Epäselvä edellisen vuoden kertymä, havainnot: ${JSON.stringify(parallel.taxable.observations)}` : "Veronalainen ansio / edellinen vuosi", {
-      evidenceStatus:previousResolution.conflict?"conflict":previousResolution.checked?"verified":"unverified",
+      evidenceStatus:previousResolution.conflict?"conflict":parallel?.taxable.uncertain?"unverified":previousResolution.checked?"verified":"unverified",
       evidence:previousResolution.observations,
       ...(previousResolution.conflict?{conflict:true,candidates:previousResolution.candidates}:{})
     }),
     taxCardAccumulatedIncome: field(taxCardAccumulatedIncome, 0.97, "Verokortin kertymä / 90000 Ennakonpidätys"),
-    withholdingPeriod: field(withholdingPeriod, parallel?.withholding.uncertain ? 0.50 : 0.95, parallel?.withholding.uncertain ? `Epäselvä pidätysrivi, havainnot: ${JSON.stringify(parallel.withholding.observations)}` : "Ennakonpidätys / palkkakausi", parallel?.withholding.uncertain ? { evidenceIssue: true, candidates: parallel.withholding.observations.flat() } : {}),
-    withholdingYtd: field(withholdingYtd, parallel?.withholding.uncertain ? 0.50 : 0.90, parallel?.withholding.uncertain ? `Epäselvä pidätysrivi, havainnot: ${JSON.stringify(parallel.withholding.observations)}` : "Ennakonpidätys / vuoden alusta", parallel?.withholding.uncertain ? { evidenceIssue: true, candidates: parallel.withholding.observations.flat() } : {}),
+    withholdingPeriod: field(withholdingPeriod, withholdingPeriodUncertain ? 0.50 : 0.95, withholdingPeriodUncertain ? "Ristiriitaiset tai puutteelliset kauden pidätyshavainnot" : "Ennakonpidätys / palkkakausi", withholdingPeriodUncertain ? { evidenceIssue: true, candidates: withholdingPeriodChoices.length>1?withholdingPeriodChoices:parallel.withholding.observations.flat() } : {}),
+    withholdingYtd: field(withholdingYtd, withholdingYtdUncertain ? 0.50 : 0.90, withholdingYtdUncertain ? "Ristiriitaiset tai puutteelliset YTD-pidätyshavainnot" : "Ennakonpidätys / vuoden alusta", withholdingYtdUncertain ? { evidenceIssue: true, candidates: withholdingYtdChoices.length>1?withholdingYtdChoices:parallel.withholding.observations.flat() } : {}),
     taxRate: field(taxRate, 0.98, "Perusprosentti / Prosentti1"),
     taxLimit: field(taxLimit, 0.98, "Tuloraja"),
     additionalRate: field(additionalRate, 0.98, "Lisäprosentti / Prosentti2"),

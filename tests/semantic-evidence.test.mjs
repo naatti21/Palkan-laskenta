@@ -62,3 +62,50 @@ test("geometry maps to numeric candidate locations without storing label text",(
   assert.deepEqual(answer.candidates,[3500,3600]);
   assert.deepEqual(answer.observations.map(o=>[o.page,o.x,o.y]),[[2,20,80],[2,20,60]]);
 });
+
+
+const repeatedPrefix=[
+  "PALKKALASKELMA",
+  "Palkkakausi 1.11.2026 - 14.11.2026",
+  "Maksupäivä 27.11.2026",
+  "Maksetaan 2 100,00",
+  "KERTYMÄ EDELLISELTÄ VUODELTA KERTYMÄ PALKKAKAUDELTA KERTYMÄ VUODEN ALUSTA",
+  "Ennakonpid. al. tul 55 000,00 Ennakonpid. al. tul 3 500,00 Ennakonpid. al. tul 42 000,00",
+  "Ennakonpidätys -13 750,00 Ennakonpidätys -875,00 Ennakonpidätys -10 500,00",
+  ...Array.from({length:26},(_,i)=>"QA lisatieto "+i+" ilman rahasummia"),
+  "KERTYMÄ VUODEN ALUSTA KERTYMÄ PALKKAKAUDELTA KERTYMÄ EDELLISELTÄ VUODELTA"
+];
+
+test("P0-04: all repeated parallel tables contribute YTD candidates in each header order",()=>{
+  for(const [a,b] of [["42 000,00","43 000,00"],["43 000,00","42 000,00"]]){
+    const lines=repeatedPrefix.map(x=>x.replaceAll("42 000,00",a));
+    lines.push("Ennakonpid. al. tul "+b+" Ennakonpid. al. tul 3 500,00 Ennakonpid. al. tul 55 000,00");
+    lines.push("Ennakonpidätys -10 500,00 Ennakonpidätys -875,00 Ennakonpidätys -13 750,00");
+    const parsed=parsePayslip(lines.join("\n"));
+    const meta=parsed.fields.ytdTaxableIncome;
+    assert.equal(meta.evidenceStatus,"conflict");
+    assert.deepEqual([...meta.candidates].sort((x,y)=>x-y),[42000,43000]);
+    assert.ok(meta.evidence.some(e=>e.label==="parallel-column"&&e.value===43000));
+    assert.ok(parsed.notices.some(n=>n.level==="blocking"&&n.fields.includes("ytdTaxableIncome")));
+  }
+});
+
+test("P0-04: equal repeated multi-column tables are not a false conflict",()=>{
+  const text=[...repeatedPrefix,
+    "Ennakonpid. al. tul 42 000,00 Ennakonpid. al. tul 3 500,00 Ennakonpid. al. tul 55 000,00",
+    "Ennakonpidätys -10 500,00 Ennakonpidätys -875,00 Ennakonpidätys -13 750,00"].join("\n");
+  const parsed=parsePayslip(text);
+  assert.equal(parsed.fields.ytdTaxableIncome.conflict,undefined);
+  assert.equal(parsed.fields.ytdTaxableIncome.evidenceStatus,"verified");
+  assert.equal(parsed.fields.grossPay.evidenceStatus,"verified");
+  assert.equal(parsed.notices.some(n=>n.level==="blocking"),false);
+});
+
+test("P0-04: recognized incomplete repeated table remains unverified and blocking",()=>{
+  const text=[...repeatedPrefix,
+    "Ennakonpid. al. tul 43 000,00 Ennakonpid. al. tul 3 500,00",
+    "Ennakonpidätys -10 500,00 Ennakonpidätys -875,00 Ennakonpidätys -13 750,00"].join("\n");
+  const parsed=parsePayslip(text);
+  assert.equal(parsed.fields.ytdTaxableIncome.evidenceStatus,"unverified");
+  assert.ok(parsed.notices.some(n=>n.level==="blocking"&&n.fields.includes("ytdTaxableIncome")));
+});

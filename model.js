@@ -126,7 +126,7 @@ function safeFieldMeta(input = {}) {
         // A bounded numeric audit trail: never persist source PDF text/filenames.
         evidence:meta.evidence.slice(0,48).map(item=>({
           value:Number(item.value),
-          label:["section","explicit","cumulative","column-or-fallback"].includes(item.label)
+          label:["section","explicit","cumulative","column-or-fallback","parallel-column"].includes(item.label)
             ? item.label : "other",
           ...(["line","page"].reduce((o,k)=>Number.isSafeInteger(item[k])?{...o,[k]:item[k]}:o,{}))
         })).filter(item=>Number.isFinite(item.value))
