@@ -335,3 +335,46 @@ test("QA PDF-P0-03: repeated identical explicit YTD is NOT a conflict", async ({
   expect(saved).toHaveLength(1);
   expect(saved[0].values.ytdTaxableIncome).toBe(48905.75);
 });
+
+test("QA PDF-P0-03: explicit YTD review choice and numeric evidence survive export/restore", async ({page}) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name:"qa-explicit-ytd-review.pdf",mimeType:"application/pdf",
+    buffer:makeColumnsPdf(["previous","period","ytd"],{
+      explicitYtdRows:["48 905,75","49 905,75"]
+    })
+  });
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await page.locator('[data-key="ytdTaxableIncome"]').fill("49905,75");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText("Korjaus tallennettu");
+  const before=await page.evaluate(async()=>(await import("/storage.js")).getAllRecords());
+  expect(before).toHaveLength(1);
+  expect(before[0].values.ytdTaxableIncome).toBe(49905.75);
+  expect(before[0].fieldMeta.ytdTaxableIncome.reviewed).toBe(true);
+  expect(before[0].fieldMeta.ytdTaxableIncome.evidenceStatus).toBe("conflict");
+  const explicit=before[0].fieldMeta.ytdTaxableIncome.evidence
+    .filter(item=>item.label==="explicit").map(item=>item.value);
+  expect(explicit).toEqual([48905.75,49905.75]);
+
+  await page.getByRole("button",{name:"Data"}).click();
+  const downloadPromise=page.waitForEvent("download");
+  await page.locator("#exportButton").click();
+  const download=await downloadPromise;
+  const {readFile}=await import("node:fs/promises");
+  const backup=JSON.parse(await readFile(await download.path(),"utf8"));
+  expect(backup.records).toHaveLength(1);
+  await page.evaluate(async()=>await (await import("/storage.js")).clearAllRecords());
+  await page.reload();
+  await page.getByRole("button",{name:"Data"}).click();
+  await page.locator("#backupInput").setInputFiles({
+    name:"qa-restore-evidence.json",mimeType:"application/json",
+    buffer:Buffer.from(JSON.stringify(backup))
+  });
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+  const after=await page.evaluate(async()=>(await import("/storage.js")).getAllRecords());
+  expect(after).toHaveLength(1);
+  expect(after[0].values.ytdTaxableIncome).toBe(49905.75);
+  expect(after[0].fieldMeta.ytdTaxableIncome.evidence).toEqual(before[0].fieldMeta.ytdTaxableIncome.evidence);
+  expect(after[0].fieldMeta.ytdTaxableIncome.reviewed).toBe(true);
+});
