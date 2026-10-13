@@ -757,7 +757,7 @@ test("R3-07: käänteistä palkkakautta ei voi hyväksyä Tallenna-painikkeella 
 });
 
 
-test("oppimisen roundtrip: kerran korjattu uusi rakenne täyttää seuraavan PDF:n ilman kysymystä", async ({ page }) => {
+test("oppimisen roundtrip: uusi rakenne esitäyttyy, mutta ilman lähdeevidenssiä hyväksyntä pysyy käsin tehtävänä", async ({ page }) => {
   await page.goto("/index.html");
 
   const firstPdf = makeTextPdf([
@@ -814,8 +814,14 @@ test("oppimisen roundtrip: kerran korjattu uusi rakenne täyttää seuraavan PDF
     buffer: secondPdf
   });
 
-  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
-  await expect(page.locator("#reviewSection")).toBeHidden();
+  // Security behavior change: trained mappings can prefill amounts but may
+  // not turn an otherwise unverified salary amount into an automatic approval.
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator('#reviewGrid input[data-key="grossPay"]')).toHaveValue("3750");
+  await expect(page.locator('#reviewGrid input[data-key="ytdTaxableIncome"]')).toHaveValue("73750");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText("Korjaus tallennettu");
 
   const records = await page.evaluate(async () => {
     const storage = await import("/storage.js");

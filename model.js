@@ -116,9 +116,22 @@ function safeFieldMeta(input = {}) {
   for (const key of VALUE_KEYS) {
     const meta = input?.[key];
     if (!meta || typeof meta !== "object") continue;
+    const provenance = ["grossPay","ytdTaxableIncome","previousYearTaxableIncome"].includes(key);
     out[key] = {
       confidence: Number.isFinite(Number(meta.confidence)) ? Number(meta.confidence) : 0,
-      source: safeText(meta.source, 160)
+      source: safeText(meta.source, 160),
+      ...(provenance && ["verified","conflict","unverified"].includes(meta.evidenceStatus)
+        ? {evidenceStatus:meta.evidenceStatus} : {}),
+      ...(provenance && Array.isArray(meta.evidence) ? {
+        // A bounded numeric audit trail: never persist source PDF text/filenames.
+        evidence:meta.evidence.slice(0,48).map(item=>({
+          value:Number(item.value),
+          label:["section","explicit","cumulative","column-or-fallback"].includes(item.label)
+            ? item.label : "other",
+          ...(["line","page"].reduce((o,k)=>Number.isSafeInteger(item[k])?{...o,[k]:item[k]}:o,{}))
+        })).filter(item=>Number.isFinite(item.value))
+      } : {}),
+      ...(provenance && meta.reviewed === true ? {reviewed:true} : {})
     };
   }
   return out;
@@ -326,7 +339,8 @@ export function makeRecordFromParsed(parsed, fingerprint = "") {
   for (const key of VALUE_KEYS) {
     const meta = parsed.fields?.[key];
     values[key] = meta?.value ?? null;
-    if (meta) fieldMeta[key] = { confidence: meta.confidence ?? 0, source: meta.source ?? null };
+    if (meta) fieldMeta[key] = { confidence: meta.confidence ?? 0, source: meta.source ?? null,
+      evidenceStatus:meta.evidenceStatus, evidence:meta.evidence };
   }
 
   const safeValueMap = safeValues(values);
