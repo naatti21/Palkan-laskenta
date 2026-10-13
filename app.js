@@ -177,13 +177,17 @@ async function applyProfileMappings(parsed, rawText, profile) {
     const meta = parsed.fields?.[field];
     // Learned mappings must not suppress parser-detected value conflicts.
     if (meta?.conflict || meta?.evidenceIssue) continue;
-    // A learned mapping cannot bypass missing/unresolved source evidence.
-    if (["grossPay","ytdTaxableIncome"].includes(field) && meta?.evidenceStatus !== "verified") continue;
+    // Learned mappings may prefill a review field, but they cannot certify
+    // missing source evidence or suppress a detected monetary conflict.
+    const coreUnverified=["grossPay","ytdTaxableIncome"].includes(field) &&
+      meta?.evidenceStatus !== "verified";
     if (!meta || meta.value == null || Number(meta.confidence || 0) < 0.95) {
       parsed.fields[field] = {
         value,
         confidence: 0.965,
-        source: "Paikallinen vahvistettu kenttäkartta"
+        source: "Paikallinen vahvistettu kenttäkartta",
+        ...(coreUnverified ? {evidenceStatus:"unverified", evidence:meta?.evidence || []}
+          : {evidenceStatus:meta?.evidenceStatus, evidence:meta?.evidence})
       };
       appliedFields.push(field);
     }
