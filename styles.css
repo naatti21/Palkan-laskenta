@@ -22,7 +22,7 @@ button.danger { background:rgba(248,113,113,.08); color:#fecaca; border:1px soli
 .light.yellow { color:#facc15; box-shadow:0 0 30px rgba(250,204,21,.22); }
 .light.red { color:#fb7185; box-shadow:0 0 30px rgba(251,113,133,.25); }
 .light.neutral { color:#64748b; }
-.tabs { position:sticky; top:8px; z-index:20; display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin:2px 0 14px; padding:5px; border:1px solid rgba(255,255,255,.1); border-radius:15px; background:rgba(11,16,32,.88); backdrop-filter:blur(12px); }
+.tabs { position:sticky; top:8px; z-index:20; display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin:2px 0 14px; padding:5px; border:1px solid rgba(255,255,255,.1); border-radius:15px; background:rgba(11,16,32,.88); backdrop-filter:blur(12px); }
 .tab { padding:9px 8px; background:transparent; color:#94a3b8; border-radius:10px; }
 .tab.active { background:rgba(255,255,255,.1); color:#f8fafc; }
 .section-heading { display:flex; gap:12px; justify-content:space-between; align-items:center; margin-bottom:10px; }
@@ -77,3 +77,23 @@ button.danger { background:rgba(248,113,113,.08); color:#fecaca; border:1px soli
   .actions button { flex:1 1 auto; }
 }
 .learning-note { margin:10px 0 0; padding:10px 11px; border-radius:11px; background:rgba(96,165,250,.07); border:1px solid rgba(96,165,250,.18); color:#bfdbfe; font-size:.82rem; line-height:1.45; }
+
+/* Beta: data-derived monthly pay bars; no external charting dependencies. */
+.chart-legend { display:flex; gap:16px; margin:0 0 14px; color:#aab4ca; font-size:.77rem; }
+.chart-legend span::before { content:""; display:inline-block; width:10px; height:10px; margin-right:6px; border-radius:3px; }
+.legend-gross::before { background:#60a5fa; }
+.legend-net::before { background:#4ade80; }
+.monthly-chart { display:grid; gap:11px; margin:12px 0; }
+.chart-row { display:grid; grid-template-columns:44px minmax(0,1fr) 104px; align-items:center; gap:9px; min-width:0; }
+.chart-month-label { color:#aab4ca; font-size:.8rem; }
+.chart-bars { display:grid; align-content:center; gap:4px; min-width:0; min-height:22px; color:#fde68a; font-size:.75rem; }
+.chart-bar { height:8px; border-radius:4px; min-width:0; max-width:100%; }
+.chart-bar-gross { background:#60a5fa; }
+.chart-bar-net { background:#4ade80; }
+.chart-amount { font-size:.79rem; text-align:right; font-variant-numeric:tabular-nums; }
+.analysis-coverage { grid-column:1/-1; margin:3px 0 0; }
+@media (max-width:390px) {
+  .tab { padding:9px 3px; font-size:.82rem; }
+  .chart-row { grid-template-columns:38px minmax(0,1fr) 83px; gap:6px; }
+  .chart-amount { font-size:.72rem; }
+}
