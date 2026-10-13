@@ -6,8 +6,7 @@
 <meta name="theme-color" content="#10182b">
 <title>Palkka — Vuosisuunnittelija v0.2 (kokeilu)</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1221;--panel:#151f33;--soft:#1e2b42;--line:#354158;--ink:#eef4ff;--sub:#aab9d2;--blue:#7cb4fc;--mint:#64d5b9;--amber:#f9c880;--red:#ff9c9c}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 70% -10%,#25385b 0%,var(--bg) 44%);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}.shell{width:min(940px,100%);margin:auto;padding:20px 14px 60px}.eyebrow{color:var(--mint);letter-spacing:.11em;text-transform:uppercase;font-size:11px;font-weight:800;margin:0 0 5px}h1{font-size:clamp(27px,5vw,39px);line-height:1.15;margin:0 0 12px}h2{font-size:19px;margin:0 0 11px;line-height:1.2}h3{font-size:16px;margin:0 0 8px}p{margin:0 0 12px}.muted,.hint{color:var(--sub)}.muted{font-size:13px}.hint{font-size:12px}.lead{max-width:700px;color:#c7d4e8}.card{background:rgba(21,31,51,.94);border:1px solid var(--line);border-radius:18px;margin-top:13px;padding:17px;box-shadow:0 8px 22px rgba(0,0,0,.09)}.section-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);margin:0 0 8px}.grid{display:grid;gap:13px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field label{font-size:13px;color:#d0dced;font-weight:650}.field input,.field select{appearance:none;width:100%;border-radius:11px;border:1px solid #516179;background:#0c1526;color:var(--ink);padding:10px 11px;font-size:16px;outline-offset:2px}.field input:focus,.field select:focus{outline:2px solid var(--blue)}.field input[type=range]{padding:8px 0;accent-color:var(--mint);border:0;background:transparent}.number-bar{display:flex;gap:12px;align-items:center}.number-bar input[type=range]{flex:1;min-width:0}.number-bar input[type=number]{width:89px;flex:none}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.chip{color:#d9e5f8;background:var(--soft);border:1px solid #43536d;padding:6px 11px;border-radius:22px;font-weight:650;cursor:pointer}.chip:focus-visible{outline:2px solid var(--mint)}.chip.active{color:#061f19;background:var(--mint);border-color:var(--mint)}.fact{background:var(--soft);padding:13px;border-radius:13px;min-width:0}.fact small{display:block;color:var(--sub);font-size:12px}.fact strong{display:block;font-size:clamp(19px,4vw,28px);line-height:1.15;margin:6px 0}.fact span{font-size:12px;color:var(--sub)}.fact.warn strong{color:var(--amber)}.fact.mint strong{color:var(--mint)}.status{padding:11px 13px;border:1px solid #4d6586;background:#192d48;border-radius:12px;font-size:13px;margin-top:12px}.status.error{background:#482329;border-color:#9e4555;color:#ffe7e7}.legend{display:flex;gap:15px;flex-wrap:wrap;color:#d7e5f9;font-size:12px;margin:5px 0 0}.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}.dot.blue{background:var(--blue)}.dot.mint{background:var(--mint)}.dot.amber{background:var(--amber)}.chart{overflow:hidden;max-width:100%}.chart svg{width:100%;height:auto;display:block}.chart text{fill:var(--sub);font-family:system-ui,sans-serif;font-size:12px}.chart .gridline{stroke:#3a4960;stroke-width:1;opacity:.65}.chart .line{stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}.chart .marker{stroke-width:1.5;stroke-dasharray:4 4}.chart .marker-label{font-size:11px;font-weight:700}.smallprint{font-size:12px;color:var(--sub)}.toggle{display:flex;gap:11px;align-items:center;color:var(--ink);font-size:14px}.toggle input{width:18px;height:18px;accent-color:var(--mint)}details{border-top:1px solid var(--line);padding-top:11px;margin-top:13px;color:var(--sub);font-size:13px}summary{cursor:pointer;color:#e6efff;font-weight:650}footer{color:var(--sub);font-size:12px;padding:23px 4px 0}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:10px}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:right;padding:9px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}.table th:first-child,.table td:first-child{text-align:left}.table th{color:var(--sub);font-weight:650}.subtitle{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.tag{display:inline-block;padding:4px 8px;background:#293950;color:#caddf6;border-radius:7px;font-size:11px}.hr{height:1px;background:var(--line);margin:15px 0}.sr{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}@media(max-width:560px){.shell{padding:16px 10px 38px}.card{padding:14px;border-radius:16px}.grid.two,.grid.three{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.field.span{grid-column:1/-1}.fact{padding:11px}.comparison{grid-template-columns:1fr 1fr;gap:8px}.fact strong{font-size:20px}.table{font-size:12px}}
- .file-picker{display:block;border:1px dashed #7593b5;background:#1c2b42;padding:12px 14px;border-radius:12px;font-weight:650;cursor:pointer}.file-picker input{display:block;width:100%;margin-top:6px;font-size:13px;color:#deebff}.history-preview{margin-top:14px}.history-preview .fact strong{font-size:21px}.chip[disabled]{opacity:.45;cursor:not-allowed}.history-preview .chip{border-radius:10px}
+:root{color-scheme:dark;--bg:#0b1221;--panel:#151f33;--soft:#1e2b42;--line:#354158;--ink:#eef4ff;--sub:#aab9d2;--blue:#7cb4fc;--mint:#64d5b9;--amber:#f9c880;--red:#ff9c9c}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 70% -10%,#25385b 0%,var(--bg) 44%);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}.shell{width:min(940px,100%);margin:auto;padding:20px 14px 60px}.eyebrow{color:var(--mint);letter-spacing:.11em;text-transform:uppercase;font-size:11px;font-weight:800;margin:0 0 5px}button.apply{display:inline-block;background:var(--mint);color:#06231c;border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-size:15px;font-weight:750;margin-top:10px}button.apply:disabled{opacity:.45;cursor:not-allowed}.imported-rows{margin:9px 0;padding-left:20px;color:#d8e7fa;font-size:13px}.imported-rows li{margin:4px 0}.finewarn{color:var(--amber)}h1{font-size:clamp(27px,5vw,39px);line-height:1.15;margin:0 0 12px}h2{font-size:19px;margin:0 0 11px;line-height:1.2}h3{font-size:16px;margin:0 0 8px}p{margin:0 0 12px}.muted,.hint{color:var(--sub)}.muted{font-size:13px}.hint{font-size:12px}.lead{max-width:700px;color:#c7d4e8}.card{background:rgba(21,31,51,.94);border:1px solid var(--line);border-radius:18px;margin-top:13px;padding:17px;box-shadow:0 8px 22px rgba(0,0,0,.09)}.section-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);margin:0 0 8px}.grid{display:grid;gap:13px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field label{font-size:13px;color:#d0dced;font-weight:650}.field input,.field select{appearance:none;width:100%;border-radius:11px;border:1px solid #516179;background:#0c1526;color:var(--ink);padding:10px 11px;font-size:16px;outline-offset:2px}.field input:focus,.field select:focus{outline:2px solid var(--blue)}.field input[type=range]{padding:8px 0;accent-color:var(--mint);border:0;background:transparent}.number-bar{display:flex;gap:12px;align-items:center}.number-bar input[type=range]{flex:1;min-width:0}.number-bar input[type=number]{width:89px;flex:none}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.chip{color:#d9e5f8;background:var(--soft);border:1px solid #43536d;padding:6px 11px;border-radius:22px;font-weight:650;cursor:pointer}.chip:focus-visible{outline:2px solid var(--mint)}.chip.active{color:#061f19;background:var(--mint);border-color:var(--mint)}.fact{background:var(--soft);padding:13px;border-radius:13px;min-width:0}.fact small{display:block;color:var(--sub);font-size:12px}.fact strong{display:block;font-size:clamp(19px,4vw,28px);line-height:1.15;margin:6px 0}.fact span{font-size:12px;color:var(--sub)}.fact.warn strong{color:var(--amber)}.fact.mint strong{color:var(--mint)}.status{padding:11px 13px;border:1px solid #4d6586;background:#192d48;border-radius:12px;font-size:13px;margin-top:12px}.status.error{background:#482329;border-color:#9e4555;color:#ffe7e7}.legend{display:flex;gap:15px;flex-wrap:wrap;color:#d7e5f9;font-size:12px;margin:5px 0 0}.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}.dot.blue{background:var(--blue)}.dot.mint{background:var(--mint)}.dot.amber{background:var(--amber)}.chart{overflow:hidden;max-width:100%}.chart svg{width:100%;height:auto;display:block}.chart text{fill:var(--sub);font-family:system-ui,sans-serif;font-size:12px}.chart .gridline{stroke:#3a4960;stroke-width:1;opacity:.65}.chart .line{stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}.chart .marker{stroke-width:1.5;stroke-dasharray:4 4}.chart .marker-label{font-size:11px;font-weight:700}.smallprint{font-size:12px;color:var(--sub)}.toggle{display:flex;gap:11px;align-items:center;color:var(--ink);font-size:14px}.toggle input{width:18px;height:18px;accent-color:var(--mint)}details{border-top:1px solid var(--line);padding-top:11px;margin-top:13px;color:var(--sub);font-size:13px}summary{cursor:pointer;color:#e6efff;font-weight:650}footer{color:var(--sub);font-size:12px;padding:23px 4px 0}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:10px}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:right;padding:9px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}.table th:first-child,.table td:first-child{text-align:left}.table th{color:var(--sub);font-weight:650}.subtitle{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.tag{display:inline-block;padding:4px 8px;background:#293950;color:#caddf6;border-radius:7px;font-size:11px}.hr{height:1px;background:var(--line);margin:15px 0}.sr{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}@media(max-width:560px){.shell{padding:16px 10px 38px}.card{padding:14px;border-radius:16px}.grid.two,.grid.three{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.field.span{grid-column:1/-1}.fact{padding:11px}.comparison{grid-template-columns:1fr 1fr;gap:8px}.fact strong{font-size:20px}.table{font-size:12px}}
 </style>
 </head>
 <body>
@@ -15,26 +14,18 @@
   <p class="eyebrow">Palkka · erillinen kokeilu</p>
   <h1>Enemmän vapaa-aikaa.<br>Riittävästi rahaa.</h1>
   <p class="lead">Vertaile samaa työvuotta kahdella verokortin tulorajalla. Muuta viikonloppuja ja katso, <b>milloin lisäprosentti alkaa pienentää seuraavan työviikonlopun nettorahaa</b>.</p>
-  <div class="status" role="note">Kokeellinen laskuri · tiedostosta luetut ja itse syötetyt luvut eivät tallennu eivätkä lähde laitteelta. Tämä arvioi <b>ennakonpidätyksen jälkeistä rahaa</b>, ei lopullista tuloveroa, TES-palkkaa tai muutosverokortin oikeaa prosenttia.</div>
+  <div class="status" role="note">Kokeellinen laskuri · omat luvut eivät tallennu eivätkä lähde laitteelta. Tämä arvioi <b>ennakonpidätyksen jälkeistä rahaa</b>, ei lopullista tuloveroa, TES-palkkaa tai muutosverokortin oikeaa prosenttia.</div>
 
-  <section class="card" aria-labelledby="history-title">
-    <div class="subtitle"><h2 id="history-title">Täytä arviot palkkahistoriasta</h2><span class="tag">UUSI · v0.2</span></div>
-    <p class="muted">Jos olet käyttänyt Palkka-sovellusta, valitse sen <strong>Data → Vie varmuuskopio</strong> -toiminnolla tallennettu JSON. Suunnittelija lukee tiedoston vain tässä selaimessa, eikä muuta palkkahistoriaasi tai tallenna tiedostoa.</p>
-    <label class="file-picker">Valitse Palkka-varmuuskopio (.json)<input id="historyInput" type="file" accept=".json,application/json" aria-label="Valitse Palkka-varmuuskopio"></label>
-    <div id="historyStatus" class="status" role="status" aria-live="polite">Toistaiseksi käytössä ovat muutettavat esimerkkiluvut. Varmuuskopion lukeminen ehdottaa perusansiota, maksettua lomarahaa ja muita palkkatietoja.</div>
-    <div id="historyPreview" class="history-preview" hidden>
-      <div class="grid two">
-        <div class="fact"><small id="historyBaseLabel">Perusansion karkea vuosiarvio</small><strong id="histBase">–</strong><span id="histBaseMeta"></span></div>
-        <div class="fact"><small>Havaitut lomarahat</small><strong id="histHoliday">–</strong><span id="histHolidayMeta"></span></div>
-        <div class="fact"><small>Havaittu APP-bonus</small><strong id="histBonus">–</strong><span id="histBonusMeta"></span></div>
-        <div class="fact"><small>Viimeisin varmistettu YTD-brutto</small><strong id="histYtd">–</strong><span id="histYtdMeta"></span></div>
-      </div>
-      <p id="historyCoverage" class="hint" style="margin-top:10px"></p>
-      <div class="chips">
-        <button type="button" class="chip" id="applyHistory" disabled>Käytä varmistettavia ehdotuksia</button>
-        <button type="button" class="chip" id="applyHistoryBonus" disabled>Lisää APP vertailuun</button>
-      </div>
-      <p class="hint" style="margin-top:8px">APP-bonusta ei lisätä automaattisesti seuraavaan vuoteen. Viikonlopun bruttoa ei täytetä automaattisesti, koska perusansiot ja päällekkäiset lisät vaativat työaikatiedot. Ehdotukset ovat muokattavissa alempana.</p>
+  <section class="card" aria-labelledby="history-import-title">
+    <div class="subtitle"><h2 id="history-import-title">Aloita palkkahistoriasta</h2><span class="tag">Uusi v0.2</span></div>
+    <p class="muted">Voit tuoda <b>Palkka PWA:n itse viemän varmuuskopion (.json)</b>. Varmuuskopio luetaan vain tässä selaimessa, eikä tuonti muuta alkuperäistä palkkahistoriaa. Tarjoudu vain tarkistamaan ehdotukset.</p>
+    <div class="field"><label for="historyFile">Valitse paikallinen Palkka-varmuuskopio</label><input type="file" id="historyFile" accept=".json,application/json" /></div>
+    <div id="importStatus" class="status" role="status">Historiaa ei ole tuotu. Voit käyttää laskuria myös ilman tuontia.</div>
+    <div id="historySuggestion" hidden>
+      <ul id="historySummary" class="imported-rows"></ul>
+      <label class="toggle"><input type="checkbox" id="includeHistoricalBonus"> Lisää edellisen vuoden APP-bonus suunnitelmaan (vain jos arvioit sen toistuvan)</label>
+      <button type="button" class="apply" id="useHistory">Käytä ehdotuksia laskurissa</button>
+      <p class="hint" style="margin-top:8px">Perusansio ja viikonlopun arvo ovat vain alustavia laskentaehdotuksia. Tarkista ne työajasta ja palkkalajeista. Tuonti ei arvioi tulevaa OmaVero-prosenttia.</p>
     </div>
   </section>
 
@@ -49,14 +40,15 @@
 
   <section class="card" aria-labelledby="income-title">
     <h2 id="income-title">2. Mistä vuosibrutto muodostuu?</h2>
-    <p class="muted">Syötä vuosiansio <b>ilman viikonlopputöitä ja ilman alla erikseen lisättäviä eriä</b>. Varmuuskopion valitseminen voi ehdottaa arvoja; tarkista ne ennen käyttöä.</p>
+    <p class="muted">Vuositulon osat ovat muokattavia. Varmuuskopiosta saa ehdotuksia, mutta <b>perusansio ja työviikonlopun palkka eivät vielä ole tarkkoja laskelmia</b>.</p>
     <div class="grid two">
       <div class="field span"><label for="baseGross">Perusansiot / vuosi (€)</label><input type="number" id="baseGross" min="0" max="1000000" step="100" value="52000"></div>
       <div class="field"><label for="holiday">Lomaraha ja vastaavat lisät (€)</label><input type="number" id="holiday" min="0" max="1000000" step="100" value="3000"></div>
       <div class="field"><label for="bonus">APP / muu bonus (€)</label><input type="number" id="bonus" min="0" max="1000000" step="100" value="0"></div>
-      <div class="field span"><label for="other">Muut erilliset veronalaiset ansiot (€)</label><input type="number" id="other" min="0" max="1000000" step="100" value="0"></div>
+      <details class="field span"><summary>Lisäasetukset: muut ansiot ja palkankorotukset</summary><div class="grid two" style="margin-top:12px"><div class="field span"><label for="other">Muut erilliset veronalaiset ansiot (€)</label><input type="number" id="other" min="0" max="1000000" step="100" value="0"></div>
       <div class="field"><label for="raise">Perusansioiden korotus (%)</label><input type="number" id="raise" min="0" max="50" step="0.1" value="2"></div>
       <div class="field"><label for="raiseMonth">Korotus voimaan (kuukausi)</label><select id="raiseMonth"><option value="1">Tammikuu</option><option value="2">Helmikuu</option><option value="3" selected>Maaliskuu</option><option value="4">Huhtikuu</option><option value="5">Toukokuu</option><option value="6">Kesäkuu</option><option value="7">Heinäkuu</option><option value="8">Elokuu</option><option value="9">Syyskuu</option><option value="10">Lokakuu</option><option value="11">Marraskuu</option><option value="12">Joulukuu</option></select></div>
+      </div></details>
       <div class="field span"><label for="weekendGross">16 tunnin työviikonlopun koko lisäbrutto (€)</label><input type="number" id="weekendGross" min="0" max="100000" step="50" value="1100"></div>
     </div>
     <p class="hint" style="margin-top:10px">Korotus mallinnetaan vain perusansioille alkaen valitusta kuukaudesta, tasaisesti kuukausille jaettuna. Viikonlopun lisäbrutto skaalautuu tunneilla suhteessa 16 tuntiin. Se ei ole tarkka TES-, työaikapankki- tai palkkakohtainen korvauslaskelma.</p>
@@ -74,12 +66,6 @@
       <div class="field"><label for="extraB">B: lisäprosentti (%)</label><input type="number" id="extraB" min="0" max="100" step="0.5" value="48"></div>
       <div class="field span"><label for="otherDeductions">Muut palkasta tehtävät vähennykset (%)</label><input type="number" id="otherDeductions" min="0" max="50" step="0.1" value="10"></div>
     </div>
-    <p class="hint" style="margin-top:12px">OmaVero on oikea paikka tarkistaa kunkin tulorajan <strong>oma pidätysprosentti</strong>. Vuoden 2026 palkkalaskelman prosentti ei ole automaattisesti vuoden 2027 77 000 € tai 100 000 € tulorajan prosentti. Vahvista tarkistuksen jälkeen:</p>
-    <div class="grid two">
-      <label class="toggle"><input type="checkbox" id="rateConfirmedA"> A:n prosentit OmaVerosta</label>
-      <label class="toggle"><input type="checkbox" id="rateConfirmedB"> B:n prosentit OmaVerosta</label>
-    </div>
-    <div id="taxRateVerification" class="status" role="status" aria-live="polite"></div>
     <div id="validation" class="status" role="status" aria-live="polite">Syötä arviot.</div>
   </section>
 
@@ -113,74 +99,8 @@
     <table class="table"><thead><tr><th>Viikonloppuja</th><th>Brutto</th><th>A: netto</th><th>B: netto</th></tr></thead><tbody id="samples"></tbody></table>
     <details><summary>Mitä tässä mallissa ei vielä ole?</summary><p>Varsinaista lopullisen progressiivisen veron laskentaa, ansio- ja työtuntikohtaista TES-erittelyä, jokaisen viikonlopun yksilöllistä aikataulua, työaikapankkia, koko vuoden toteutuneita palkkoja tai automaattista yhteyttä OmaVeroon. Todellinen verokortin tuloraja voi koskea vain jäljellä olevaa kortin voimassaoloa. Palkkapäivien välinen kassavirta tarkentuu vasta, kun työviikonloput sijoitetaan maksupäiviin.</p></details>
   </section>
-  <footer>Paikallinen, itsenäinen demotiedosto · ei verkkopyyntöjä, ei seurantaa, ei tietojen tallennusta · kokeiluluvut eivät ole vero- tai palkkaneuvontaa. Varmuuskopion valinta ei palauta sitä Palkka-sovellukseen.</footer>
+  <footer>Paikallinen, itsenäinen demotiedosto · ei verkkopyyntöjä, ei seurantaa, ei tietojen tallennusta · kokeiluluvut eivät ole vero- tai palkkaneuvontaa.</footer>
 </main>
-<script id="planner-history-core">
-(function(){
-'use strict';
-const validNumber=n=>typeof n==='number' && Number.isFinite(n);
-const isDate=s=>typeof s==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-function median(xs){const a=[...xs].sort((x,y)=>x-y);return a.length?(a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2):null;}
-function historySuggestions(backup,weeklyHours=40){
-  if(!backup || backup.app!=='Palkka PWA' || !Array.isArray(backup.records) ||
-     !Number.isFinite(backup.backupSchemaVersion) || !Number.isFinite(backup.recordSchemaVersion))
-      throw new Error('Tiedosto ei ole tunnistettu Palkka-varmuuskopio.');
-  if(!validNumber(weeklyHours)||weeklyHours<1||weeklyHours>60)throw new Error('Viikkotyöaika ei ole kelvollinen.');
-  if(backup.records.length>10000)throw new Error('Varmuuskopiossa on liikaa tietueita.');
-  const original=backup.records.filter(r=>r&&r.kind!=='forecast'&&isDate(r.values?.payDate)&&r.values?.payDate.slice(0,4)>='2000');
-  if(!original.length)throw new Error('Varmuuskopiossa ei ole päivämäärällisiä palkkalaskelmia.');
-  const year=Math.max(...original.map(r=>Number(r.values.payDate.slice(0,4))));
-  const yearly=original.filter(r=>Number(r.values.payDate.slice(0,4))===year);
-  // Same payment event can have mutually contradictory versions: never silently use either for aggregates.
-  const key=r=>[r.values.payDate,r.values.payPeriodStart||'?',r.values.payPeriodEnd||'?'].join('|');
-  const counts=new Map();for(const r of yearly)counts.set(key(r),(counts.get(key(r))||0)+1);
-  const conflicted=yearly.filter(r=>counts.get(key(r))>1).length;
-  const rows=yearly.filter(r=>counts.get(key(r))===1).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
-  if(!rows.length)throw new Error('Viimeisimmän vuoden tiedot ovat ristiriitaisia.');
-  let holiday=0,bonus=0,other=0;
-  let linesObserved=0,holidayItems=0,bonusItems=0;
-  const rates=[];
-  const deductions=[];
-  for(const r of rows){
-    const lines=Array.isArray(r.payLines)?r.payLines:[];
-    if(lines.length)linesObserved++;
-    for(const line of lines){
-      const code=String(line?.code??'');const cat=String(line?.category??'');const label=String(line?.label??'');
-      const amount=line?.amount;
-      if(!validNumber(amount))continue;
-      if(cat==='holiday_bonus' || ['55201','55301'].includes(code) || /\blomaraha/i.test(label)) {holiday+=amount;holidayItems++;}
-      else if(code==='40000' || /bonus\s*app/i.test(label)) {bonus+=amount;bonusItems++;}
-      else if(code==='40070')other+=amount;
-    }
-    const standard=lines.find(l=>String(l.code)==='13001'&&validNumber(l.quantity)&&l.quantity>0&&validNumber(l.amount)&&l.amount>0&&!/korjaus/i.test(l.label||''));
-    const piece=standard&&lines.find(l=>String(l.code)==='13101'&&validNumber(l.quantity)&&l.quantity>0&&validNumber(l.amount)&&l.amount>=0&&Math.abs(l.quantity-standard.quantity)<0.05&&!/korjaus/i.test(l.label||''));
-    if(standard&&piece) rates.push({date:r.values.payDate,rate:(standard.amount+piece.amount)/standard.quantity});
-    const gross=r.values?.grossPay;
-    if(validNumber(gross)&&gross>0){
-      const codes=['90100','90200','90400','90920'];
-      const matching=codes.map(code=>lines.find(l=>String(l.code)===code&&validNumber(l.amount)&&l.amount<0));
-      if(matching.every(Boolean)){const otherRate=matching.reduce((s,l)=>s-Math.min(0,l.amount),0)/gross*100;
-        if(otherRate>=0&&otherRate<=30)deductions.push({date:r.values.payDate,rate:otherRate});
-      }
-    }
-  }
-  const sortedRates=rates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(r=>r.rate);
-  const avgRate=median(sortedRates);
-  const baseEstimate=avgRate===null?null:Math.round((avgRate*weeklyHours*52)/100)*100;
-  const latestYtd=[...rows].reverse().find(r=>validNumber(r.values?.ytdTaxableIncome) && r.values.ytdTaxableIncome>=0);
-  const latestDeductions=deductions.sort((a,b)=>b.date.localeCompare(a.date))[0];
-  return {year,records:rows.length,excludedConflicts:conflicted,lineCoverage:linesObserved,total:yearly.length,
-    holiday:holidayItems?Math.round(holiday*100)/100:null,
-    bonus:bonusItems?Math.round(bonus*100)/100:null,
-    other:other?Math.round(other*100)/100:null,
-    baseEstimate,avgHourlyRate:avgRate,rateSamples:sortedRates.length,weeklyHours,
-    deductionsRate:latestDeductions?Math.round(latestDeductions.rate*100)/100:null,
-    latestYtd:latestYtd?latestYtd.values.ytdTaxableIncome:null,
-    latestYtdDate:latestYtd?latestYtd.values.payDate:null};
-}
-globalThis.PalkkaPlannerHistory={historySuggestions};
-})();
-</script>
 <script id="planner-core">
 (function(){
   'use strict';
@@ -216,6 +136,64 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   globalThis.PalkkaPlannerCore={computePlan};
 })();
 </script>
+<script id="history-core">
+(function(){
+  'use strict';
+  const moneyValue=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0?v:null;
+  const positive=v=>typeof v==='number'&&Number.isFinite(v)&&v>0?v:null;
+  function median(values){if(!values.length)return null;const s=[...values].sort((a,b)=>a-b);return s.length%2?s[(s.length-1)/2]:(s[s.length/2-1]+s[s.length/2])/2;}
+  const matchingDate=(s,year)=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&s.startsWith(String(year)+'-')&&!Number.isNaN(Date.parse(s+'T00:00:00Z'));
+  function deriveHistorySuggestions(payload,preferredYear=null){
+    if(!payload||typeof payload!=='object'||Array.isArray(payload)||payload.app!=='Palkka PWA'||payload.backupSchemaVersion!==2||payload.recordSchemaVersion!==1||!Array.isArray(payload.records))throw new Error('Tarvitaan Palkka PWA:n versio 2 -varmuuskopio.');
+    if(payload.records.length>6000)throw new Error('Varmuuskopio on liian suuri.');
+    const usable=payload.records.filter(r=>r&&typeof r==='object'&&!Array.isArray(r)&&r.kind!=='forecast'&&matchingDate(r.values?.payDate,Number(String(r.values?.payDate).slice(0,4))));
+    const years=[...new Set(usable.map(r=>Number(r.values.payDate.slice(0,4))))].sort((a,b)=>b-a);
+    const year=years.includes(preferredYear)?preferredYear:years[0];
+    if(!year)throw new Error('Varmuuskopiosta ei löytynyt maksupäivällisiä palkkalaskelmia.');
+    const annual=usable.filter(r=>Number(r.values.payDate.slice(0,4))===year).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
+    const keys=new Map();
+    for(const r of annual){const v=r.values||{};const key=[v.payDate,v.payPeriodStart||'',v.payPeriodEnd||''].join('|');keys.set(key,(keys.get(key)||0)+1);}
+    const unique=annual.filter(r=>{const v=r.values;return keys.get([v.payDate,v.payPeriodStart||'',v.payPeriodEnd||''].join('|'))===1;});
+    const conflicts=annual.length-unique.length;
+    if(conflicts)throw new Error('Samalle palkkakaudelle löytyi ristiriitaisia laskelmia. Korjaa palkkahistoria ennen suunnitelmaan tuontia.');
+    const latest=unique.at(-1);
+    const ytd=moneyValue(latest?.values?.ytdTaxableIncome);
+    const paid=unique.reduce((sum,r)=>{const g=moneyValue(r.values?.grossPay);return g===null?sum:sum+g;},0);
+    const categories={holiday:0,bonus:0,other:0};
+    const hourly=[],kTas=[],extras=[];
+    let lineCoverage=0;
+    for(const r of unique){
+      const lines=Array.isArray(r.payLines)?r.payLines:[];
+      if(lines.length)lineCoverage++;
+      for(const line of lines){
+        const code=String(line?.code||''),cat=String(line?.category||'');
+        const amount=moneyValue(line?.amount);
+        if(amount!==null&&(/^(55201|55301)$/.test(code)||cat==='holiday_bonus'))categories.holiday+=amount;
+        else if(amount!==null&&code==='40000')categories.bonus+=amount;
+        else if(amount!==null&&code==='40070')categories.other+=amount;
+      }
+      const a=lines.find(l=>String(l?.code)==='13001');
+      const b=lines.find(l=>String(l?.code)==='13101'&&positive(l?.unitPrice)!==null);
+      if(a&&b&&positive(a.unitPrice)!==null&&positive(a.quantity)!==null&&positive(b.quantity)!==null&&Math.abs(a.quantity-b.quantity)<.3&&a.quantity>=40&&a.quantity<=150){hourly.push({date:r.values.payDate,value:a.unitPrice+b.unitPrice});}
+      const kta=positive(r.values?.kta);
+      if(kta!==null)kTas.push({date:r.values.payDate,value:kta});
+      const evening=lines.filter(l=>/^(30020|30010)$/.test(String(l?.code||''))&&moneyValue(l.amount)!==null).reduce((a,l)=>a+l.amount,0);
+      if(evening>0&&evening<350)extras.push(evening);
+    }
+    const recentRates=hourly.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6).map(x=>x.value);
+    const recentKta=kTas.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6).map(x=>x.value);
+    const hourlyRate=recentRates.length>=3?median(recentRates):null;
+    const ktaRate=recentKta.length>=3?median(recentKta):null;
+    const baseGross=hourlyRate===null?null:Math.round((hourlyRate*80+ (median(extras)||0))*26/100)*100;
+    // Illustrative 8+8h weekend only; assumes regular base wage + 50/100%, Sunday and weekly rest supplements.
+    const weekendGross=hourlyRate===null||ktaRate===null?null:Math.round((16*hourlyRate+4*ktaRate+8*ktaRate+8*ktaRate+8*ktaRate)/50)*50;
+    const taxRate=moneyValue(latest?.values?.taxRate);
+    const extraRate=moneyValue(latest?.values?.additionalRate);
+    return {year,records:unique.length,latestDate:latest.values.payDate,paidGross:Math.round(paid*100)/100,latestYtd:ytd,partial:ytd===null||Math.abs(paid-ytd)>.5,sourceCoverage:lineCoverage+'/'+unique.length,holiday:lineCoverage?Math.round(categories.holiday*100)/100:null,bonus:lineCoverage?Math.round(categories.bonus*100)/100:null,other:lineCoverage?Math.round(categories.other*100)/100:null,baseGross,weekendGross,hourlyRate,ktaRate,taxRate,extraRate};
+  }
+  globalThis.PalkkaHistoryCore={deriveHistorySuggestions};
+})();
+</script>
 <script>
 (function(){
   'use strict';
@@ -230,7 +208,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     const lo=minY===null?Math.min(...vals):minY,hi0=maxY===null?Math.max(...vals):maxY,hi=hi0===lo?hi0+1:hi0;
     const x=n=>l+n/52*(W-l-r),y=v=>t+(hi-v)/(hi-lo)*(H-t-b);
     let html=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${axisSuffix===' €'?'Eurojen':'Työviikonloppujen'} vertailukäyrä">`;
-    for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;const tick=Math.abs(hi-lo)<6000?Math.round(v).toLocaleString("fi-FI"):Math.round(v/1000)+"k";html+=`<line class="gridline" x1="${l}" x2="${W-r}" y1="${y(v)}" y2="${y(v)}"/><text x="${l-8}" y="${y(v)+4}" text-anchor="end">${tick}</text>`;}
+    for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;html+=`<line class="gridline" x1="${l}" x2="${W-r}" y1="${y(v)}" y2="${y(v)}"/><text x="${l-8}" y="${y(v)+4}" text-anchor="end">${hi>10000?Math.round(v/1000)+'k':Math.round(v)}${hi>10000?'':' €'}</text>`;}
     for(const n of [0,13,26,39,52])html+=`<text x="${x(n)}" y="${H-13}" text-anchor="middle">${n}</text>`;
     for(const d of defs){html+=`<polyline class="line" stroke="${d.color}" points="${series.map(v=>x(v.n)+','+y(v[d.key])).join(' ')}"/>`;}
     html+=`<text x="${W/2}" y="${H-1}" text-anchor="middle">Työviikonloppuja vuodessa</text></svg>`;
@@ -254,67 +232,48 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     const sample=Array.from(new Set([0,10,13,26,c.weekends,52])).sort((a,b)=>a-b);
     el('samples').innerHTML=sample.map(n=>{const p=s[n];return `<tr><td>${n}</td><td>${span(money(p.gross))}</td><td>${span(money(p.netA))}</td><td>${span(money(p.netB))}</td></tr>`;}).join('');
   }
+  let suggested=null;
+  const status=el('importStatus'),summary=el('historySummary');
+  const updateSuggestions=(s)=>{
+    summary.replaceChildren();
+    const parts=[
+      `Vuosi ${s.year}: ${s.records} palkkalaskelmaa, viimeisin maksupäivä ${s.latestDate}`,
+      `Palkkakausien brutto yhteensä: ${money(s.paidGross)}; viimeisimmän laskelman YTD: ${s.latestYtd===null?'ei tiedossa':money(s.latestYtd)}`,
+      `Tunnistetut lomarahat: ${s.holiday===null?'ei palkkarivejä':money(s.holiday)}; APP-bonus: ${s.bonus===null?'ei palkkarivejä':money(s.bonus)}; muu kertakorvaus: ${s.other===null?'ei palkkarivejä':money(s.other)}`,
+      `Palkkarivien kattavuus: ${s.sourceCoverage}. Ehdotettu 2027 perusansio: ${s.baseGross===null?'ei johdettavissa':money(s.baseGross)}; 16 h viikonloppu: ${s.weekendGross===null?'ei johdettavissa':money(s.weekendGross)}`,
+      `Edellisen vuoden viimeinen verokortti: ${s.taxRate===null?'ei tietoa':pct(s.taxRate)} / ${s.extraRate===null?'ei tietoa':pct(s.extraRate)}. EI ennuste vuoden 2027 prosenteista.`
+    ];
+    if(s.partial)parts.push('HUOM. Palkkakausien summa poikkeaa viimeisimmästä YTD-kertymästä tai YTD puuttuu: kaikkia vuoden laskelmia ei välttämättä ole mukana.');
+    parts.push('Kertakorvaukset on laskettu vain havaituista palkkariveistä. Vuoden koko historia voi olla puutteellinen. Perusansioarvion oletus on 80 tavallista tuntia / 2 viikkoa × 26 ja havaittu tuntiansio, ei todistettu ylityötön ansio.');
+    for(const part of parts){const li=document.createElement('li');li.textContent=part;summary.append(li);}
+    el('historySuggestion').hidden=false;
+  };
+  el('historyFile').addEventListener('change',async event=>{
+    suggested=null;el('historySuggestion').hidden=true;
+    const file=event.target.files?.[0];
+    if(!file)return;
+    try{
+      if(file.size>3_000_000)throw new Error('Tiedosto on yli 3 Mt; näin suurta varmuuskopiota ei lueta tässä kokeilussa.');
+      if(!/\.json$/i.test(file.name))throw new Error('Valitse Palkka PWA:n .json-varmuuskopio.');
+      suggested=PalkkaHistoryCore.deriveHistorySuggestions(JSON.parse(await file.text()),2026);
+      status.classList.remove('error');status.textContent='Historia luettu vain paikallisesti. Tarkista ehdotukset alta ja hyväksy haluamasi.';
+      updateSuggestions(suggested);
+    }catch(e){status.textContent='Tuonti ei onnistunut: '+e.message;status.classList.add('error');}
+    finally{event.target.value='';}
+  });
+  el('useHistory').addEventListener('click',()=>{
+    if(!suggested)return;
+    for(const [key,v] of [['baseGross',suggested.baseGross],['holiday',suggested.holiday],['other',suggested.other],['weekendGross',suggested.weekendGross]]){
+      if(v!==null)el(key).value=String(v);
+    }
+    if(suggested.bonus!==null)el('bonus').value=el('includeHistoricalBonus').checked?String(suggested.bonus):'0';
+    status.classList.remove('error');
+    status.textContent='Ehdotukset siirretty muokattaviin kenttiin. Verokortin vuoden 2027 prosentteja ei muutettu. Tarkista perusansio ja viikonloppukorvaukset.';
+    render();
+  });
   for(const input of inputs)input.addEventListener('input',render);
   el('weekendsRange').addEventListener('input',()=>{el('weekends').value=el('weekendsRange').value;render();});
   for(const chip of document.querySelectorAll('[data-weekends]'))chip.addEventListener('click',()=>{el('weekends').value=chip.dataset.weekends;render();});
-  const historyInput=el('historyInput');
-  let lastHistory=null;
-  const displayOrDash=v=>typeof v==='number'&&Number.isFinite(v)?money(v):'Ei luotettavaa tietoa';
-  const setStatus=(txt,error=false)=>{el('historyStatus').textContent=txt;el('historyStatus').classList.toggle('error',error);};
-  function showHistory(r){
-    lastHistory=r;
-    el('historyPreview').hidden=false;
-    el('histBase').textContent=displayOrDash(r.baseEstimate);
-    el('histBaseMeta').textContent=r.avgHourlyRate===null?'Palkkiotyön tuntierittelyä ei löydy':`Palkkiotyön keskihinta ${r.avgHourlyRate.toFixed(2).replace('.',',')} €/h × ${r.weeklyHours} h/vko × 52 vkoa; ${r.rateSamples} havaintoa`;
-    el('histHoliday').textContent=displayOrDash(r.holiday);
-    el('histHolidayMeta').textContent=`Maksettu ${r.year}, ei koko seuraavan vuoden takuu`;
-    el('histBonus').textContent=displayOrDash(r.bonus);
-    el('histBonusMeta').textContent='Kertaluonteinen APP, ei oletuksena toistuva';
-    el('histYtd').textContent=displayOrDash(r.latestYtd);
-    el('histYtdMeta').textContent=r.latestYtdDate?`Palkkapäivä ${r.latestYtdDate.split('-').reverse().join('.')}`:'Ei YTD-lukua';
-    el('historyCoverage').textContent=`${r.year}: ${r.records} palkkalaskelmaa, palkkarivit ${r.lineCoverage}/${r.records} laskelmassa.`+
-      (r.excludedConflicts?` Ristiriitaisia tietueita suljettu pois ${r.excludedConflicts}.`:'')+
-      (r.deductionsRate!==null?` Viimeisin neljän muun palkkavähennyksen havaittu osuus ${r.deductionsRate.toFixed(2).replace('.',',')} %. Vuoden 2027 osuus voi muuttua.`:'')+
-      (r.other!==null?` Erillistä muuta kertakorvausta havaittu ${money(r.other)} (ei oletettu toistuvaksi).`:'');
-    el('applyHistory').disabled=r.baseEstimate===null && r.holiday===null && r.deductionsRate===null;
-    el('applyHistoryBonus').disabled=r.bonus===null;
-    setStatus('Historiasta löytyi ehdotuksia. Tarkista summa ja valitse ”Käytä varmistettavia ehdotuksia”. Mitään ei ole vielä muutettu.');
-  }
-  historyInput.addEventListener('change',async()=>{
-    const file=historyInput.files?.[0];if(!file)return;
-    el('historyPreview').hidden=true;lastHistory=null;
-    try{
-      if(file.size>6*1024*1024)throw new Error('Tiedosto on liian suuri tähän kokeiluun (enintään 6 Mt).');
-      const payload=JSON.parse(await file.text());
-      const r=PalkkaPlannerHistory.historySuggestions(payload);
-      showHistory(r);
-    }catch(err){setStatus('Tiedoston tulkinta epäonnistui: '+err.message,true);}
-    finally{historyInput.value='';}
-  });
-  el('applyHistory').addEventListener('click',()=>{
-    if(!lastHistory)return;
-    const changed=[];
-    for(const [key,v] of [['baseGross',lastHistory.baseEstimate],['holiday',lastHistory.holiday],['otherDeductions',lastHistory.deductionsRate]]){
-      if(typeof v==='number'&&Number.isFinite(v)){el(key).value=v;changed.push(key);}
-    }
-    render();
-    setStatus('Ehdotukset siirretty muokattaviin kenttiin ('+changed.length+' kpl). APP ja muu kertakorvaus jätettiin pois. Perusansio on karkea vuosiarvio, tarkista ennen päätöksiä.');
-  });
-  el('applyHistoryBonus').addEventListener('click',()=>{
-    if(lastHistory?.bonus===null||lastHistory===null)return;
-    el('bonus').value=lastHistory.bonus;render();
-    setStatus('APP-bonus otettu yhteen vertailuskenaarioon käyttäjän valinnalla. Se ei ole luvattu seuraavan vuoden bonus.');
-  });
-  const verification=()=>{
-    const a=el('rateConfirmedA').checked,b=el('rateConfirmedB').checked;
-    el('taxRateVerification').textContent=a&&b?'Molemmat prosenttiparit merkitty OmaVerosta tarkistetuiksi. Tarkista myös tulorajan ajallinen voimassaolo.':
-      'Prosentit ovat vielä oletuksia: '+(a?'B':'A')+(a||b?' kaipaa tarkistusta.':' ja B kaipaavat tarkistusta.');
-  };
-  for(const id of ['rateConfirmedA','rateConfirmedB'])el(id).addEventListener('change',verification);
-  for(const pair of [['rateA','rateConfirmedA'],['extraA','rateConfirmedA'],['limitA','rateConfirmedA'],['rateB','rateConfirmedB'],['extraB','rateConfirmedB'],['limitB','rateConfirmedB']]){
-    el(pair[0]).addEventListener('input',()=>{el(pair[1]).checked=false;verification();});
-  }
-  verification();
   render();
 })();
 </script>
