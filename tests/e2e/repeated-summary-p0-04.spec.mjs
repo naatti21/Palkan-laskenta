@@ -2,7 +2,7 @@ import {test,expect} from "@playwright/test";
 
 // Real two-page PDF. Different column order on each page, separated by
 // neutral lines. This is not a mock of PDF.js, parser, UI or IndexedDB.
-function makeRepeatedSummaryPdf(secondYtd="43 000,00") {
+function makeRepeatedSummaryPdf(secondYtd="43 000,00", options={}) {
   const columns={
     previous:["KERTYMÄ EDELLISELTÄ VUODELTA","55 000,00","-13 750,00"],
     period:["KERTYMÄ PALKKAKAUDELTA","3 500,00","-875,00"],
@@ -12,18 +12,18 @@ function makeRepeatedSummaryPdf(secondYtd="43 000,00") {
     [30,525,"Maksupäivä 27.11.2026"],[30,500,"Maksetaan 2 100,00"]];
   const after=[[30,580,"SAMAN PALKKAKAUDEN YHTEENVETO - JATKO"],
     [30,550,"Palkkakausi 1.11.2026 - 14.11.2026"]];
-  const addColumns=(rows,order,updatedYtd)=>{
+  const addColumns=(rows,order,updatedYtd,onlyYtdHeader=false)=>{
     order.forEach((role,i)=>{
       const values=columns[role];
       const x=30+i*285;
-      rows.push([x,390,values[0]],
-        [x,360,"Ennakonpid. al. tul "+(role==="ytd"&&updatedYtd?updatedYtd:values[1])],
+      if(!onlyYtdHeader || role==="ytd") rows.push([x,390,values[0]]);
+      rows.push([x,360,"Ennakonpid. al. tul "+(role==="ytd"&&updatedYtd?updatedYtd:values[1])],
         [x,333,"Ennakonpidätys "+values[2]]);
     });
   };
   addColumns(before,["previous","period","ytd"],null);
   for(let i=0;i<26;i++)before.push([30,300-i*8,"QA lisatieto "+i+" - ilman rahasummia"]);
-  addColumns(after,["ytd","period","previous"],secondYtd);
+  addColumns(after,["ytd","period","previous"],secondYtd,options.onlyYtdHeader===true);
   const escape=value=>value.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
   const stream=rows=>["BT","/F1 10 Tf",...rows.flatMap(row=>[
     "1 0 0 1 "+row[0]+" "+row[1]+" Tm",
@@ -78,4 +78,20 @@ test("QA PDF-P0-04: equal YTD amounts across two tables permit autosave",async({
   const saved=await page.evaluate(async()=> (await import("/storage.js")).getAllRecords());
   expect(saved).toHaveLength(1);
   expect(saved[0].values.ytdTaxableIncome).toBe(42000);
+});
+
+test("QA PDF-P0-05 RED: missing two page-two headings blocks autosave",async({page})=>{
+  await page.setViewportSize({width:412,height:915});
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({
+    name:"qa-p0-05-partial-ytd-heading.pdf",mimeType:"application/pdf",
+    buffer:makeRepeatedSummaryPdf("43 000,00",{onlyYtdHeader:true})
+  });
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  let saved=await page.evaluate(async()=> (await import("/storage.js")).getAllRecords());
+  expect(saved).toHaveLength(0);
+  await page.reload();
+  saved=await page.evaluate(async()=> (await import("/storage.js")).getAllRecords());
+  expect(saved).toHaveLength(0);
 });
