@@ -1,4 +1,4 @@
-import { extractPdfText } from "./pdf-reader.js";
+import { extractPdfDocument } from "./pdf-reader.js";
 import { parsePayslip, validate } from "./parser.js";
 import {
   applyLearnedMappings,
@@ -177,6 +177,8 @@ async function applyProfileMappings(parsed, rawText, profile) {
     const meta = parsed.fields?.[field];
     // Learned mappings must not suppress parser-detected value conflicts.
     if (meta?.conflict || meta?.evidenceIssue) continue;
+    // A learned mapping cannot bypass missing/unresolved source evidence.
+    if (["grossPay","ytdTaxableIncome"].includes(field) && meta?.evidenceStatus !== "verified") continue;
     if (!meta || meta.value == null || Number(meta.confidence || 0) < 0.95) {
       parsed.fields[field] = {
         value,
@@ -273,7 +275,8 @@ function problemKeys(parsed) {
   const keys = new Set();
   for (const key of requiredFields) {
     const meta = parsed.fields[key];
-    if (!meta || meta.value == null || meta.confidence < .95) keys.add(key);
+    if (!meta || meta.value == null || meta.confidence < .95 ||
+        (["grossPay","ytdTaxableIncome"].includes(key) && meta.evidenceStatus !== "verified")) keys.add(key);
   }
   for (const notice of blockingNotices(parsed)) {
     for (const key of notice.fields || []) keys.add(key);
@@ -284,6 +287,9 @@ function problemKeys(parsed) {
 function canAutoAccept(parsed) {
   if (parsed.documentType !== "payslip") return false;
   if (blockingNotices(parsed).length) return false;
+  // A numerical confidence score cannot certify an observation that the
+  // evidence resolver has never validated. Fail closed on both taxable fields.
+  if (["grossPay","ytdTaxableIncome"].some(key => parsed.fields[key]?.evidenceStatus !== "verified")) return false;
   return requiredFields.every(key => {
     const meta = parsed.fields[key];
     return meta?.value != null && meta.confidence >= .95;
@@ -664,8 +670,9 @@ async function processPdf(file) {
   currentPendingWasAutoParsed = false;
   el("conflictSection")?.classList.add("hidden");
 
-  currentRawText = await extractPdfText(file);
-  currentParsed = parsePayslip(currentRawText);
+  const pdfEvidence = await extractPdfDocument(file);
+  currentRawText = pdfEvidence.text;
+  currentParsed = parsePayslip(pdfEvidence);
   currentLearnedProfile = await findLearnedProfile(currentParsed.structureSignals);
   const learnedResult = await applyProfileMappings(currentParsed, currentRawText, currentLearnedProfile);
   currentParsed = learnedResult.parsed;
@@ -727,6 +734,13 @@ el("saveButton").addEventListener("click", async () => {
   const editedValues = collectEditedValues();
   const base = currentRecord || makeRecordFromParsed(currentParsed, currentFingerprint);
   const record = refreshRecordNotices(applyUserCorrections(base, editedValues));
+  // The Save action is the explicit user decision for formerly ambiguous fields.
+  for (const key of ["grossPay","ytdTaxableIncome","previousYearTaxableIncome"]) {
+    if (currentParsed.fields[key]?.evidenceStatus === "conflict" ||
+        currentParsed.fields[key]?.evidenceStatus === "unverified") {
+      if (record.fieldMeta[key]) record.fieldMeta[key].reviewed = true;
+    }
+  }
 
   const missing = requiredFields.filter(key => record.values[key] == null || record.values[key] === "");
   if (missing.length) {
