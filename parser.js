@@ -107,7 +107,8 @@ function sectionMoney(text, sectionPattern, labelPattern) {
 }
 
 function parallelCumulativeSummary(text, taxableLabel, sourceLines = []) {
-  // Evidence adapter for ALL multi-column cumulative headers, not the first.
+  // Evidence adapter for recognized cumulative headers on every page.
+  // Incomplete headings must not disappear before coverage validation.
   // Each heading owns its rows up to the next structural heading or page.
   const lines = String(text).split("\n");
   const headerRegex = /Kertymä\s+(palkkakaudelta|vuoden alusta|edelliseltä vuodelta)\b/gi;
@@ -119,14 +120,42 @@ function parallelCumulativeSummary(text, taxableLabel, sourceLines = []) {
   const headers = [];
   for (let index=0; index<lines.length; index++) {
     const matches = [...lines[index].matchAll(headerRegex)];
-    if (matches.length < 2) continue;
+    if (!matches.length) continue;
     const columns = matches.map(match => roles[match[1].toLocaleLowerCase("fi-FI")]);
     const distinct = new Set(columns);
-    const valid = columns.length <= 3 && distinct.size === columns.length &&
-      distinct.has("grossPay") && distinct.has("ytdTaxableIncome");
+    // A single labeled column is semantically attributable only when its
+    // corresponding row contains exactly one amount. Multiple amounts beneath
+    // one heading must be treated as incomplete, never guessed by position.
+    const valid = columns.length === 1 ||
+      (columns.length <= 3 && distinct.size === columns.length &&
+       distinct.has("grossPay") && distinct.has("ytdTaxableIncome"));
     headers.push({index,columns,valid,page:sourceLines[index]?.page ?? null});
   }
   if (!headers.length) return null;
+
+  const nextSection = /^\\s*(?:Kauden\\s+tiedot|Vuoden\\s+tiedot|Kertymä\\s+(?:palkkakaudelta|vuoden alusta|edelliseltä vuodelta))\\b/i;
+  // Keep the existing one-column section interpreter for ordinary documents.
+  // Escalate to this adapter when an incomplete one-column header owns a row
+  // with multiple labeled amounts, even without any complete parallel table.
+  // Otherwise a previously verified value can hide that later ambiguous row.
+  if (headers.every(header=>header.columns.length===1)) {
+    const taxableRows=new RegExp(taxableLabel.source+"\\\\s+("+MONEY_RE+")","gi");
+    const withholdingRows=new RegExp("Ennakonpidätys\\\\s+("+MONEY_RE+")","gi");
+    const ambiguous=headers.some((header,h)=>{
+      const stop=headers[h+1]?.index ?? lines.length;
+      for(let index=header.index+1;index<stop;index++) {
+        if(nextSection.test(lines[index])) break;
+        if(header.page!=null && sourceLines[index]?.page!=null &&
+           sourceLines[index].page!==header.page) break;
+        taxableRows.lastIndex=0;
+        withholdingRows.lastIndex=0;
+        if([...lines[index].matchAll(taxableRows)].length>1 ||
+           [...lines[index].matchAll(withholdingRows)].length>1) return true;
+      }
+      return false;
+    });
+    if(!ambiguous) return null;
+  }
 
   const makeGroup = () => ({
     values:null, observations:[], uncertain:false,
@@ -138,7 +167,6 @@ function parallelCumulativeSummary(text, taxableLabel, sourceLines = []) {
     [taxable,new RegExp(taxableLabel.source+"\\s+("+MONEY_RE+")","gi")],
     [withholding,new RegExp("Ennakonpidätys\\s+("+MONEY_RE+")","gi")]
   ];
-  const nextSection = /^\s*(?:Kauden\s+tiedot|Vuoden\s+tiedot|Kertymä\s+(?:palkkakaudelta|vuoden alusta|edelliseltä vuodelta))\b/i;
   let headerValid=true;
 
   for(let h=0;h<headers.length;h++){
@@ -178,7 +206,9 @@ function parallelCumulativeSummary(text, taxableLabel, sourceLines = []) {
       }
     }
     if(!header.valid || !seen.get(taxable)) taxable.uncertain=true;
-    if(!header.valid || !seen.get(withholding)) withholding.uncertain=true;
+    // A lone, otherwise unambiguous taxable column does not require a
+    // withholding row; incomplete supplied withholding rows remain blocking.
+    if(!header.valid || (header.columns.length>1 && !seen.get(withholding))) withholding.uncertain=true;
   }
   // Conflicting complete rows are kept separately: the shared semantic
   // resolver compares role-specific values and blocks any disagreement.
