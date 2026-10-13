@@ -339,7 +339,8 @@ export function makeRecordFromParsed(parsed, fingerprint = "") {
   for (const key of VALUE_KEYS) {
     const meta = parsed.fields?.[key];
     values[key] = meta?.value ?? null;
-    if (meta) fieldMeta[key] = { confidence: meta.confidence ?? 0, source: meta.source ?? null };
+    if (meta) fieldMeta[key] = { confidence: meta.confidence ?? 0, source: meta.source ?? null,
+      evidenceStatus:meta.evidenceStatus, evidence:meta.evidence };
   }
 
   const safeValueMap = safeValues(values);
