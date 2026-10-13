@@ -12,7 +12,7 @@ async function getPdfJs() {
   return pdfjsPromise;
 }
 
-function pageItemsToLines(items) {
+function pageItemsToLines(items, pageNumber) {
   const rows = new Map();
   for (const item of items) {
     if (!item.str?.trim()) continue;
@@ -20,15 +20,19 @@ function pageItemsToLines(items) {
     const y = item.transform?.[5] ?? 0;
     const bucket = Math.round(y / 2) * 2;
     if (!rows.has(bucket)) rows.set(bucket, []);
-    rows.get(bucket).push({ x, text: item.str.trim() });
+    rows.get(bucket).push({ x, text: item.str.trim(), width: item.width || 0 });
   }
   return [...rows.entries()]
     .sort((a, b) => b[0] - a[0])
-    .map(([, parts]) => parts.sort((a, b) => a.x - b.x).map(p => p.text).join(" "))
-    .filter(Boolean);
+    .map(([y, parts]) => {
+      parts.sort((a, b) => a.x - b.x);
+      return {text: parts.map(p => p.text).join(" "), page:pageNumber, x:parts[0].x,
+        y, width:Math.max(...parts.map(p=>p.x+p.width))-parts[0].x};
+    })
+    .filter(item => item.text);
 }
 
-export async function extractPdfText(file) {
+export async function extractPdfDocument(file) {
   const pdfjs = await getPdfJs();
   const bytes = new Uint8Array(await file.arrayBuffer());
   const pdf = await pdfjs.getDocument({ data: bytes }).promise;
@@ -36,7 +40,14 @@ export async function extractPdfText(file) {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    pages.push(pageItemsToLines(content.items).join("\n"));
+    pages.push(pageItemsToLines(content.items,pageNumber));
   }
-  return pages.join("\n\n");
+  const lines=pages.flatMap((items,index)=>index===0?items:[null,...items]);
+  return {text:pages.map(items=>items.map(item=>item.text).join("\n")).join("\n\n"),
+    lines};
+}
+
+// Retain the original public text API for consumers that do not need line geometry.
+export async function extractPdfText(file) {
+  return (await extractPdfDocument(file)).text;
 }
