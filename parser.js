@@ -133,14 +133,14 @@ function parallelCumulativeSummary(text, taxableLabel, sourceLines = []) {
   }
   if (!headers.length) return null;
 
-  const nextSection = /^\\s*(?:Kauden\\s+tiedot|Vuoden\\s+tiedot|Kertymä\\s+(?:palkkakaudelta|vuoden alusta|edelliseltä vuodelta))\\b/i;
+  const nextSection = /^\s*(?:Kauden\s+tiedot|Vuoden\s+tiedot|Kertymä\s+(?:palkkakaudelta|vuoden alusta|edelliseltä vuodelta))\b/i;
   // Keep the existing one-column section interpreter for ordinary documents.
   // Escalate to this adapter when an incomplete one-column header owns a row
   // with multiple labeled amounts, even without any complete parallel table.
   // Otherwise a previously verified value can hide that later ambiguous row.
   if (headers.every(header=>header.columns.length===1)) {
-    const taxableRows=new RegExp(taxableLabel.source+"\\\\s+("+MONEY_RE+")","gi");
-    const withholdingRows=new RegExp("Ennakonpidätys\\\\s+("+MONEY_RE+")","gi");
+    const taxableRows=new RegExp(taxableLabel.source+"\\s+("+MONEY_RE+")","gi");
+    const withholdingRows=new RegExp("Ennakonpidätys\\s+("+MONEY_RE+")","gi");
     const ambiguous=headers.some((header,h)=>{
       const stop=headers[h+1]?.index ?? lines.length;
       for(let index=header.index+1;index<stop;index++) {
