@@ -59,12 +59,15 @@ export function collectTaxableEvidence(text, sourceLines = []) {
 
 // Shared resolver: differences across independently labeled observations always block.
 export function resolveTaxableEvidence(role, found, supplement = []) {
-  const observations = [...(found[role] || [])];
+  const observations = [];
   for (const item of supplement) {
     if (typeof item === "number" && Number.isFinite(item))
       observations.push({value:item,label:"column-or-fallback"});
     else if (item && Number.isFinite(item.value)) observations.push(item);
   }
+  // Preserve the historical field-source priority in candidates/UI while still
+  // appending every additional text observation before conflict resolution.
+  observations.push(...(found[role] || []));
   const candidates = [...new Map(observations.map(o=>[moneyKey(o.value),o.value])).values()];
   return {
     conflict:candidates.length>1,
