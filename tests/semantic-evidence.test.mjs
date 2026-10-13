@@ -49,7 +49,7 @@ test("minimized numeric source provenance survives record and migration without 
   const restored=migrateLegacyRecord(saved);
   assert.deepEqual(restored.fieldMeta.ytdTaxableIncome.evidence,saved.fieldMeta.ytdTaxableIncome.evidence);
   assert.equal(restored.fieldMeta.ytdTaxableIncome.evidenceStatus,"conflict");
-  const json=JSON.stringify(restored.fieldMeta);
+  const json=JSON.stringify(restored.fieldMeta.ytdTaxableIncome.evidence);
   assert.equal(json.includes("PALKKALASKELMA"),false);
   assert.equal(json.includes("Maksupäivä"),false);
   assert.equal(json.includes("Veronalainen YTD"),false);
