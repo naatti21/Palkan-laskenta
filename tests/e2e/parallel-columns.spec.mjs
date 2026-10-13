@@ -32,7 +32,8 @@ function makeColumnsPdf(order = ["period", "ytd", "previous"], options = {}) {
       : []),
     ...(options.explicitPeriodTaxable
       ? [[40, 350, `Veronalainen palkka / kausi ${options.explicitPeriodTaxable}`]]
-      : [])
+      : []),
+    ...(options.explicitYtdRows || []).map((amount,i) => [40, 330 - i * 20, `Veronalainen YTD ${amount}`])
   ];
 
   const escape = value => value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -306,4 +307,31 @@ test("QA IMPORT-P0-02: manual decision for duplicate period conflict is retained
   expect(records).toHaveLength(1);
   expect(records[0].values.grossPay).toBe(3600);
   expect(records[0].corrections.grossPay.parserValue).toBe(3240.5);
+});
+
+test("QA PDF-P0-03: distinct explicit YTD lines must BLOCK autosave and preserve both candidates", async ({page}) => {
+  await page.goto("/index.html");
+  const pdf=makeColumnsPdf(["previous","period","ytd"], {
+    explicitYtdRows:["48 905,75","49 905,75"]
+  });
+  await page.locator("#pdfInput").setInputFiles({name:"qa-p0-03-explicit-ytd.pdf",mimeType:"application/pdf",buffer:pdf});
+  await expect(page.locator("#status")).toContainText("tarvitsee tarkistuksen");
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator("#reviewGrid")).toContainText("48 905,75");
+  await expect(page.locator("#reviewGrid")).toContainText("49 905,75");
+  let records=await page.evaluate(async()=> (await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(0);
+  await page.reload();
+  records=await page.evaluate(async()=> (await import("/storage.js")).getAllRecords());
+  expect(records).toHaveLength(0);
+});
+
+test("QA PDF-P0-03: repeated identical explicit YTD is NOT a conflict", async ({page}) => {
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles({name:"qa-ytd-identical.pdf",mimeType:"application/pdf",
+    buffer:makeColumnsPdf(["previous","period","ytd"],{explicitYtdRows:["48 905,75","48 905,75"]})});
+  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
+  const saved=await page.evaluate(async()=> (await import("/storage.js")).getAllRecords());
+  expect(saved).toHaveLength(1);
+  expect(saved[0].values.ytdTaxableIncome).toBe(48905.75);
 });
