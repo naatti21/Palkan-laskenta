@@ -5,7 +5,7 @@ import {
   recordContentKey,
   sameRecordContent
 } from "./model.js";
-import {BANK_KEY, mergeBankAnchors} from "./bank-ledger.js";
+import {BANK_KEY, mergeBankAnchors, normalizeBankAnchor, updateBankAnchor} from "./bank-ledger.js";
 
 const DB_NAME = "palkka-pwa";
 const DB_VERSION = 1;
@@ -357,6 +357,42 @@ export async function restoreBackupAtomically(incomingRecords, {
     await done;
     return {added: plan.added, merged: plan.merged,
       conflictsPreserved: plan.conflictsPreserved};
+  } catch (err) {
+    try { tx.abort(); } catch {}
+    try { await done; } catch {}
+    throw err;
+  }
+}
+
+/**
+ * Atomic manual bank balance create/correction. The read, merge and put all
+ * occur inside ONE settings readwrite transaction, serialized with backup
+ * restore's settings transaction. A stale list can never overwrite anchors
+ * concurrently imported by restoreBackupAtomically.
+ */
+export async function saveBankAnchorAtomically({anchor = null, editId = null, values = null, at = null} = {}) {
+  const editing = typeof editId === "string" && editId.length > 0;
+  if ((editing && anchor !== null) || (!editing && anchor === null))
+    throw new Error("Virheellinen saldon tallennuspyyntö.");
+  // Reject malformed new observations before opening a write transaction.
+  const entry = editing ? null : normalizeBankAnchor(anchor);
+  if (editing && (!values || !at)) throw new Error("Saldon korjaustiedot puuttuvat.");
+
+  const db = await openDb();
+  const tx = db.transaction(SETTINGS_STORE, "readwrite");
+  const done = transactionDone(tx);
+  const store = tx.objectStore(SETTINGS_STORE);
+  try {
+    const row = await requestToPromise(store.get(BANK_KEY));
+    // Run the original validation and merge routines inside the transaction,
+    // without timers, network operations or other awaits.
+    const current = mergeBankAnchors([], row?.value ?? []);
+    const next = editing
+      ? updateBankAnchor(current, editId, values, at)
+      : mergeBankAnchors(current, [entry]);
+    store.put({key: BANK_KEY, value: next});
+    await done;
+    return next;
   } catch (err) {
     try { tx.abort(); } catch {}
     try { await done; } catch {}

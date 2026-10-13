@@ -85,7 +85,7 @@ test("service worker cache sisältää sovelluksen ja paikallisen PDF.js-runtime
   });
 
   expect(state.controlled).toBe(true);
-  expect(state.cacheName).toBe("palkka-pwa-v18");
+  expect(state.cacheName).toBe("palkka-pwa-v19");
   expect(state.urls).toContain("/index.html");
   expect(state.urls).toContain("/bank-ledger.js");
   expect(state.urls).toContain("/bank-ui.js");
@@ -186,7 +186,7 @@ test("uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:ide
 
   await page.waitForFunction(async () => {
     const names = await caches.keys();
-    return names.includes("palkka-pwa-v18")
+    return names.includes("palkka-pwa-v19")
       && !names.includes("palkka-pwa-v16")
       && !names.includes("palkka-pwa-v15")
       && !names.includes("palkka-pwa-v14")
@@ -197,7 +197,7 @@ test("uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:ide
   const state = await page.evaluate(async otherCacheName => {
     const allNames = await caches.keys();
     const ownCaches = allNames.filter(name => name.startsWith("palkka-pwa-v")).sort();
-    const current = await caches.open("palkka-pwa-v18");
+    const current = await caches.open("palkka-pwa-v19");
     const oldMarker = await current.match(new URL("./palkka-pwa-v15-marker.txt", location.href));
     const foreignCachePresent = allNames.includes(otherCacheName);
     const foreignCache = await caches.open(otherCacheName);
@@ -212,7 +212,7 @@ test("uusi service worker siivoaa vain palkka-cachet eikä poista muiden PWA:ide
   }, foreignCacheName);
 
   expect(state.controlled).toBe(true);
-  expect(state.ownCaches).toEqual(["palkka-pwa-v18"]);
+  expect(state.ownCaches).toEqual(["palkka-pwa-v19"]);
   expect(state.oldMarkerPresent).toBe(false);
   expect(state.foreignCachePresent).toBe(true);
   expect(state.foreignMarkerBody).toBe("do-not-delete");

@@ -1,8 +1,8 @@
 import {
  BANK_KEY,BANK_PROMPT_KEY,parseBalanceMinutes,formatBalanceMinutes,
- mergeBankAnchors,normalizeBankAnchor,newestBankAnchor,updateBankAnchor,shouldOfferBankPrompt
+ mergeBankAnchors,normalizeBankAnchor,newestBankAnchor,shouldOfferBankPrompt
 } from "./bank-ledger.js";
-import {getSetting,setSetting} from "./storage.js";
+import {getSetting,setSetting,saveBankAnchorAtomically} from "./storage.js";
 const el=id=>document.getElementById(id);
 const readable=s=>s?new Date(s+"T12:00:00").toLocaleDateString("fi-FI"):"–";
 let navigate=()=>{};
@@ -121,18 +121,15 @@ export async function initBankUi(setView){
    const source=el("bankSourceInput").value;
    const note=el("bankNoteInput").value.trim();
    const timestamp=new Date().toISOString();
-   const anchors=await loadBankAnchors();
-   let next;
-   if(editingId) {
-     next=updateBankAnchor(anchors,editingId,
-       {asOfDate:date,balanceMinutes:minutes,source,note},timestamp);
-   } else {
-     const id="bank-"+crypto.randomUUID();
-     const entry=normalizeBankAnchor({id,asOfDate:date,balanceMinutes:minutes,source,note,recordedAt:timestamp,corrections:[]});
-     next=mergeBankAnchors(anchors,[entry]);
-   }
-   await setSetting(BANK_KEY,next);
-   const isCorrection=Boolean(editingId);
+   const editId=editingId;
+   const isCorrection=Boolean(editId);
+   const values={asOfDate:date,balanceMinutes:minutes,source,note};
+   const anchor=isCorrection?null:normalizeBankAnchor({
+     id:"bank-"+crypto.randomUUID(),...values,recordedAt:timestamp,corrections:[]
+   });
+   // Manual save and backup restore share a serializable settings write lock.
+   // Do not read anchors outside this transaction and later overwrite the list.
+   await saveBankAnchorAtomically({anchor,editId,values,at:timestamp});
    editingId=null;
    editVisible(false);
    await renderBankUi();
