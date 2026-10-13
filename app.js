@@ -21,6 +21,7 @@ import {
   clearAllRecords,
   getAllRecords,
   mergeManyRecords,
+  restoreBackupAtomically,
   migrateLegacyLocalStorage,
   upsertRecord,
   replaceRecord,
@@ -28,7 +29,7 @@ import {
   getSetting,
   setSetting
 } from "./storage.js";
-import {BANK_KEY, BANK_PROMPT_KEY, mergeBankAnchors} from "./bank-ledger.js";
+import {BANK_KEY, BANK_PROMPT_KEY} from "./bank-ledger.js";
 import {initBankUi,renderBankUi,offerBankPrompt,loadBankAnchors} from "./bank-ui.js";
 
 let currentParsed = null;
@@ -142,8 +143,8 @@ async function getLearnedProfiles() {
   return Array.isArray(value) ? value : [];
 }
 
-async function setLearnedProfiles(profiles) {
-  const safe = (profiles || []).slice(0, 100).map(profile => ({
+function sanitizeLearnedProfileList(profiles) {
+  return (profiles || []).slice(0, 100).map(profile => ({
     id: String(profile.id || profileId(profile.signals)).slice(0, 120),
     signals: normalizedSignals(profile.signals).slice(0, 30),
     observations: Math.max(0, Math.min(9999, Number(profile.observations) || 0)),
@@ -154,6 +155,10 @@ async function setLearnedProfiles(profiles) {
     firstSeenAt: profile.firstSeenAt || null,
     lastSeenAt: profile.lastSeenAt || null
   })).filter(profile => profile.signals.length >= 3);
+}
+
+async function setLearnedProfiles(profiles) {
+  const safe = sanitizeLearnedProfileList(profiles);
   await setSetting(LEARNED_PROFILES_KEY, safe);
   return safe;
 }
@@ -241,8 +246,8 @@ async function rememberCurrentStructure({ confirmed = false, autoParsed = false,
   return profile;
 }
 
-async function mergeLearnedProfiles(incoming) {
-  const profiles = await getLearnedProfiles();
+function mergeLearnedProfileValues(existing, incoming) {
+  const profiles = Array.isArray(existing) ? existing.map(profile => ({...profile})) : [];
   for (const item of incoming || []) {
     const signals = normalizedSignals(item.signals);
     if (signals.length < 3) continue;
@@ -259,7 +264,7 @@ async function mergeLearnedProfiles(incoming) {
       };
     } else profiles.push(item);
   }
-  return setLearnedProfiles(profiles);
+  return sanitizeLearnedProfileList(profiles);
 }
 
 function refreshRecordNotices(record) {
@@ -862,17 +867,22 @@ el("backupInput").addEventListener("change", async event => {
     const records = parseBackup(payload);
     const learnedProfiles = parseBackupLearnedProfiles(payload);
     const bankSnapshots = parseBackupBankSnapshots(payload);
-    const existingBankSnapshots = await loadBankAnchors();
-    const nextBankSnapshots = mergeBankAnchors(existingBankSnapshots,bankSnapshots);
-    const result = await mergeManyRecords(records);
-    if(bankSnapshots.length) await setSetting(BANK_KEY,nextBankSnapshots);
-    await renderBankUi();
-    if (learnedProfiles.length) await mergeLearnedProfiles(learnedProfiles);
-    await renderAll();
+    const result = await restoreBackupAtomically(records, {
+      bankSnapshots, learnedProfiles,
+      planLearnedProfiles: mergeLearnedProfileValues
+    });
     const preserved = result.conflictsPreserved
       ? `, ${result.conflictsPreserved} ristiriitaversiota säilytetty erillään`
       : "";
     el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa${preserved}${learnedProfiles.length ? `, ${learnedProfiles.length} tunnistettua rakennetta` : ""}${bankSnapshots.length ? `, ${bankSnapshots.length} pankkisaldon havaintoa` : ""}.`;
+    // A display error after commit is NOT a failed restore.
+    try {
+      await renderBankUi();
+      await renderAll();
+    } catch (renderErr) {
+      console.error("Restore display refresh failed", renderErr);
+      el("backupStatus").textContent = "Palautus tallennettu, mutta näkymän päivitys epäonnistui. Lataa sivu uudelleen.";
+    }
   } catch (err) {
     el("backupStatus").textContent = `Palautus epäonnistui: ${err.message}`;
   } finally {
