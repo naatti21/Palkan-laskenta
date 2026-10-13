@@ -17,7 +17,7 @@ test("PWA-asennusmanifesti ja kuvakkeet löytyvät myös offline-välimuistista"
     const manifestResponse = await fetch(manifestUrl);
     if (!manifestResponse.ok) throw new Error("Manifest cannot be fetched");
     const manifest = await manifestResponse.json();
-    const cache = await caches.open("palkka-pwa-v17");
+    const cache = await caches.open("palkka-pwa-v18");
     const icons = [];
 
     for (const item of manifest.icons ?? []) {
