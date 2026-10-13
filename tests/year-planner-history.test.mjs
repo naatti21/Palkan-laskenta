@@ -13,7 +13,7 @@ test('bonus and holiday are derived once from coded lines',()=>{const r=derive(b
 test('annual and 16h weekend earnings are labelled estimates',()=>{const r=derive(backup([pay(1),pay(2),pay(3),pay(4)]),2026);assert.ok(r.baseGross>51000&&r.baseGross<54000);assert.ok(r.weekendGross>=1100&&r.weekendGross<=1200);assert.equal(r.records,4);});
 test('missing earlier payroll records warns on YTD discrepancy',()=>{const r=derive(backup([pay(2),pay(3),pay(4)]),2026);assert.equal(r.partial,true);});
 test('no pay lines mean unverified bonus rather than zero',()=>{const a=pay(1);a.payLines=[];const r=derive(backup([a]),2026);assert.equal(r.holiday,null);assert.equal(r.bonus,null);assert.equal(r.baseGross,null);});
-test('duplicate same payment event cannot double count',()=>{const a=pay(1);assert.throws(()=>derive(backup([a,a]),/ristiriitaisia/);});
+test('duplicate same payment event cannot double count',()=>{const a=pay(1);assert.throws(()=>derive(backup([a,a])),/ristiriitaisia/);});
 test('foreign or wrong-schema backups blocked',()=>{assert.throws(()=>derive({app:'Other',records:[]}),/Palkka PWA/);assert.throws(()=>derive({app:'Palkka PWA',backupSchemaVersion:4,recordSchemaVersion:1,records:[]}),/versio 2/);});
 test('forecast records excluded',()=>{const a=pay(1);const f=pay(2);f.kind='forecast';assert.equal(derive(backup([a,f]),2026).records,1);});
 test('historic card percentages are observed facts only',()=>{const r=derive(backup([pay(1)]),2026);assert.equal(r.taxRate,27.5);assert.equal(r.extraRate,45);});
