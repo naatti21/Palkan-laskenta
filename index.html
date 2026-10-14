@@ -124,6 +124,15 @@
     </section>
 
     <section data-view="analysis" class="hidden">
+      <section class="card planner-beta-card" aria-labelledby="plannerHeading">
+        <p class="eyebrow">BETA · VUODEN 2027 SUUNNITTELU</p>
+        <h2 id="plannerHeading">Enemmän vapaa-aikaa — riittävästi rahaa</h2>
+        <p class="muted">Kokeile 0–52 työviikonloppua, tulorajoja ja nettovaikutusta. Betan vahvistettu palkkahistoria ehdottaa lähtöarvoja paikallisesti. Kaikkia lukuja voi muuttaa.</p>
+        <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
+        <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html" title="Vuoden 2027 suunnittelijan laskuri" referrerpolicy="same-origin"></iframe>
+        <p class="muted">OmaVero-prosentit syötetään erikseen. Arvio koskee ennakonpidätyksen mukaista rahaa, ei lopullista verotusta. Tietoja ei lähetetä palvelimelle.</p>
+      </section>
+
       <section class="card">
         <div class="section-heading">
           <div>
@@ -161,7 +170,7 @@
         <p id="overtimeCaution" class="muted"></p>
       </section>
 
-      <section class="card">
+      <section class="card hidden beta-replaced">
         <p class="eyebrow">PALKKAKAUSI EI OLE MAKSUKUUKAUSI</p>
         <h2>Työn ja palkan aikajana</h2>
         <div id="periodSummary" class="insight-rows"></div>
@@ -175,13 +184,12 @@
         <p class="muted">Nämä ovat palkkalaskelmille kirjatut yksiköt, eivät vahvistettu työaikapankin saldo. Alkusaldo, siirtosäännöt ja mahdolliset muuntokertoimet tarkistetaan myöhemmin.</p>
       </section>
 
-      <section class="card">
-        <p class="eyebrow">AVAA KUUKAUSI</p>
-        <h2>Kuukausien erittely</h2>
+      <details class="card beta-compact-months">
+        <summary>Kuukausien erittely · avaa tarvittaessa</summary>
         <div id="monthlyDetails" class="insight-rows"></div>
-      </section>
+      </details>
 
-      <section class="card">
+      <section class="card hidden beta-replaced">
         <p class="eyebrow">OMAT VALINNAT · EI VEROLASKURI</p>
         <h2>Mitä lisätyöstä jää?</h2>
         <p class="muted">Skenaario perustuu havaittuihin ylityön korotusosiin ja itse antamaasi arvioon siitä, paljonko lisäansiosta jää käteen. Se ei laske peruspalkkaa, kaikkia työkorvauksia eikä lopullista veroa.</p>
@@ -198,7 +206,7 @@
         <div id="premiumComparison" class="insight-rows"></div>
       </section>
 
-      <section class="card">
+      <section class="card hidden beta-replaced">
         <p class="eyebrow">KOKEILE ITSE · VEROKORTTIENNAKOINTI</p>
         <h2>Milloin seuraavasta eurosta jää vähemmän?</h2>
         <p class="muted">Kokeile, miten verokortin tuloraja vaikuttaa <strong>arvioituun lisänettoon</strong>. Tämä ei ole todellinen veroennuste eikä muuta palkkatietojasi.</p>
@@ -236,7 +244,7 @@
         </details>
       </section>
 
-      <section class="card">
+      <section class="card hidden beta-replaced">
         <p class="eyebrow">TYÖVIIKONLOPPU KOKONAISUUTENA · KOKEILU</p>
         <h2>Mitä seuraavat viikonloput tuottaisivat?</h2>
         <p class="muted">Emme vertaa lauantaita ja sunnuntaita erillisinä vaihtoehtoina. Anna <strong>koko työviikonlopun</strong> arvioitu lisäbrutto, jossa on mukana kaikki siihen kuuluvat korvaukset. Esimerkkiluvut voi muuttaa.</p>
