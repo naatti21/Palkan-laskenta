@@ -5,9 +5,11 @@ test("beta branding, exact origin and offline analytics shell", async ({ page })
   await expect(page.locator("#beta-tag")).toHaveText("BETA");
   await expect(page.locator("#beta-banner")).toHaveCount(0);
   await expect(page.locator("#beta-tag")).toBeVisible();
-  await expect(page.locator(".beta-disabled-upload")).toBeHidden();
+  await expect(page.locator(".beta-pdf-slot")).toBeVisible();
+  await expect(page.locator(".beta-pdf-note")).toContainText("Odottaa tarkistusta");
   await expect(page.locator("#pdfInput")).toBeDisabled();
-  await expect(page.locator("#beta-tracking-tip")).toContainText("Data → Palauta varmuuskopio");
+  await expect(page.locator(".beta-pdf-note")).toContainText("Data-välilehdeltä");
+  await expect(page.locator("#dashboardMiniChartWrap")).toBeHidden();
   await expect(page.locator("#dashboardMore")).toBeHidden();
   await expect(page).toHaveTitle("Palkka BETA");
   await page.getByRole("button", { name: "Analyysi" }).click();
@@ -81,7 +83,7 @@ test("synthetic production-format JSON backup restores locally into beta analysi
   expect(records[0].values.overtimeHours).toBe(null);
 });
 
-test("compact mobile dashboard keeps top four metrics and full breakdown one tap away", async ({ page }) => {
+test("compact mobile dashboard keeps six real metrics and other values one tap away", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await page.goto("/index.html");
   const backup = await page.evaluate(async () => {
@@ -100,8 +102,8 @@ test("compact mobile dashboard keeps top four metrics and full breakdown one tap
   await page.locator("#backupInput").setInputFiles({name:"synthetic-dashboard.json",mimeType:"application/json",buffer:Buffer.from(backup)});
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
   await page.getByRole("button",{name:"Seuranta"}).click();
-  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
-  await expect(page.locator("#dashboardDetails .metric")).toHaveCount(4);
+  await expect(page.locator("#dashboard .metric")).toHaveCount(6);
+  await expect(page.locator("#dashboardDetails .metric")).toHaveCount(2);
   await expect(page.locator("#dashboardMore")).toBeVisible();
   await expect(page.locator("#dashboardMore")).not.toHaveAttribute("open","");
   await expect(page.locator("#dashboard")).toContainText("Viimeisin netto");
@@ -111,14 +113,46 @@ test("compact mobile dashboard keeps top four metrics and full breakdown one tap
   await expect(page.locator("#dashboard")).toContainText("80 000");
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
-  await expect(page.locator("#dashboardDetails")).toContainText("Veronalainen YTD");
+  await expect(page.locator("#dashboard")).toContainText("Veronalainen YTD");
+  await expect(page.locator("#dashboard")).toContainText("Brutto");
   await expect(page.locator("#dashboardDetails")).toContainText("Viimeisin maksupäivä");
   await expect(page.locator("#dashboardDetails")).toContainText("OT viime jaksolla");
   const width = await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(width).toBeLessThanOrEqual(1);
   await page.reload();
-  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
-  await expect(page.locator(".beta-disabled-upload")).toBeHidden();
+  await expect(page.locator("#dashboard .metric")).toHaveCount(6);
+  await expect(page.locator(".beta-pdf-slot")).toBeVisible();
+});
+test("compact monthly net graph uses real payment months, without forecast or filling missing months", async ({page})=>{
+ await page.setViewportSize({width:360,height:780});
+ await page.goto("/index.html");
+ const backup=await page.evaluate(async()=>{
+   const m=await import("/model.js");
+   const row=(month,net,kind="payslip")=>m.migrateLegacyRecord({
+     recordSchemaVersion:1,id:"net-mini-"+month+"-"+kind,kind,
+     values:{payDate:"2026-"+month+"-23",payPeriodStart:"2026-"+month+"-07",
+       payPeriodEnd:"2026-"+month+"-20",grossPay:net+1000,netPay:net,ytdTaxableIncome:3000},
+     payLines:[],fingerprints:["net-mini-"+month+"-"+kind],fieldMeta:{},corrections:{},notices:[],
+     parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}
+   });
+   return JSON.stringify(m.makeBackup([row("01",1800),row("03",2100),row("05",1900),row("08",9000,"forecast")]));
+ });
+ await page.getByRole("button",{name:"Data"}).click();
+ await page.locator("#backupInput").setInputFiles({name:"synthetic-chart.json",mimeType:"application/json",buffer:Buffer.from(backup)});
+ await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+ await page.getByRole("button",{name:"Seuranta"}).click();
+ await expect(page.locator("#dashboardMiniChartWrap")).toBeVisible();
+ const chart=page.locator("#dashboardMiniChart svg");
+ await expect(chart).toBeVisible();
+ await expect(chart.locator("rect")).toHaveCount(3);
+ await expect(chart.locator("text")).toHaveText(["tammi","maalis","touko"]);
+ await expect(chart).toHaveAttribute("aria-label",/1 800.*2 100.*1 900/);
+ await expect(chart).not.toHaveAttribute("aria-label",/9 000|helmi|elo/);
+ await expect(page.locator("#dashboardMiniChartScope")).toContainText("3 toteutunutta");
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+ await page.reload();
+ await expect(page.locator("#dashboardMiniChart svg rect")).toHaveCount(3);
+ await expect(page.locator("#pdfInput")).toBeDisabled();
 });
 test("beta source does not overwrite QA staging, main or browser origin", async ({ page }) => {
   await page.goto("/index.html");
