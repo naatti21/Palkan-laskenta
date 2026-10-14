@@ -148,7 +148,7 @@ test("compact monthly net graph uses real payment months, without forecast or fi
  await expect(chart.locator("text")).toHaveText(["tammi","maalis","touko"]);
  await expect(chart).toHaveAttribute("aria-label",/tammi.*maalis.*touko/);
  await expect(chart).not.toHaveAttribute("aria-label",/9 000|helmi|elo/);
- await expect(page.locator("#dashboardMiniChartScope")).toContainText("3 toteutunutta");
+ await expect(page.locator("#dashboardMiniChartScope")).toContainText("3 kk · vain tallennetut");
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
  await page.reload();
  await expect(page.locator("#dashboardMiniChart svg rect")).toHaveCount(3);
