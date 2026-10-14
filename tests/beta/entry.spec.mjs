@@ -119,35 +119,25 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await page.locator("#backupInput").setInputFiles({name:"synthetic-insights.json",mimeType:"application/json",buffer:Buffer.from(fixture,"utf8")});
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
   await page.getByRole("button", { name: "Analyysi" }).click();
-  await expect(page.locator("#periodSummary")).toContainText("22.12.2025");
-  await expect(page.locator("#periodSummary")).toContainText("9.1.2026");
+  await expect(page.locator("#periodSummary")).toBeHidden();
   await expect(page.locator("#incomeBreakdown")).toContainText("6 367,93");
-  await expect(page.locator("#incomeBreakdown")).toContainText("3 844,96");
   await expect(page.locator("#overtimeBreakdown")).toContainText("11,13");
   await expect(page.locator("#bankSummary")).toContainText("−0,5");
+  await expect(page.locator("#plannerFrame")).toBeVisible();
   await expect(page.locator("#monthlyDetails .month-expand")).toHaveCount(1);
-  await page.locator(".month-expand summary").click();
+  await expect(page.locator(".beta-compact-months")).not.toHaveAttribute("open", "");
+  await page.locator(".beta-compact-months > summary").click();
+  await page.locator("#monthlyDetails .month-expand summary").click();
   await expect(page.locator("#monthlyDetails")).toContainText("1 846,70");
-  await page.locator("#retainedRate").fill("60");
-  await expect(page.locator("#overtimeScenario")).toContainText("102,63");
-  await expect(page.locator("#overtimeScenario")).toContainText("Odottaa vahvistettuja tunteja");
-  await page.locator("#confirmedOvertime").fill("10");
-  await expect(page.locator("#overtimeScenario")).toContainText("10,26");
+  await expect(page.locator("#budgetSummary")).toContainText("1 922,48");
   await page.locator("#netGoal").fill("2100");
   await expect(page.locator("#netGoalResult")).toContainText("3 500,00");
-  await expect(page.locator("#budgetSummary")).toContainText("1 922,48");
-  await expect.poll(async () => page.evaluate(async () =>
-    (await import("/storage.js")).getSetting("insights:v1:netGoal")
-  )).toBe("2100");
+  await expect.poll(async()=>page.evaluate(async()=>(await import("/storage.js")).getSetting("insights:v1:netGoal"))).toBe("2100");
   await page.reload();
-  await page.getByRole("button", { name: "Analyysi" }).click();
-  await expect(page.locator("#retainedRate")).toHaveValue("60");
-  await expect(page.locator("#confirmedOvertime")).toHaveValue("10");
+  await page.getByRole("button",{name:"Analyysi"}).click();
   await expect(page.locator("#netGoal")).toHaveValue("2100");
-  await expect(page.locator("#overtimeScenario")).toContainText("10,26");
   await expect(page.locator("#pdfInput")).toBeDisabled();
-  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
 
 test("new analytical modules load in offline beta cache", async ({ page }) => {
@@ -159,76 +149,50 @@ test("new analytical modules load in offline beta cache", async ({ page }) => {
     return (await cache.keys()).map(r=>new URL(r.url).pathname);
   })).toEqual(expect.arrayContaining(["/insights.js","/insights-ui.js"]));
   await page.getByRole("button",{name:"Analyysi"}).click();
-  await expect(page.getByRole("heading",{name:"Työn ja palkan aikajana"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Työn ja palkan aikajana"})).toBeHidden();
+  await expect(page.locator("#plannerFrame")).toBeVisible();
 });
 
-test("tax-card 100 euro net, bend and weekend crossover from synthetic local backup", async ({page})=>{
+test("embedded annual planner uses local Palkka history, preserves manual edits and offers 0/3/5/10",async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
  const backup=await page.evaluate(async()=>{
   const m=await import("/model.js");
-  const x=m.migrateLegacyRecord({recordSchemaVersion:1,id:"synthetic-tax",
-   kind:"payslip",values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
-    grossPay:3000,netPay:2000,ytdTaxableIncome:12000,
-    taxRate:30,additionalRate:47,taxLimit:6000,taxCardAccumulatedIncome:5500,
-    overtimeHours:null},payLines:[],fingerprints:["fake-tax"],
-   fieldMeta:{},corrections:{},notices:[],
-   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"test"}});
-  return JSON.stringify(m.makeBackup([x]));
+  const rows=[1,2,3].map(n=>m.migrateLegacyRecord({recordSchemaVersion:1,id:"planner-fake-"+n,kind:"payslip",
+    values:{payDate:"2026-0"+n+"-09",payPeriodStart:"2026-0"+n+"-01",payPeriodEnd:"2026-0"+n+"-07",grossPay:3000,netPay:1850,ytdTaxableIncome:3000*n,kta:25,taxRate:31,additionalRate:47},
+    payLines:[{code:"13001",label:"Palkkiotyö",quantity:80,amount:1600,unitPrice:20},{code:"13101",label:"Tuotantopalkkio",quantity:80,amount:400,unitPrice:5},{code:"90100",amount:-210},{code:"90200",amount:-26},{code:"90400",amount:-30},{code:"90920",amount:-39},...(n===2?[{code:"55301",amount:1200}]:[])],
+    fingerprints:["synthetic-planner-"+n],fieldMeta:{},corrections:{},notices:[],parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}}));
+  return JSON.stringify(m.makeBackup(rows));
  });
  await page.getByRole("button",{name:"Data"}).click();
- await page.locator("#backupInput").setInputFiles({
-  name:"synthetic-tax.json",mimeType:"application/json",buffer:Buffer.from(backup,"utf8")});
+ await page.locator("#backupInput").setInputFiles({name:"synthetic-planner.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Analyysi"}).click();
- await expect(page.getByRole("heading",{name:"Milloin seuraavasta eurosta jää vähemmän?"})).toBeVisible();
- await expect(page.locator("#scenarioBaseRate")).toHaveValue("30");
- await expect(page.locator("#scenarioExtraRate")).toHaveValue("47");
- await expect(page.locator("#scenarioRemaining")).toHaveValue("500");
- await expect(page.locator("#scenarioHundred")).toContainText("70,00");
- await expect(page.locator("#scenarioTaxChart svg")).toBeVisible();
- await expect(page.locator("#scenarioWeekendChart svg")).toBeVisible();
- const overview=await page.locator("#scenarioWeekendMetrics").innerText();
- expect(overview).toContain("350,00");
- await page.locator("#scenarioFreeValue").fill("20");
- await expect(page.locator("#scenarioWeekendExplanation")).toContainText("viikonloppuna 2");
- await page.locator("#scenarioRemaining").fill("50");
- await expect(page.locator("#scenarioHundred")).toContainText("61,50");
- await expect(page.locator("#scenarioTaxStatus")).toContainText("50,00");
- await page.locator("#scenarioOtherRate").fill("7");
- await expect(page.locator("#scenarioHundred")).toContainText("54,50");
- await expect.poll(async()=>page.evaluate(async()=>(await import("/storage.js")).getSetting("scenario:v1:2026"))).toMatchObject({scenarioRemaining:50,scenarioOtherRate:7,scenarioFreeValue:20});
- await page.reload();
+ const planner=page.frameLocator("#plannerFrame");
+ await expect(planner.locator("#historyStatus")).toContainText("Beta ehdotti luvut", {timeout:15000});
+ await expect(planner.locator("#baseGross")).toHaveValue("52000");
+ await expect(planner.locator("#holiday")).toHaveValue("1200");
+ await expect(planner.locator("#bonus")).toHaveValue("0");
+ await expect(planner.locator("#weekendMethod")).toHaveValue("paylines");
+ await expect(planner.locator("#rateA")).toHaveValue("30");
+ await expect(planner.locator("#rateConfirmedA")).not.toBeChecked();
+ await expect(planner.locator("#samples")).toContainText("3");
+ await expect(planner.locator("#samples")).toContainText("5");
+ await planner.locator("#baseGross").fill("61000");
+ await page.getByRole("button",{name:"Historia"}).click();
  await page.getByRole("button",{name:"Analyysi"}).click();
- await expect(page.locator("#scenarioRemaining")).toHaveValue("50");
- await expect(page.locator("#scenarioOtherRate")).toHaveValue("7");
- await expect(page.locator("#scenarioHundred")).toContainText("54,50");
- const recordCount=await page.evaluate(async()=>(await (await import("/storage.js")).getAllRecords()).length);
- expect(recordCount).toBe(1);
+ await expect(planner.locator("#baseGross")).toHaveValue("61000");
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
  await expect(page.locator("#pdfInput")).toBeDisabled();
 });
-test("missing explicit tax card accumulation prevents guessing from unrelated YTD",async({page})=>{
+test("historical tax card percentages never become certified 2027 scenario percentages",async({page})=>{
  await page.goto("/index.html");
- const backup=await page.evaluate(async()=>{
-  const m=await import("/model.js");
-  return JSON.stringify(m.makeBackup([m.migrateLegacyRecord({recordSchemaVersion:1,id:"missing-tax",
-   kind:"payslip",values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
-    grossPay:5000,netPay:3500,ytdTaxableIncome:90000,
-    taxRate:32.5,additionalRate:47,taxLimit:40000,taxCardAccumulatedIncome:null},
-   payLines:[],fingerprints:["fake-not-real"],fieldMeta:{},corrections:{},notices:[],
-   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"test"}})]));
- });
- await page.getByRole("button",{name:"Data"}).click();
- await page.locator("#backupInput").setInputFiles({name:"missing-card.json",mimeType:"application/json",buffer:Buffer.from(backup,"utf8")});
- await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Analyysi"}).click();
- await expect(page.locator("#scenarioRemaining")).toHaveValue("");
- await expect(page.locator("#scenarioTaxStatus")).toContainText("Ilman näitä en arvaa");
- await expect(page.locator("#scenarioTaxChart svg")).toHaveCount(0);
- await page.locator("#scenarioRemaining").fill("0");
- await expect(page.locator("#scenarioHundred")).toContainText("53,00");
- await expect(page.locator("#scenarioTaxChart svg")).toBeVisible();
+ const planner=page.frameLocator("#plannerFrame");
+ await expect(planner.locator("#rateConfirmedA")).not.toBeChecked();
+ await expect(planner.locator("#rateConfirmedB")).not.toBeChecked();
+ await expect(planner.locator("#taxRateVerification")).toContainText("oletuksia");
+ await expect(page.getByRole("heading",{name:"Milloin seuraavasta eurosta jää vähemmän?"})).toBeHidden();
 });
 test("beta offline service worker caches explanatory simulations locally",async({page})=>{
  await page.goto("/index.html");
@@ -237,5 +201,5 @@ test("beta offline service worker caches explanatory simulations locally",async(
    const keys=await caches.keys();
    const cache=await caches.open(keys.find(x=>x.startsWith("palkka-beta-v")));
    return (await cache.keys()).map(req=>new URL(req.url).pathname);
- })).toEqual(expect.arrayContaining(["/scenario-model.js","/scenario-ui.js"]));
+ })).toEqual(expect.arrayContaining(["/scenario-model.js","/scenario-ui.js","/experiments/year-planner/index.html"]));
 });
