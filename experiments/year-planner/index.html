@@ -263,6 +263,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     if(!['manual','paylines'].includes(weekendMethod))throw new Error('Tuntematon viikonlopun laskentatapa');
     let grossPerWeekend,breakdown=null;
     if(weekendMethod==='paylines'){
+      if(c.rulesConfirmed!==true)throw new Error('Vahvista ensin tämän palkkalajimallin korvaussäännöt. Kaava ei sovi automaattisesti kaikille.');
       const hourlyRate=readPositive(c.hourlyRate,'Perustuntiansio',1000),ktaRate=readPositive(c.ktaRate,'KTA',1000);
       if(hourlyRate===0||ktaRate===0)throw new Error('Palkkalajiarvio vaatii tuntiansion ja KTA:n. Tuo palkkahistoria tai täytä kentät itse.');
       const regular=sat+sun;
@@ -276,6 +277,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       grossPerWeekend=baseAmount+weekly50+weekly100+daily100+sunday+rest;
       breakdown={baseAmount,weekly50,weekly100,daily100,sunday,rest};
     }else grossPerWeekend=weekendGross*(sat+sun)/16;
+    if(count>0&&sat+sun>0&&grossPerWeekend===0)throw new Error('Anna viikonlopun oma lisäbruttoarvio tai vahvista soveltuva palkkalajimalli. Nolla ei ole ansioennuste.');
     const baseline=base*(1+(raise/100)*(13-raiseMonth)/12)+holiday+bonus+other;
     const net=(gross,limit,rate,extra)=>gross*(1-otherDeductions/100)-Math.min(gross,limit)*rate/100-Math.max(0,gross-limit)*extra/100;
     const series=Array.from({length:53},(_,n)=>{
@@ -293,7 +295,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
 (function(){
   'use strict';
   const el=id=>document.getElementById(id),money=v=>Math.round(v).toLocaleString('fi-FI')+' €',pct=v=>v.toLocaleString('fi-FI')+' %';
-  const keys=['weekends','sat','sun','baseGross','holiday','bonus','other','raise','raiseMonth','weekendGross','hourlyRate','ktaRate','limitA','limitB','rateA','rateB','extraA','extraB','otherDeductions'];
+  const keys=['planYear','weekends','sat','sun','baseGross','holiday','bonus','other','raise','raiseMonth','weekendGross','hourlyRate','ktaRate','limitA','limitB','rateA','rateB','extraA','extraB','otherDeductions'];
   const inputs=keys.map(el);
   const span=(s)=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;');
   const crossingText=n=>n===0?'jo ilman viikonlopputöitä':n===null?'ei 0–52 viikonlopulla':n+'. työviikonlopun kohdalla';
@@ -331,8 +333,10 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     return [...rows.entries()].sort((a,b)=>a[0]-b[0]).map(([n,notes])=>({n,notes}));
   }
   globalThis.PalkkaComparison={comparisonPoints};
-  function read(){return {...Object.fromEntries(keys.map(k=>[k,Number(el(k).value)])),weekendMethod:el('weekendMethod').value};}
+  function read(){return {...Object.fromEntries(keys.map(k=>[k,Number(el(k).value)])),weekendMethod:el('weekendMethod').value,rulesConfirmed:el('rulesConfirmed').checked};}
   function render(){
+    const planYear=Number(el('planYear').value);
+    if(!Number.isInteger(planYear)||planYear<2020||planYear>2100){el('validation').textContent='Valitse kelvollinen suunnitteluvuosi.';el('validation').classList.add('error');return;}
     el('weekendsRange').value=el('weekends').value;
     for(const chip of document.querySelectorAll('[data-weekends]'))chip.classList.toggle('active',Number(chip.dataset.weekends)===Number(el('weekends').value));
     let c,plan;
@@ -342,7 +346,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       const b=plan.breakdown;
       el('weekendBreakdown').textContent=`Palkkalajiarvio ${c.sat}+${c.sun} h: perustunnit ${money(b.baseAmount)}, viikkoylityölisät ${money(b.weekly50+b.weekly100)}, päivittäiset lisät ${money(b.daily100)}, sunnuntaityö ${money(b.sunday)}, viikkovapaa ${money(b.rest)}. Yhteensä noin ${money(plan.grossPerWeekend)} brutto / viikonloppu (ennen työaikapankin vaikutusta).`;
     }else el('weekendBreakdown').textContent=`Manuaalinen arvio: 16 h ${money(c.weekendGross)} → valituilla ${c.sat+c.sun} tunnilla ${money(plan.grossPerWeekend)} brutto / viikonloppu. Lineaarinen skaalaus ei huomioi ylityörajojen vaihtumista.`;
-    el('validation').classList.remove('error');el('validation').textContent='Vertailu laskettu: sama vuotuisen bruton kehitys, kaksi erilaista ennakonpidätysprofiilia. Prosentit ovat käyttäjän oletuksia.';
+    el('validation').classList.remove('error');el('validation').textContent='Vuoden '+planYear+' skenaario. Veroprosentit ja tulorajat ovat käyttäjän tarkistettavia oletuksia, eivät verottajan laskemia.';
     el('hoursResult').textContent=plan.hours.toLocaleString('fi-FI')+' h';el('hoursResult2').textContent=plan.hours.toLocaleString('fi-FI')+' h';el('freeResult').textContent=plan.free.toLocaleString('fi-FI');
     el('grossResult').textContent=money(plan.current.gross);el('netA').textContent=money(plan.current.netA);el('netB').textContent=money(plan.current.netB);
     el('crossing').innerHTML=`A: ${money(c.limitA)} ylittyy <b>${crossingText(plan.crossA)}</b>.<br>B: ${money(c.limitB)} ylittyy <b>${crossingText(plan.crossB)}</b>.<br><span class="hint">Ilman viikonloppuja vuosibrutto olisi ${money(plan.baseline)}. Yksi valitun tuntimäärän viikonloppu lisää noin ${money(plan.grossPerWeekend)}.</span>`;
@@ -363,6 +367,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   }
   for(const input of inputs)input.addEventListener('input',render);
   el('weekendMethod').addEventListener('change',render);
+  el('rulesConfirmed').addEventListener('change',render);
   el('weekendsRange').addEventListener('input',()=>{el('weekends').value=el('weekendsRange').value;render();});
   for(const chip of document.querySelectorAll('[data-weekends]'))chip.addEventListener('click',()=>{el('weekends').value=chip.dataset.weekends;render();});
   const historyInput=el('historyInput');
@@ -371,19 +376,21 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   const setStatus=(txt,error=false)=>{el('historyStatus').textContent=txt;el('historyStatus').classList.toggle('error',error);};
   function showHistory(r){
     lastHistory=r;
+    const modelText=r.wageModel==='hourly'?'Tuntipalkkainen malli tunnistettu ('+r.rateSamples+' laskelmaa). Vuosiansio on arvio: tuntiansio × viikkotyöaika × 52.':r.wageModel==='monthly'?'Kuukausipalkkainen malli tunnistettu ('+r.monthlySamples+' laskelmaa). Vuosiansio perustuu kuukausipalkan mediaaniin × 12.':'Palkkamallia ei tunnistettu varmasti. Perusvuosiansiota ei arvata; täytä se itse.';
+    el('wageModelNote').textContent=modelText;
     el('historyPreview').hidden=false;
     el('filePickerTitle').textContent='Vaihda Palkka-varmuuskopio (.json)';
     el('histBase').textContent=displayOrDash(r.baseEstimate);
-    el('histBaseMeta').textContent=r.avgHourlyRate===null?'Palkkiotyön tuntierittelyä ei löydy':`Palkkiotyön keskihinta ${r.avgHourlyRate.toFixed(2).replace('.',',')} €/h × ${r.weeklyHours} h/vko × 52 vkoa; ${r.rateSamples} havaintoa`;
+    el('histBaseMeta').textContent=r.wageModel==='monthly'?`Kuukausipalkan mediaani ${money(r.monthlyRate)} × 12, muut lisät erikseen.`:r.wageModel==='hourly'?`Tunnistettu tuntiansio ${r.avgHourlyRate.toFixed(2).replace('.',',')} €/h × ${r.weeklyHours} h/vko × 52 viikkoa (oletus); ${r.rateSamples} havaintoa.`:'Ei perusteltua automaattista vuosiansiota.';
     el('histHoliday').textContent=displayOrDash(r.holiday);
     el('histHolidayMeta').textContent=`Maksettu ${r.year}, ei koko seuraavan vuoden takuu`;
     el('histBonus').textContent=displayOrDash(r.bonus);
-    el('histBonusMeta').textContent='Kertaluonteinen APP, ei oletuksena toistuva';
+    el('histBonusMeta').textContent='Aiempi tulospalkkio tai bonus. Ei oletuksena toistuva.';
     el('histYtd').textContent=displayOrDash(r.latestYtd);
     el('histYtdMeta').textContent=r.latestYtdDate?`Palkkapäivä ${r.latestYtdDate.split('-').reverse().join('.')}`:'Ei YTD-lukua';
     el('historyCoverage').textContent=`${r.year}: ${r.records} palkkalaskelmaa, palkkarivit ${r.lineCoverage}/${r.records} laskelmassa.`+
       (r.excludedConflicts?` Ristiriitaisia tietueita suljettu pois ${r.excludedConflicts}.`:'')+
-      (r.deductionsRate!==null?` Viimeisin neljän muun palkkavähennyksen havaittu osuus ${r.deductionsRate.toFixed(2).replace('.',',')} %. Vuoden 2027 osuus voi muuttua.`:'')+
+      (r.deductionsRate!==null?` Neljän tietyn palkkavähennyskoodin havaittu osuus ${r.deductionsRate.toFixed(2).replace('.',',')} %: tarkista oma vähennysrakenne.`:'')+
       (r.other!==null?` Erillistä muuta kertakorvausta havaittu ${money(r.other)} (ei oletettu toistuvaksi).`:'');
     el('applyHistory').disabled=r.baseEstimate===null && r.holiday===null && r.deductionsRate===null;
     if(r.avgHourlyRate!==null && r.ktaRate!==null)el('historyCoverage').textContent+=` Viikonlopun laskentaan havaittu perusansio ${r.avgHourlyRate.toFixed(2)} €/h ja KTA ${r.ktaRate.toFixed(2)} €/h (tarkistettava).`;
@@ -413,21 +420,22 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     for(const [key,v] of [['baseGross',lastHistory.baseEstimate],['holiday',lastHistory.holiday],['otherDeductions',lastHistory.deductionsRate]]){
       if(typeof v==='number'&&Number.isFinite(v)){el(key).value=v;changed.push(key);}
     }
-    let weekendApplied=false;
+    let weekendSuggested=false;
     if(typeof lastHistory.avgHourlyRate==='number'&&typeof lastHistory.ktaRate==='number'){
       el('hourlyRate').value=lastHistory.avgHourlyRate.toFixed(2);
       el('ktaRate').value=lastHistory.ktaRate.toFixed(2);
-      el('weekendMethod').value='paylines';
-      weekendApplied=true;
+      weekendSuggested=true;
+      el('weekendMethod').value='manual';
+      el('rulesConfirmed').checked=false;
       el('weekendPayDetails').open=true;
     }
     render();
-    setStatus('Ehdotukset siirretty muokattaviin kenttiin ('+changed.length+' kpl). '+(weekendApplied?'Viikonlopun palkkalajiarvio valittu havaittujen tuntihintojen perusteella. ':'Viikonlopun palkkalajiarvioa ei voitu varmistaa; käsin asetettu summa säilyi. ')+'APP ja muu kertakorvaus jätettiin pois. Tarkista luvut ennen päätöksiä.');
+    setStatus('Ehdotuksia siirretty ('+changed.length+' kpl). '+(weekendSuggested?'Tuntihintoja löytyi, mutta erikoista viikonloppumallia ei otettu automaattisesti käyttöön. ':'Viikonlopun korvausmallia ei tunnistettu. ')+'Bonuksia ei lisätty. Vahvista lisäbrutto ja veroprosentit.');
   });
   el('applyHistoryBonus').addEventListener('click',()=>{
     if(lastHistory?.bonus===null||lastHistory===null)return;
     el('bonus').value=lastHistory.bonus;render();
-    setStatus('APP-bonus otettu yhteen vertailuskenaarioon käyttäjän valinnalla. Se ei ole luvattu seuraavan vuoden bonus.');
+    setStatus('Havaittu bonus lisättiin skenaarioon käyttäjän valinnalla. Sen toistumisesta ei ole takuuta.');
   });
   const verification=()=>{
     const a=el('rateConfirmedA').checked,b=el('rateConfirmedB').checked;
@@ -438,6 +446,8 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   for(const pair of [['rateA','rateConfirmedA'],['extraA','rateConfirmedA'],['limitA','rateConfirmedA'],['rateB','rateConfirmedB'],['extraB','rateConfirmedB'],['limitB','rateConfirmedB']]){
     el(pair[0]).addEventListener('input',()=>{el(pair[1]).checked=false;verification();});
   }
+  const today=new Date();el('planYear').value=String(Math.min(2100,today.getFullYear()+1));
+  el('planYear').addEventListener('input',()=>{el('rateConfirmedA').checked=false;el('rateConfirmedB').checked=false;verification();});
   verification();
   // The parent Beta sends a private, same-origin structured backup in memory.
   // Never persist it, and never accept messages from another origin or frame.
@@ -454,7 +464,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
         if(!acceptedOnce){
           acceptedOnce=true;
           el('applyHistory').click();
-          setStatus('Beta ehdotti luvut paikallisesta palkkahistoriasta. Ne ovat arvioita — tarkista ja muuta niitä vapaasti. APP ei tule mukaan automaattisesti.');
+          setStatus('Beta ehdotti luvut paikallisesta palkkahistoriasta. Tarkista palkkamalli ja viikonlopun korvaus. Bonuksia ei lisätä automaattisesti.');
         }else setStatus('Palkkahistoria päivitetty. Omia käsin muutettuja arvoja ei ylikirjoitettu; voit halutessasi valita ”Käytä varmistettavia ehdotuksia”.');
       }catch(err){setStatus('Betan historiasta ei saatu luotettavia ehdotuksia: '+err.message,true);}
     });
