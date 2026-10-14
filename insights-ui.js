@@ -199,7 +199,8 @@ function updateNetGoal() {
   const delta=target-source.monthlyEstimate;
   h.append(line(delta>0?'Tavoitteeseen puuttuu, karkea arvio':'Tavoitteen ylittävä netto, karkea arvio',eur(Math.abs(delta))));
  }
- const explicit=fieldVal('retainedRate');
+ // A retired hidden control must not silently steer the remaining goal tool.
+ const explicit=el('retainedRate')?.closest('.beta-replaced') ? null : fieldVal('retainedRate');
  const retention=explicit!=null&&explicit>0&&explicit<=100?explicit:source?.retained??null;
  const gross=reverseNetGoal({targetNet:target,retainedPct:retention});
  if(gross!=null)h.append(line('Tarvittava brutto / kk ('+(explicit!=null?'oma %':'havaittu netto/brutto')+')',eur(gross)));
