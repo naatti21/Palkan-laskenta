@@ -574,6 +574,62 @@ async function renderAll() {
   await renderLearnedProfileSummary();
 }
 
+// A small, optional Beta-only visual: observed monthly net payments by pay date.
+// Uses the same conflict-excluding analytics as the full analysis tab. No forecast
+// records, interpolation, zeros for missing months, or private record transfer.
+function renderBetaDashboardTrend(records) {
+  const wrap = document.getElementById("dashboardMiniChartWrap");
+  if (!wrap) return;
+  const host = document.getElementById("dashboardMiniChart");
+  const scope = document.getElementById("dashboardMiniChartScope");
+  const caution = document.getElementById("dashboardMiniChartCaution");
+  host.replaceChildren();
+  wrap.hidden = true;
+  const year = buildYearAnalysis(records, selectedYear);
+  const observed = year.months.filter(m => m.payslips > 0 &&
+    m.conflictingRecords === 0 && typeof m.net === "number" &&
+    Number.isFinite(m.net) && m.net >= 0).slice(-6);
+  if (observed.length < 2) return;
+  const excluded = year.months.some(m => m.conflictingRecords > 0);
+  caution.hidden = !excluded;
+  caution.textContent = excluded ? "Ristiriitaiset maksukuukaudet jätetty pois." : "";
+  scope.textContent = observed.length + " kk · vain tallennetut";
+  const ns = "http://www.w3.org/2000/svg";
+  const node = (tag, attrs = {}) => {
+    const n = document.createElementNS(ns, tag);
+    for (const [key, value] of Object.entries(attrs)) n.setAttribute(key, String(value));
+    return n;
+  };
+  const svg = node("svg", {
+    viewBox: "0 0 320 108", preserveAspectRatio: "xMidYMid meet",
+    role: "img", "aria-label": "Tallennetut nettopalkat maksukuukausittain (maksupäivien määrä voi vaihdella): " +
+      observed.map(m => m.label + " " + fmtMoney(m.net)).join(", ")
+  });
+  const max = Math.max(1, ...observed.map(m => m.net));
+  svg.append(node("line", { x1: 6, y1: 84, x2: 314, y2: 84,
+    stroke: "rgba(148,163,184,.38)", "stroke-width": 1 }));
+  observed.forEach((month, index) => {
+    const x = 12 + (index + .5) * 296 / observed.length;
+    const height = Math.max(1, 65 * month.net / max);
+    const bar = node("rect", {
+      x: x - Math.min(18, 92 / observed.length),
+      y: 84 - height, width: Math.min(36, 184 / observed.length),
+      height, rx: 4, fill: "#72b7f6"
+    });
+    const title = node("title");
+    title.textContent = month.label + ": " + fmtMoney(month.net) + " nettoa, maksupäivän mukaan";
+    bar.append(title);
+    svg.append(bar);
+    const label = node("text", {
+      x, y: 100, fill: "#aab4ca", "text-anchor": "middle", "font-size": 11
+    });
+    label.textContent = month.label;
+    svg.append(label);
+  });
+  host.append(svg);
+  wrap.hidden = false;
+}
+
 function renderDashboard(records) {
   const yearRecords = records.filter(r => r.taxYear === selectedYear);
   const latest = sortByPayDate(yearRecords).at(-1);
@@ -584,9 +640,10 @@ function renderDashboard(records) {
   const secondaryDash = document.getElementById("dashboardDetails");
   secondaryDash?.replaceChildren();
   const betaPrimary = secondaryDash
-    ? new Set(["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja"])
+    ? new Set(["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja", "Brutto", "Veronalainen YTD"])
     : null;
   const overall = el("overallLight");
+  renderBetaDashboardTrend(records);
   const morePanel = document.getElementById("dashboardMore");
   if (morePanel) morePanel.hidden = !latest;
 
@@ -616,7 +673,7 @@ function renderDashboard(records) {
   ];
   // Keep the most useful pair visible first on phone: recent net and remaining
   // tax-card margin. All other original metrics remain accessible on one tap.
-  const primaryOrder = ["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja"];
+  const primaryOrder = ["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja", "Brutto", "Veronalainen YTD"];
   const visibleMetrics = betaPrimary
     ? [...primaryOrder.map(label => metrics.find(row => row[0] === label)),
        ...metrics.filter(row => !betaPrimary.has(row[0]))]
