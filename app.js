@@ -587,6 +587,8 @@ function renderDashboard(records) {
     ? new Set(["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja"])
     : null;
   const overall = el("overallLight");
+  const morePanel = document.getElementById("dashboardMore");
+  if (morePanel) morePanel.hidden = !latest;
 
   if (!latest) {
     overall.className = "light neutral";
@@ -612,7 +614,14 @@ function renderDashboard(records) {
     ["Tulorajaa jäljellä", fmtMoney(remaining)],
     ["OT viime jaksolla", `${fmtNumber(valueOf(latest, "overtimeHours"))} h`]
   ];
-  for (const [label, value] of metrics) {
+  // Keep the most useful pair visible first on phone: recent net and remaining
+  // tax-card margin. All other original metrics remain accessible on one tap.
+  const primaryOrder = ["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja"];
+  const visibleMetrics = betaPrimary
+    ? [...primaryOrder.map(label => metrics.find(row => row[0] === label)),
+       ...metrics.filter(row => !betaPrimary.has(row[0]))]
+    : metrics;
+  for (const [label, value] of visibleMetrics) {
     const box = document.createElement("div");
     box.className = "metric";
     const shownLabel = secondaryDash && label === "Netto" ? "Viimeisin netto" : label;
