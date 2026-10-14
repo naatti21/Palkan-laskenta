@@ -43,7 +43,13 @@ html = html.replace(
 );
 const uploadCard = '<section class="card upload-card">';
 if (!html.includes(uploadCard)) throw new Error('Beta upload card missing; review safety gate.');
-html = html.replace(uploadCard, '<section class="card upload-card hidden beta-disabled-upload">');
+html = html.replace(uploadCard, '<section class="card upload-card beta-pdf-slot">');
+html = html.replace('<span>Valitse palkkalaskelma PDF</span>',
+  '<span>PDF-tuonti</span>');
+const betaUploadState = '<p id="status" class="status">Ei ladattua dokumenttia.</p>';
+if (!html.includes(betaUploadState)) throw new Error('Upload state marker missing');
+html = html.replace(betaUploadState, betaUploadState +
+  '<p class="beta-pdf-note">Odottaa tarkistusta · aiempi historia Data-välilehdeltä</p>');
 // Display just the important measurements first. Additional known, real values
 // stay one tap away in a native details element, with no recalculation.
 const dashboardBlock = '<div id="dashboard" class="metrics"></div>';
@@ -52,14 +58,19 @@ html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-pri
         <details id="dashboardMore" class="beta-dashboard-more" hidden>
           <summary>Lisää palkkatietoja</summary>
           <div id="dashboardDetails" class="metrics beta-secondary-metrics"></div>
-        </details>`);
+        </details>
+        <section id="dashboardMiniChartWrap" class="beta-mini-chart" hidden aria-label="Viimeisimpien maksukuukausien nettoansiot">
+          <div class="beta-mini-chart-heading"><strong>Netto / maksukuukausi</strong><span id="dashboardMiniChartScope">Viimeiset kuukaudet</span></div>
+          <div id="dashboardMiniChart"></div>
+          <p id="dashboardMiniChartCaution" class="beta-mini-chart-caution" hidden></p>
+        </section>`);
 const dashboardCard = '<section class="card">\n        <div class="section-heading">\n          <div>\n            <p class="eyebrow">TILANNE</p>';
 if (!html.includes(dashboardCard)) throw new Error('Dashboard card changed; inspect compact Beta layout.');
 html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard">\n        <div class="section-heading">\n          <div>');
 const endTracking = '    </section>\n\n    <section data-view="analysis" class="hidden">';
 if (!html.includes(endTracking)) throw new Error('Tracking view boundary changed');
-html = html.replace(endTracking, `      <p id="beta-tracking-tip" class="beta-tracking-tip">PDF-tuonti on Betassa pois käytöstä. Palkkahistorian saat mukaan kohdasta <strong>Data → Palauta varmuuskopio</strong>.</p>
-    </section>
+// The compact PDF placeholder already explains disabled import; no duplicate footer.
+html = html.replace(endTracking, `    </section>
 
     <section data-view="analysis" class="hidden">`);
 // Apply the UI experiment ONLY inside _beta. The shared index.html stays
@@ -127,6 +138,19 @@ const betaCss = `
 .beta-primary-metrics .metric strong { font-size:clamp(.90rem,3.9vw,1.2rem); line-height:1.25; letter-spacing:-.025em; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
 .beta-primary-metrics .metric span { font-size:.72rem; line-height:1.3; }
 .beta-primary-metrics .metric:nth-child(2) { background:rgba(100,213,185,.07); outline:1px solid rgba(100,213,185,.15); }
+/* Reserve a single compact import row without enabling the unverified parser. */
+.beta-pdf-slot { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 11px; margin:5px 0 7px; border-radius:11px; box-shadow:none; background:rgba(255,255,255,.022); }
+.beta-pdf-slot .file-button { display:flex; flex:0 0 auto; width:auto; padding:7px 10px; font-size:.78rem; border:1px dashed rgba(148,163,184,.35); border-radius:9px; background:rgba(255,255,255,.06); color:#d3dbe9; font-weight:650; cursor:not-allowed; opacity:.75; }
+.beta-pdf-slot .file-button input { display:none; }
+.beta-pdf-slot #status, .beta-pdf-slot .privacy { display:none; }
+.beta-pdf-note { color:#aab4ca; font-size:.7rem; line-height:1.3; margin:0; text-align:right; flex:1 1 auto; }
+.beta-mini-chart { border-top:1px solid rgba(255,255,255,.10); padding-top:8px; margin-top:8px; }
+.beta-mini-chart[hidden] { display:none; }
+.beta-mini-chart-heading { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px 8px; font-size:.76rem; line-height:1.35; }
+.beta-mini-chart-heading strong { color:#e0e9fa; font-size:.80rem; }
+.beta-mini-chart-heading span { color:#9baac2; font-size:.7rem; }
+.beta-mini-chart svg { display:block; width:100%; max-width:100%; height:auto; max-height:108px; }
+.beta-mini-chart-caution { font-size:.68rem; color:#f9c880; margin:3px 0 0; }
 .beta-dashboard-more { margin:7px 0 0; border-top:1px solid rgba(255,255,255,.1); }
 .beta-dashboard-more[hidden] { display:none; }
 .beta-dashboard-more > summary { padding:9px 2px 3px; font-weight:650; font-size:.82rem; color:#aabbd3; cursor:pointer; }
