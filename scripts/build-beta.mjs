@@ -77,6 +77,16 @@ html = html.replace(monthPanel,`      <details class="card beta-compact-months">
         <summary>Kuukausien erittely · avaa tarvittaessa</summary>
         <div id="monthlyDetails" class="insight-rows"></div>
       </details>`);
+const budgetLabel = '<label class="insight-label">Valitse maksettu kuukausi';
+if (!html.includes(budgetLabel)) throw new Error('Budget section changed');
+html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
+          <select id="budgetSource" class="year-select">
+            <option value="typical" selected>Tyypillinen kuukausi · viimeiset palkkanauhat</option>
+            <option value="latest">Viimeisin palkkalaskelma</option>
+            <option value="month">Valittu toteutunut kuukausi</option>
+          </select>
+        </label>
+        ` + budgetLabel);
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
