@@ -15,7 +15,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const files = ['index.html', 'styles.css', 'app.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
-  'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs'];
+  'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
@@ -23,6 +23,7 @@ const revision = hash.digest('hex').slice(0, 16);
 const output = '_beta';
 await rm(output, { recursive: true, force: true }); // Generated directory only; no browser storage.
 await mkdir(`${output}/vendor/pdfjs`, { recursive: true });
+await mkdir(`${output}/experiments/year-planner`, { recursive: true });
 for (const file of files) await copyFile(file, `${output}/${file}`);
 let html = await readFile('index.html', 'utf8');
 if (!html.includes('<script type="module" src="./app.js"></script>')) throw new Error('App entry changed; inspect build.');
