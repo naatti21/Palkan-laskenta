@@ -86,6 +86,33 @@ function displayMonthDetails(r) {
   details.append(body);host.append(details);
  }
 }
+// Lightweight historical reference; median resists an isolated bonus payout.
+// Do not double-count conflicting copies of the same pay event.
+function incomeReference() {
+  if (!current) return null;
+  const raw = currentRecords.filter(r => r?.kind !== 'forecast'
+    && r?.values?.payDate?.startsWith(String(current.year))
+    && yes(r.values.grossPay) && r.values.grossPay > 0
+    && yes(r.values.netPay) && r.values.netPay >= 0);
+  const event = r => [r.values.payDate, r.values.payPeriodStart || '?', r.values.payPeriodEnd || '?'].join('|');
+  const counts = new Map();
+  for (const r of raw) counts.set(event(r), (counts.get(event(r)) || 0) + 1);
+  const ordered = raw.filter(r => counts.get(event(r)) === 1)
+    .sort((a,b) => a.values.payDate.localeCompare(b.values.payDate));
+  if (!ordered.length) return null;
+  const recent = ordered.slice(-6);
+  const median = values => { const sorted = values.sort((a,b)=>a-b); const m = Math.floor(sorted.length/2); return sorted.length%2 ? sorted[m] : (sorted[m-1]+sorted[m])/2; };
+  const typicalNet = median(recent.map(r => r.values.netPay));
+  const typicalGross = median(recent.map(r => r.values.grossPay));
+  const differences = recent.slice(1).map((r,i)=>(Date.parse(r.values.payDate)-Date.parse(recent[i].values.payDate))/86400000);
+  const biweekly = differences.length>0 && differences.filter(d=>d>=12&&d<=17).length>=Math.ceil(differences.length*2/3);
+  const monthlyEstimate = biweekly ? typicalNet*26/12 : null;
+  const paid = ordered.at(-1);
+  return {count:recent.length, latestNet:paid.values.netPay, latestDate:paid.values.payDate,
+    typicalNet, typicalGross, monthlyEstimate,
+    retained:typicalGross>0 ? Math.min(100,100*typicalNet/typicalGross) : null};
+}
+
 function syncBudget(r) {
  const input=el("budgetMonth");
  const previous=input.value;
@@ -102,15 +129,29 @@ function syncBudget(r) {
 }
 function updateBudget() {
  if(!current)return;
- const m=current.months.find(x=>String(x.month)===el("budgetMonth").value);
- const b=m?buildBudget(m.net):null;
- metrics("budgetSummary",b?[
-  ["Nettopalkka "+m.label,eur(m.net)],
-  ["Tarpeet 50 %",eur(b.needs)],
-  ["Toiveet 30 %",eur(b.wants)],
-  ["Säästö / velanlyhennys 20 %",eur(b.savings)]
- ]:[["Jakauman laskenta","Valitse kuukausi, jossa on luotettavat nettotiedot"]]);
+ const source=el('budgetSource')?.value || 'month';
+ const historical=incomeReference();
+ const selected=current.months.find(x=>String(x.month)===el('budgetMonth').value);
+ let net=selected?.net??null, label='Maksettu kuukausi '+(selected?.label||'');
+ if(source==='latest') {
+   net=historical?.latestNet??null;
+   label='Viimeisin palkanmaksu '+(historical?.latestDate||'')+' (ei kuukauden summa)';
+ }else if(source==='typical') {
+   net=historical?.monthlyEstimate??null;
+   label=historical?.monthlyEstimate==null?'Tyypillinen kuukausi (ei riittävää maksurytmin näyttöä)'
+     :'Tyypillinen kuukausi ('+historical.count+' viimeisimmän nauhan mediaani × 26/12)';
+ }
+ const monthSelector=el('budgetMonth')?.closest('label');
+ if(monthSelector && el('budgetSource'))monthSelector.hidden=source!=='month';
+ const b=buildBudget(net);
+ metrics('budgetSummary',b?[
+  [label,eur(net)],
+  ['Tarpeet 50 %',eur(b.needs)],
+  ['Toiveet 30 %',eur(b.wants)],
+  ['Säästö / velanlyhennys 20 %',eur(b.savings)]
+ ]:[['Laskentapohja',source==='typical'?'Kahden viikon palkkarytmiä ei voitu varmistaa. Valitse viimeisin palkka tai toteutunut kuukausi.':'Valitse kuukausi, jossa on luotettavat nettotiedot.']]);
 }
+
 function updateScenarios() {
  if(!current)return;
  const rate=fieldVal("retainedRate");
@@ -143,11 +184,29 @@ function updateScenarios() {
 }
 function updateNetGoal() {
  if(!current)return;
- const gross=reverseNetGoal({targetNet:fieldVal("netGoal"),retainedPct:fieldVal("retainedRate")});
- const h=el("netGoalResult");h.replaceChildren();
- if(gross!=null)h.append(line("Esimerkin tarvittava brutto",eur(gross)));
- else h.append(line("Arvio","Täytä tavoitenetto ja käteen jäävä %"));
+ const h=el('netGoalResult');h.replaceChildren();
+ const source=incomeReference();
+ if(source){
+   h.append(line('Viimeisimmän palkkalaskelman netto',eur(source.latestNet)));
+   h.append(line('Viimeisten '+source.count+' laskelman tyypillinen netto / palkka',eur(source.typicalNet)));
+   h.append(line('Historiasta arvioitu kuukausinettotaso',source.monthlyEstimate==null?'Ei vahvistettua 14 päivän palkkarytmiä':eur(source.monthlyEstimate)));
+ }
+ const target=fieldVal('netGoal');
+ if(target==null){h.append(line('Oma nettotavoite','Aseta tavoite, niin näet vertailun'));return;}
+ if(!yes(target)||target<0){h.append(line('Nettotavoite','Anna kelvollinen positiivinen summa'));return;}
+ h.append(line('Oma kuukausittainen nettotavoite',eur(target)));
+ if(source?.monthlyEstimate!=null){
+  const delta=target-source.monthlyEstimate;
+  h.append(line(delta>0?'Tavoitteeseen puuttuu, karkea arvio':'Tavoitteen ylittävä netto, karkea arvio',eur(Math.abs(delta))));
+ }
+ // A retired hidden control must not silently steer the remaining goal tool.
+ const explicit=el('retainedRate')?.closest('.beta-replaced') ? null : fieldVal('retainedRate');
+ const retention=explicit!=null&&explicit>0&&explicit<=100?explicit:source?.retained??null;
+ const gross=reverseNetGoal({targetNet:target,retainedPct:retention});
+ if(gross!=null)h.append(line('Tarvittava brutto / kk ('+(explicit!=null?'oma %':'havaittu netto/brutto')+')',eur(gross)));
+ else h.append(line('Bruttoarvio','Ei riittävää historiatietoa; tarkista verokortin vaikutus vuosisuunnittelijasta'));
 }
+
 export async function initInsightsUi() {
  for(const id of ["retainedRate","confirmedOvertime","netGoal"]) {
   const field=el(id);
@@ -157,6 +216,15 @@ export async function initInsightsUi() {
    updateScenarios();
    setSetting("insights:v1:"+id,field.value).catch(()=>{});
   });
+ }
+ const budgetSource=el('budgetSource');
+ if(budgetSource){
+   const previous=await getSetting('insights:v2:budgetSource');
+   if(['month','latest','typical'].includes(previous))budgetSource.value=previous;
+   budgetSource.addEventListener('change',()=>{
+     updateBudget();
+     setSetting('insights:v2:budgetSource',budgetSource.value).catch(()=>{});
+   });
  }
  el("budgetMonth").addEventListener("change",updateBudget);
 }

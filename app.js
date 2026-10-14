@@ -520,8 +520,50 @@ function syncYearSelectors(records) {
   }
 }
 
+// Planner runs as a same-origin, non-persistent experiment inside the Beta.
+// Source records stay in the browser; only the Palkka backup's structured fields
+// are passed in memory. Never write the planner suggestions into payroll records.
+let plannerRecords = [];
+let plannerReady = false;
+let plannerObserver = null;
+function syncPlannerHistory() {
+  const frame = el('plannerFrame');
+  if (!frame || !plannerReady || !frame.contentWindow) return;
+  frame.contentWindow.postMessage({ type: 'palkka:planner:prefill', backup: makeBackup(plannerRecords) }, location.origin);
+  const note = el('plannerSyncStatus');
+  if (note) note.textContent = plannerRecords.length
+    ? `Historiasta saatavilla ${plannerRecords.filter(r => r.kind !== 'forecast').length} tietuetta. Ehdotukset näkyvät alla ja ovat muokattavissa.`
+    : 'Historiaa ei vielä ole. Suunnittelijaa voi käyttää esimerkkiluvuilla.';
+}
+function initPlannerBridge() {
+  const frame = el('plannerFrame');
+  if (!frame) return;
+  const loaded = () => {
+    // Intentionally refuse a cross-origin embedded planner.
+    let doc;
+    try { doc = frame.contentDocument; if (!doc || frame.contentWindow.location.origin !== location.origin) return; }
+    catch { el('plannerSyncStatus').textContent = 'Suunnittelijan alkuperä ei täsmää. Historiatietoja ei välitetä.'; return; }
+    plannerReady = true;
+    plannerObserver?.disconnect();
+    const resize = () => {
+      const next = Math.ceil(Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0) + 12);
+      if (Number.isFinite(next) && next > 200 && next < 25000) frame.style.height = next + 'px';
+    };
+    resize();
+    if (doc.body && 'ResizeObserver' in window) {
+      plannerObserver = new ResizeObserver(resize);
+      plannerObserver.observe(doc.body);
+    }
+    syncPlannerHistory();
+  };
+  frame.addEventListener('load', loaded);
+  if (frame.contentDocument?.readyState === 'complete') loaded();
+}
+
 async function renderAll() {
   const records = await getAllRecords();
+  plannerRecords = records;
+  syncPlannerHistory();
   syncYearSelectors(records);
   renderDashboard(records);
   renderAnalysis(records);
@@ -979,6 +1021,7 @@ el("installButton").addEventListener("click", async () => {
 
 async function init() {
   try {
+    initPlannerBridge();
     await initInsightsUi();
     initScenarioUi();
     const migration = await migrateLegacyLocalStorage();

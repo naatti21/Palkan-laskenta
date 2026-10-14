@@ -131,3 +131,12 @@ button.danger { background:rgba(248,113,113,.08); color:#fecaca; border:1px soli
  .scenario-legend{font-size:.72rem}
  .scenario-svg {min-height:180px}
 }
+
+/* Beta cleanup experiment: planner as a single scrollable page, no nested iframe scrolling. */
+.planner-beta-card{padding:14px 10px;overflow:hidden;}
+.planner-beta-card>h2,.planner-beta-card>.muted,.planner-beta-card>.eyebrow{margin-left:6px;margin-right:6px;}
+.planner-embed{display:block;width:100%;height:1200px;border:0;background:transparent;overflow:hidden;}
+.beta-compact-months{padding:12px 14px;}
+.beta-compact-months>summary{cursor:pointer;font-weight:700;font-size:.95rem;line-height:1.5;}
+.beta-compact-months[open]>summary{margin-bottom:12px;}
+@media(max-width:390px){.planner-beta-card{padding:12px 5px;}}

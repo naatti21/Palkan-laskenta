@@ -15,7 +15,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const files = ['index.html', 'styles.css', 'app.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
-  'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs'];
+  'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
@@ -23,6 +23,7 @@ const revision = hash.digest('hex').slice(0, 16);
 const output = '_beta';
 await rm(output, { recursive: true, force: true }); // Generated directory only; no browser storage.
 await mkdir(`${output}/vendor/pdfjs`, { recursive: true });
+await mkdir(`${output}/experiments/year-planner`, { recursive: true });
 for (const file of files) await copyFile(file, `${output}/${file}`);
 let html = await readFile('index.html', 'utf8');
 if (!html.includes('<script type="module" src="./app.js"></script>')) throw new Error('App entry changed; inspect build.');
@@ -39,6 +40,53 @@ html = html.replace(
   '<input id="pdfInput" type="file" accept="application/pdf" disabled />'
 ).replace('Valitse palkkalaskelma PDF',
   'PDF-tuonti odottaa parserin QA-tarkastusta · tuo nykyinen historia Data-välilehdeltä');
+// Apply the UI experiment ONLY inside _beta. The shared index.html stays
+// untouched so production and QA staging keep their existing interface.
+const analysisMarker = '<section data-view="analysis" class="hidden">';
+if (!html.includes(analysisMarker)) throw new Error('Analysis view changed; review Beta integration.');
+const plannerCard = `
+      <section class="card planner-beta-card" aria-labelledby="plannerHeading">
+        <p class="eyebrow">BETA · VUODEN 2027 SUUNNITTELU</p>
+        <h2 id="plannerHeading">Enemmän vapaa-aikaa — riittävästi rahaa</h2>
+        <p class="muted">Työviikonloput 0–52, kaksi verokorttivaihtoehtoa ja nettovaikutus. Vahvistettu palkkahistoria ehdottaa lähtöarvoja paikallisesti; voit muuttaa niitä.</p>
+        <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
+        <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html" title="Vuoden 2027 suunnittelijan laskuri" referrerpolicy="same-origin"></iframe>
+        <p class="muted">OmaVeron perus- ja lisäprosentit vahvistetaan erikseen. Kyse on palkkapäivän ennakonpidätysarviosta, ei lopullisesta verosta.</p>
+      </section>
+`;
+html = html.replace(analysisMarker, analysisMarker + plannerCard);
+for (const heading of [
+  'Työn ja palkan aikajana',
+  'Mitä lisätyöstä jää?',
+  'Milloin seuraavasta eurosta jää vähemmän?',
+  'Mitä seuraavat viikonloput tuottaisivat?'
+]) {
+  const at = html.indexOf('<h2>' + heading + '</h2>');
+  if (at === -1) throw new Error('Missing Beta card: ' + heading);
+  const start = html.lastIndexOf('<section class="card">', at);
+  if (start === -1 || at - start > 450) throw new Error('Cannot safely hide Beta card: ' + heading);
+  html = html.slice(0, start) + html.slice(start).replace('<section class="card">', '<section class="card hidden beta-replaced">');
+}
+const monthPanel = `      <section class="card">
+        <p class="eyebrow">AVAA KUUKAUSI</p>
+        <h2>Kuukausien erittely</h2>
+        <div id="monthlyDetails" class="insight-rows"></div>
+      </section>`;
+if (!html.includes(monthPanel)) throw new Error('Month detail block changed');
+html = html.replace(monthPanel,`      <details class="card beta-compact-months">
+        <summary>Kuukausien erittely · avaa tarvittaessa</summary>
+        <div id="monthlyDetails" class="insight-rows"></div>
+      </details>`);
+const budgetLabel = '<label class="insight-label">Valitse maksettu kuukausi';
+if (!html.includes(budgetLabel)) throw new Error('Budget section changed');
+html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
+          <select id="budgetSource" class="year-select">
+            <option value="typical" selected>Tyypillinen kuukausi · viimeiset palkkanauhat</option>
+            <option value="latest">Viimeisin palkkalaskelma</option>
+            <option value="month">Valittu toteutunut kuukausi</option>
+          </select>
+        </label>
+        ` + budgetLabel);
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
@@ -61,6 +109,7 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";')
   .replace('const CACHE = `${CACHE_PREFIX}17`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
   .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs",')
+  .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html"')
   .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",');
 // Enforce the same origin before any worker event handlers can register.
 sw = `if (self.location.origin !== ${JSON.stringify(rawOrigin)}) throw new Error('Beta origin mismatch');\n` + sw;
