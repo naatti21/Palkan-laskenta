@@ -133,6 +133,12 @@ html.beta-integrated .card{margin-top:8px;box-shadow:none;}
     <div class="legend"><span><i class="dot blue"></i>Vaihtoehto A</span><span><i class="dot amber"></i>Vaihtoehto B</span></div>
     <div id="netChart" class="chart" aria-label="Lisäviikonlopun neton kuvaaja"></div>
     <div id="nextImpact" class="status"></div>
+    <div class="hr"></div>
+    <h3>Kumulatiivinen nettoero: A − B</h3>
+    <p class="muted">Kuinka paljon enemmän rahaa olisi kertynyt käteen <strong>vaihtoehdolla A verrattuna B:hen</strong> samalla työmäärällä? Positiivinen erotus suosii A:ta, negatiivinen B:tä. Mukana ovat myös tulot ilman viikonlopputöitä.</p>
+    <div id="netDifferenceChart" class="chart" role="group" aria-label="Kumulatiivisen vuosineton erotuskäyrä: A miinus B, työviikonloput 0–52"></div>
+    <div id="netDifferenceSummary" class="status" role="status" aria-live="polite"></div>
+    <p class="hint" style="margin-top:9px">Kuvaaja näyttää ennakonpidätyksen mukaisen <strong>kassavirtaeron</strong>, ei eroa lopullisissa veroissa. Saman vuositulon lopullinen vero ei määräydy verokortin tulorajan perusteella. Vaaka-akseli kuvaa tehtyjen viikonloppujen määrää, <strong>ei kalenteriaikaa</strong>.</p>
   </section>
 
   <section class="card" aria-labelledby="sample-title">
@@ -288,7 +294,26 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     function crossing(limit){if(baseline>limit)return 0;if(grossPerWeekend===0)return null;const n=Math.floor((limit-baseline)/grossPerWeekend)+1;return n<=52?n:null;}
     return {baseline,grossPerWeekend,breakdown,series,current:series[count],hours:count*(sat+sun),free:52-count,crossA:crossing(limitA),crossB:crossing(limitB)};
   }
-  globalThis.PalkkaPlannerCore={computePlan};
+  // Signed annual take-home gap. Do not reset the series at N=0:
+  // a tax-card advantage may already exist without overtime weekends.
+  function netDifferenceAnalysis(series){
+    if(!Array.isArray(series)||!series.length || series.some(p=>!Number.isInteger(p.n)||!finite(p.netA)||!finite(p.netB)))
+      throw new Error('Nettoeron pisteet ovat virheellisiä');
+    const EPS=0.005;
+    const data=series.map(p=>({n:p.n,difference:p.netA-p.netB}));
+    const first=data.find(p=>Math.abs(p.difference)>EPS);
+    if(!first)return {data,leader:null,peak:null,decline:null,lost:null,reversal:null,current:data.at(-1)};
+    const sign=Math.sign(first.difference);
+    const score=p=>sign*p.difference;
+    // The largest lead for the side that is ahead first. Equal peaks choose the earliest.
+    const peak=data.reduce((best,p)=>score(p)>score(best)+EPS?p:best,data[0]);
+    const after=data.filter(p=>p.n>peak.n);
+    const decline=after.find(p=>score(p)<score(peak)-EPS)||null;
+    const lost=data.find(p=>p.n>=first.n && sign*p.difference<=EPS)||null;
+    const reversal=data.find(p=>p.n>=first.n && sign*p.difference< -EPS)||null;
+    return {data,leader:sign>0?'A':'B',peak,decline,lost,reversal,current:data.at(-1)};
+  }
+  globalThis.PalkkaPlannerCore={computePlan,netDifferenceAnalysis};
 })();
 </script>
 <script>
@@ -298,16 +323,23 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   const keys=['planYear','weekends','sat','sun','baseGross','holiday','bonus','other','raise','raiseMonth','weekendGross','hourlyRate','ktaRate','limitA','limitB','rateA','rateB','extraA','extraB','otherDeductions'];
   const inputs=keys.map(el);
   const span=(s)=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;');
+  const finiteCoordinate=v=>typeof v==='number'&&Number.isFinite(v);
   const crossingText=n=>n===0?'jo ilman viikonlopputöitä':n===null?'ei 0–52 viikonlopulla':n+'. työviikonlopun kohdalla';
-  function lineChart(series,defs,{minY=null,maxY=null,axisSuffix='' }={}){
+  function lineChart(series,defs,{minY=null,maxY=null,axisSuffix='',showZero=false,markers=[] }={}){
     const W=740,H=267,l=68,r=20,t=23,b=43;
     const vals=series.flatMap(q=>defs.map(d=>q[d.key]));
     const lo=minY===null?Math.min(...vals):minY,hi0=maxY===null?Math.max(...vals):maxY,hi=hi0===lo?hi0+1:hi0;
     const x=n=>l+n/52*(W-l-r),y=v=>t+(hi-v)/(hi-lo)*(H-t-b);
     let html=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${axisSuffix===' €'?'Eurojen':'Työviikonloppujen'} vertailukäyrä">`;
     for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;const tick=Math.abs(hi-lo)<6000?Math.round(v).toLocaleString("fi-FI"):Math.round(v/1000)+"k";html+=`<line class="gridline" x1="${l}" x2="${W-r}" y1="${y(v)}" y2="${y(v)}"/><text x="${l-8}" y="${y(v)+4}" text-anchor="end">${tick}</text>`;}
+    if(showZero && lo<=0 && hi>=0)html+=`<line x1="${l}" x2="${W-r}" y1="${y(0)}" y2="${y(0)}" stroke="#bac9dd" stroke-width="1.5" stroke-dasharray="6 5" aria-label="Nollaero"/>`;
     for(const n of [0,13,26,39,52])html+=`<text x="${x(n)}" y="${H-13}" text-anchor="middle">${n}</text>`;
     for(const d of defs){html+=`<polyline class="line" stroke="${d.color}" points="${series.map(v=>x(v.n)+','+y(v[d.key])).join(' ')}"/>`;}
+    for(const mark of markers){
+      const point=series.find(v=>v.n===mark.n);
+      if(!point||!finiteCoordinate(point[mark.key]))continue;
+      html+=`<circle cx="${x(mark.n)}" cy="${y(point[mark.key])}" r="5.5" stroke="#0b1221" stroke-width="2" fill="${mark.color}" aria-label="${span(mark.label)}"/>`;
+    }
     html+=`<text x="${W/2}" y="${H-1}" text-anchor="middle">Työviikonloppuja vuodessa</text></svg>`;
     return html;
   }
@@ -340,7 +372,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     el('weekendsRange').value=el('weekends').value;
     for(const chip of document.querySelectorAll('[data-weekends]'))chip.classList.toggle('active',Number(chip.dataset.weekends)===Number(el('weekends').value));
     let c,plan;
-    try{c=read();plan=PalkkaPlannerCore.computePlan(c);}catch(err){el('validation').textContent=err.message;el('validation').classList.add('error');for(const id of ['hoursResult','freeResult','grossResult','hoursResult2','netA','netB','crossing','grossChart','netChart','nextImpact','samples','allSamples','weekendBreakdown'])el(id).replaceChildren();return;}
+    try{c=read();plan=PalkkaPlannerCore.computePlan(c);}catch(err){el('validation').textContent=err.message;el('validation').classList.add('error');for(const id of ['hoursResult','freeResult','grossResult','hoursResult2','netA','netB','crossing','grossChart','netChart','netDifferenceChart','netDifferenceSummary','nextImpact','samples','allSamples','weekendBreakdown'])el(id).replaceChildren();return;}
     el('manualWeekendField').hidden=Boolean(plan.breakdown);
     if(plan.breakdown){
       const b=plan.breakdown;
@@ -353,6 +385,27 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     const s=plan.series;
     el('grossChart').innerHTML=lineChart(s.map(v=>({...v,limitA:c.limitA,limitB:c.limitB})),[{key:'gross',color:'#7cb4fc'},{key:'limitA',color:'#64d5b9'},{key:'limitB',color:'#f9c880'}],{axisSuffix:' €'});
     el('netChart').innerHTML=lineChart(s.slice(1),[{key:'gainA',color:'#7cb4fc'},{key:'gainB',color:'#f9c880'}],{minY:0,axisSuffix:' €'});
+    const diff=PalkkaPlannerCore.netDifferenceAnalysis(s);
+    const diffs=diff.data;
+    const low=Math.min(0,...diffs.map(p=>p.difference));
+    const high=Math.max(0,...diffs.map(p=>p.difference));
+    const marker=[...(diff.peak?[{n:diff.peak.n,key:'difference',color:'#f9c880',label:'Suurin etumatka'}]:[]),
+      {n:c.weekends,key:'difference',color:'#64d5b9',label:'Oma valinta'}];
+    el('netDifferenceChart').innerHTML=lineChart(diffs,[{key:'difference',color:'#7cb4fc'}],{
+      minY:low,maxY:high,axisSuffix:' €',showZero:true,markers:marker});
+    if(!diff.leader){
+      el('netDifferenceSummary').textContent='Näillä oletuksilla A:n ja B:n nettosummissa ei ole eroa millään 0–52 viikonlopun työmäärällä.';
+    }else{
+      const start=diff.leader;
+      const peakText=diff.peak.n===0?'jo ilman viikonlopputöitä':diff.peak.n+'. työviikonlopun kohdalla';
+      const declineText=diff.decline?' etumatka alkaa pienentyä '+diff.decline.n+'. viikonlopulla.':' etumatka ei pienene tässä 0–52 viikonlopun vertailussa.';
+      const lostText=diff.reversal?' Rahallinen etu vaihtuu '+(start==='A'?'B:lle':'A:lle')+' '+diff.reversal.n+'. viikonlopulla.'
+        :diff.lost?' Etumatka poistuu '+diff.lost.n+'. viikonlopulla.':'';
+      const selected=diff.data[c.weekends].difference;
+      const selectedText=Math.abs(selected)<0.005?'A ja B ovat tasoissa':(selected>0?'A:n':'B:n')+' etu '+money(Math.abs(selected));
+      el('netDifferenceSummary').textContent=start+':n suurin laskennallinen etumatka on '+money(Math.abs(diff.peak.difference))+' '+peakText+'.'+declineText+lostText+
+        ' Oma valinta ('+c.weekends+' viikonloppua): '+selectedText+'.';
+    }
     if(c.weekends<52){const next=s[c.weekends+1];el('nextImpact').textContent=`Seuraava (${c.weekends+1}.) työviikonloppu: vaihtoehdolla A arvioitu lisänetto ${money(next.gainA)}, vaihtoehdolla B ${money(next.gainB)}. Erotus kertoo ennakonpidätyksen ajoituksen vaikutuksesta, ei lopullisen veron erosta.`;}
     else el('nextImpact').textContent='52 viikonloppua valittuna. Simuloitavan vuoden kaikki viikonloput on käytetty.';
     const renderRow=(n,notes=[])=>{

@@ -197,6 +197,35 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
  await expect(page.locator("#pdfInput")).toBeDisabled();
 });
+test("cumulative net difference identifies maximum lead and shrinking phase",async({page})=>{
+ await page.setViewportSize({width:360,height:780});
+ await page.goto("/index.html");
+ await page.getByRole("button",{name:"Analyysi"}).click();
+ const planner=page.frameLocator("#plannerFrame");
+ await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
+ await expect(planner.locator("#netDifferenceSummary")).toContainText("ei ole eroa");
+ await planner.locator("#baseGross").fill("50000");
+ await planner.locator("#weekendGross").fill("1000");
+ await planner.locator("#limitA").fill("55000");
+ await planner.locator("#limitB").fill("65000");
+ await planner.locator("#rateA").fill("30");
+ await planner.locator("#rateB").fill("34");
+ await planner.locator("#raise").fill("0");
+ await planner.locator("#weekends").fill("13");
+ await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
+ await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(1);
+ await expect(planner.locator("#netDifferenceChart svg circle")).toHaveCount(2);
+ await expect(planner.locator("#netDifferenceSummary")).toContainText("5. työviikonlopun kohdalla");
+ await expect(planner.locator("#netDifferenceSummary")).toContainText("pienentyä 6. viikonlopulla");
+ await expect(planner.locator("#netDifferenceSummary")).toContainText("13 viikonloppua");
+ await planner.locator("#rateB").fill("30");
+ await planner.locator("#limitB").fill("55000");
+ await expect(planner.locator("#netDifferenceSummary")).toContainText("ei ole eroa");
+ await planner.locator("#weekendGross").fill("0");
+ await expect(planner.locator("#netDifferenceChart svg")).toHaveCount(0);
+ await expect(planner.locator("#netDifferenceSummary")).toBeEmpty();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});
 test("historical tax card percentages never become certified 2027 scenario percentages",async({page})=>{
  await page.goto("/index.html");
  await page.getByRole("button",{name:"Analyysi"}).click();
