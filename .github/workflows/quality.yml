@@ -50,11 +50,11 @@ jobs:
       - name: Run Playwright tests
         run: npm run test:e2e
 
-      - name: Run staging isolation tests
-        run: npm run test:staging
-
       - name: Run isolated Beta integration tests
         run: npm run test:beta
+
+      - name: Run staging isolation tests
+        run: npm run test:staging
 
       - name: Upload failure report
         if: failure()
