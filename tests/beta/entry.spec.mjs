@@ -178,7 +178,14 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(planner.locator("#baseGross")).toHaveValue("52000");
  await expect(planner.locator("#holiday")).toHaveValue("1200");
  await expect(planner.locator("#bonus")).toHaveValue("0");
- await expect(planner.locator("#weekendMethod")).toHaveValue("paylines");
+ await expect(planner.locator("#weekendMethod")).toHaveValue("manual");
+ await expect(planner.locator("#rulesConfirmed")).not.toBeChecked();
+ await expect(planner.locator("#wageModelNote")).toContainText("Tuntipalkkainen");
+ await expect(planner.locator("#weekendGross")).toHaveValue("0");
+ await planner.locator("#weekendMethod").selectOption("paylines");
+ await expect(planner.locator("#validation")).toContainText("Vahvista ensin");
+ await planner.locator("#rulesConfirmed").check();
+ await expect(planner.locator("#validation")).toContainText("skenaario");
  await expect(planner.locator("#rateA")).toHaveValue("30");
  await expect(planner.locator("#rateConfirmedA")).not.toBeChecked();
  await expect(planner.locator("#samples")).toContainText("3");
