@@ -40,6 +40,43 @@ html = html.replace(
   '<input id="pdfInput" type="file" accept="application/pdf" disabled />'
 ).replace('Valitse palkkalaskelma PDF',
   'PDF-tuonti odottaa parserin QA-tarkastusta · tuo nykyinen historia Data-välilehdeltä');
+// Apply the UI experiment ONLY inside _beta. The shared index.html stays
+// untouched so production and QA staging keep their existing interface.
+const analysisMarker = '<section data-view="analysis" class="hidden">';
+if (!html.includes(analysisMarker)) throw new Error('Analysis view changed; review Beta integration.');
+const plannerCard = `
+      <section class="card planner-beta-card" aria-labelledby="plannerHeading">
+        <p class="eyebrow">BETA · VUODEN 2027 SUUNNITTELU</p>
+        <h2 id="plannerHeading">Enemmän vapaa-aikaa — riittävästi rahaa</h2>
+        <p class="muted">Työviikonloput 0–52, kaksi verokorttivaihtoehtoa ja nettovaikutus. Vahvistettu palkkahistoria ehdottaa lähtöarvoja paikallisesti; voit muuttaa niitä.</p>
+        <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
+        <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html" title="Vuoden 2027 suunnittelijan laskuri" referrerpolicy="same-origin"></iframe>
+        <p class="muted">OmaVeron perus- ja lisäprosentit vahvistetaan erikseen. Kyse on palkkapäivän ennakonpidätysarviosta, ei lopullisesta verosta.</p>
+      </section>
+`;
+html = html.replace(analysisMarker, analysisMarker + plannerCard);
+for (const heading of [
+  'Työn ja palkan aikajana',
+  'Mitä lisätyöstä jää?',
+  'Milloin seuraavasta eurosta jää vähemmän?',
+  'Mitä seuraavat viikonloput tuottaisivat?'
+]) {
+  const at = html.indexOf('<h2>' + heading + '</h2>');
+  if (at === -1) throw new Error('Missing Beta card: ' + heading);
+  const start = html.lastIndexOf('<section class="card">', at);
+  if (start === -1 || at - start > 450) throw new Error('Cannot safely hide Beta card: ' + heading);
+  html = html.slice(0, start) + html.slice(start).replace('<section class="card">', '<section class="card hidden beta-replaced">');
+}
+const monthPanel = `      <section class="card">
+        <p class="eyebrow">AVAA KUUKAUSI</p>
+        <h2>Kuukausien erittely</h2>
+        <div id="monthlyDetails" class="insight-rows"></div>
+      </section>`;
+if (!html.includes(monthPanel)) throw new Error('Month detail block changed');
+html = html.replace(monthPanel,`      <details class="card beta-compact-months">
+        <summary>Kuukausien erittely · avaa tarvittaessa</summary>
+        <div id="monthlyDetails" class="insight-rows"></div>
+      </details>`);
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
