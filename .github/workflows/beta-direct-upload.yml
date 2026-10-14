@@ -54,7 +54,10 @@ jobs:
           const html = await readFile(root + 'index.html', 'utf8');
           assert.match(html, /Palkka BETA/);
           assert.match(html, /beta-entry\.mjs/);
-          assert.match(html, /BETA · Kokeiluversio/);
+          assert.match(html, /id="beta-tag"[^>]*>BETA<\/span>/);
+          assert.doesNotMatch(html, /id="beta-banner"/);
+          assert.match(html, /id="pdfInput"[^>]*disabled/);
+          assert.match(html, /id="dashboardDetails"/);
           const entry = await readFile(root + 'beta-entry.mjs', 'utf8');
           assert.ok(entry.includes(process.env.BETA_ORIGIN));
           const sw = await readFile(root + 'sw.js', 'utf8');
