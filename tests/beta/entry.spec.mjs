@@ -2,7 +2,13 @@ import { test, expect } from "@playwright/test";
 
 test("beta branding, exact origin and offline analytics shell", async ({ page }) => {
   await page.goto("/index.html");
-  await expect(page.locator("#beta-banner")).toContainText("BETA");
+  await expect(page.locator("#beta-tag")).toHaveText("BETA");
+  await expect(page.locator("#beta-banner")).toHaveCount(0);
+  await expect(page.locator("#beta-tag")).toBeVisible();
+  await expect(page.locator(".beta-disabled-upload")).toBeHidden();
+  await expect(page.locator("#pdfInput")).toBeDisabled();
+  await expect(page.locator("#beta-tracking-tip")).toContainText("Data → Palauta varmuuskopio");
+  await expect(page.locator("#dashboardMore")).toBeHidden();
   await expect(page).toHaveTitle("Palkka BETA");
   await page.getByRole("button", { name: "Analyysi" }).click();
   await expect(page.getByRole("heading", { name: "Ansiot ja työaika" })).toBeVisible();
@@ -25,7 +31,7 @@ test("beta branding, exact origin and offline analytics shell", async ({ page })
 
 test("another origin cannot start a beta application from the same files", async ({ page }) => {
   await page.goto("http://127.0.0.1:4178/index.html");
-  await expect(page.locator("#beta-banner")).toContainText("BETA ESTETTY");
+  await expect(page.locator("body")).toContainText("BETA ESTETTY");
   await expect(page.locator("main")).toHaveCount(0);
   const worker = await page.evaluate(() => navigator.serviceWorker.getRegistrations().then(x => x.length));
   expect(worker).toBe(0);
@@ -75,6 +81,45 @@ test("synthetic production-format JSON backup restores locally into beta analysi
   expect(records[0].values.overtimeHours).toBe(null);
 });
 
+test("compact mobile dashboard keeps top four metrics and full breakdown one tap away", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto("/index.html");
+  const backup = await page.evaluate(async () => {
+    const m = await import("/model.js");
+    const row = m.migrateLegacyRecord({
+      recordSchemaVersion:1, id:"compact-synthetic-1", kind:"payslip",
+      values:{payDate:"2026-09-23",payPeriodStart:"2026-09-07",payPeriodEnd:"2026-09-20",
+        grossPay:3500,netPay:2100,ytdTaxableIncome:71500,
+        taxLimit:80000,taxCardAccumulatedIncome:72000,overtimeHours:6},
+      payLines:[],fingerprints:["compact-synthetic-1"],fieldMeta:{},corrections:{},notices:[],
+      parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}
+    });
+    return JSON.stringify(m.makeBackup([row]));
+  });
+  await page.getByRole("button",{name:"Data"}).click();
+  await page.locator("#backupInput").setInputFiles({name:"synthetic-dashboard.json",mimeType:"application/json",buffer:Buffer.from(backup)});
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+  await page.getByRole("button",{name:"Seuranta"}).click();
+  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
+  await expect(page.locator("#dashboardDetails .metric")).toHaveCount(4);
+  await expect(page.locator("#dashboardMore")).toBeVisible();
+  await expect(page.locator("#dashboardMore")).not.toHaveAttribute("open","");
+  await expect(page.locator("#dashboard")).toContainText("Viimeisin netto");
+  await expect(page.locator("#dashboard")).toContainText("Tulorajaa jäljellä");
+  await expect(page.locator("#dashboard")).toContainText("8 000");
+  await expect(page.locator("#dashboard")).toContainText("Verokortin kertymä");
+  await expect(page.locator("#dashboard")).toContainText("80 000");
+  await expect(page.locator("#dashboardDetails")).toBeHidden();
+  await page.locator("#dashboardMore > summary").click();
+  await expect(page.locator("#dashboardDetails")).toContainText("Veronalainen YTD");
+  await expect(page.locator("#dashboardDetails")).toContainText("Viimeisin maksupäivä");
+  await expect(page.locator("#dashboardDetails")).toContainText("OT viime jaksolla");
+  const width = await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  expect(width).toBeLessThanOrEqual(1);
+  await page.reload();
+  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
+  await expect(page.locator(".beta-disabled-upload")).toBeHidden();
+});
 test("beta source does not overwrite QA staging, main or browser origin", async ({ page }) => {
   await page.goto("/index.html");
   const registration = await page.evaluate(async () => {
