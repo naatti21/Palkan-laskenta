@@ -593,7 +593,7 @@ function renderBetaDashboardTrend(records) {
   const excluded = year.months.some(m => m.conflictingRecords > 0);
   caution.hidden = !excluded;
   caution.textContent = excluded ? "Ristiriitaiset maksukuukaudet jätetty pois." : "";
-  scope.textContent = observed.length + " toteutunutta maksukuukautta";
+  scope.textContent = observed.length + " kk · vain tallennetut";
   const ns = "http://www.w3.org/2000/svg";
   const node = (tag, attrs = {}) => {
     const n = document.createElementNS(ns, tag);
@@ -602,7 +602,7 @@ function renderBetaDashboardTrend(records) {
   };
   const svg = node("svg", {
     viewBox: "0 0 320 108", preserveAspectRatio: "xMidYMid meet",
-    role: "img", "aria-label": "Toteutuneiden nettopalkkojen maksukuukausivertailu: " +
+    role: "img", "aria-label": "Tallennetut nettopalkat maksukuukausittain (maksupäivien määrä voi vaihdella): " +
       observed.map(m => m.label + " " + fmtMoney(m.net)).join(", ")
   });
   const max = Math.max(1, ...observed.map(m => m.net));
