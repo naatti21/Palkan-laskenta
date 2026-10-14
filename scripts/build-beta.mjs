@@ -28,7 +28,9 @@ for (const file of files) await copyFile(file, `${output}/${file}`);
 let html = await readFile('index.html', 'utf8');
 if (!html.includes('<script type="module" src="./app.js"></script>')) throw new Error('App entry changed; inspect build.');
 html = html.replace('<title>Palkka PWA</title>', '<title>Palkka BETA</title>')
-  .replace('<body>', '<body>\n  <aside id="beta-banner" style="padding:12px;background:#f1d4ff;color:#33164b;text-align:center;font-weight:700">BETA · Kokeiluversio · Säilytä tuotannon varmuuskopio</aside>')
+  .replace('<h1>Palkka</h1>', '<h1 class="beta-heading">Palkka <span id="beta-tag" class="beta-tag">BETA</span></h1>')
+  .replace('<p class="eyebrow">PAIKALLINEN PALKANSEURANTA</p>', '')
+  .replace('<p>Palkkalaskelma sisään. Sovellus muistaa, seuraa ja huomaa muutokset puolestasi.</p>', '')
   .replace('<script type="module" src="./app.js"></script>', '<script type="module" src="./beta-entry.mjs"></script>');
 // This is a data-review beta. Import trusted structured backups to analyze them,
 // but do not let an unapproved PDF parser automatically create new pay records.
@@ -38,8 +40,28 @@ if (!html.includes('<input id="pdfInput" type="file" accept="application/pdf" />
 html = html.replace(
   '<input id="pdfInput" type="file" accept="application/pdf" />',
   '<input id="pdfInput" type="file" accept="application/pdf" disabled />'
-).replace('Valitse palkkalaskelma PDF',
-  'PDF-tuonti odottaa parserin QA-tarkastusta · tuo nykyinen historia Data-välilehdeltä');
+);
+const uploadCard = '<section class="card upload-card">';
+if (!html.includes(uploadCard)) throw new Error('Beta upload card missing; review safety gate.');
+html = html.replace(uploadCard, '<section class="card upload-card hidden beta-disabled-upload">');
+// Display just the important measurements first. Additional known, real values
+// stay one tap away in a native details element, with no recalculation.
+const dashboardBlock = '<div id="dashboard" class="metrics"></div>';
+if (!html.includes(dashboardBlock)) throw new Error('Dashboard target changed; inspect compact Beta layout.');
+html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-primary-metrics"></div>
+        <details id="dashboardMore" class="beta-dashboard-more" hidden>
+          <summary>Lisää palkkatietoja</summary>
+          <div id="dashboardDetails" class="metrics beta-secondary-metrics"></div>
+        </details>`);
+const dashboardCard = '<section class="card">\n        <div class="section-heading">\n          <div>\n            <p class="eyebrow">TILANNE</p>';
+if (!html.includes(dashboardCard)) throw new Error('Dashboard card changed; inspect compact Beta layout.');
+html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard">\n        <div class="section-heading">\n          <div>');
+const endTracking = '    </section>\n\n    <section data-view="analysis" class="hidden">';
+if (!html.includes(endTracking)) throw new Error('Tracking view boundary changed');
+html = html.replace(endTracking, `      <p id="beta-tracking-tip" class="beta-tracking-tip">PDF-tuonti on Betassa pois käytöstä. Palkkahistorian saat mukaan kohdasta <strong>Data → Palauta varmuuskopio</strong>.</p>
+    </section>
+
+    <section data-view="analysis" class="hidden">`);
 // Apply the UI experiment ONLY inside _beta. The shared index.html stays
 // untouched so production and QA staging keep their existing interface.
 const analysisMarker = '<section data-view="analysis" class="hidden">';
@@ -87,11 +109,44 @@ html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
           </select>
         </label>
         ` + budgetLabel);
+// Only the isolated generated Beta CSS gets compact mobile-first styling.
+const betaCss = `
+/* Compact Beta dashboard. Shared production stylesheet is never overwritten. */
+.beta-heading { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:0; }
+.beta-tag { display:inline-flex; padding:3px 7px; vertical-align:middle; font-size:.66rem; letter-spacing:.07em; line-height:1.3; font-weight:800; border-radius:6px; color:#c4f1df; border:1px solid rgba(100,213,185,.4); background:rgba(100,213,185,.1); }
+.hero { padding:7px 2px 5px; align-items:center; }
+.hero h1 { font-size:clamp(1.75rem,6.5vw,2.35rem); letter-spacing:-.035em; }
+.hero .light { width:30px; height:30px; font-size:1.35rem; }
+.tabs { margin:2px 0 8px; }
+.beta-compact-dashboard { margin:6px 0 3px; padding:12px; }
+.beta-compact-dashboard .section-heading { margin-bottom:9px; }
+.beta-compact-dashboard h2 { font-size:1.08rem; margin:0; }
+.beta-compact-dashboard .year-select { min-width:78px; padding:5px 8px; }
+.beta-primary-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.beta-primary-metrics .metric { padding:10px; min-width:0; gap:4px; }
+.beta-primary-metrics .metric strong { font-size:clamp(.90rem,3.9vw,1.2rem); line-height:1.25; letter-spacing:-.025em; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.beta-primary-metrics .metric span { font-size:.72rem; line-height:1.3; }
+.beta-primary-metrics .metric:nth-child(2) { background:rgba(100,213,185,.07); outline:1px solid rgba(100,213,185,.15); }
+.beta-dashboard-more { margin:7px 0 0; border-top:1px solid rgba(255,255,255,.1); }
+.beta-dashboard-more[hidden] { display:none; }
+.beta-dashboard-more > summary { padding:9px 2px 3px; font-weight:650; font-size:.82rem; color:#aabbd3; cursor:pointer; }
+.beta-secondary-metrics { margin-top:7px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.beta-secondary-metrics .metric { padding:8px 9px; min-width:0; }
+.beta-secondary-metrics .metric strong { font-size:.94rem; overflow-wrap:anywhere; }
+.beta-compact-dashboard #dashboardNote { margin:9px 0 0; line-height:1.4; font-size:.77rem; }
+.beta-tracking-tip { margin:8px 6px 16px; color:#aab4ca; font-size:.76rem; line-height:1.45; }
+@media(max-width:360px) {
+  .beta-primary-metrics .metric { padding:9px 7px; }
+  .beta-compact-dashboard { padding:10px; }
+  .beta-primary-metrics .metric strong { font-size:.92rem; }
+}
+`;
+await writeFile(`${output}/styles.css`, (await readFile('styles.css', 'utf8')) + '\n' + betaCss);
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
   document.querySelector('main')?.remove();
-  document.getElementById('beta-banner').textContent = 'BETA ESTETTY: väärä origin';
+  document.body.textContent = 'BETA ESTETTY: väärä origin';
   throw new Error('Beta origin mismatch; app and service worker not started.');
 }
 await import('./app.js');
