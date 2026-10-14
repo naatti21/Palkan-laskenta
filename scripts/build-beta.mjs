@@ -46,9 +46,9 @@ const analysisMarker = '<section data-view="analysis" class="hidden">';
 if (!html.includes(analysisMarker)) throw new Error('Analysis view changed; review Beta integration.');
 const plannerCard = `
       <section class="card planner-beta-card" aria-labelledby="plannerHeading">
-        <p class="eyebrow">BETA · VUODEN 2027 SUUNNITTELU</p>
+        <p class="eyebrow">BETA · VUOSISUUNNITTELU</p>
         <h2 id="plannerHeading">Enemmän vapaa-aikaa — riittävästi rahaa</h2>
-        <p class="muted">Työviikonloput 0–52, kaksi verokorttivaihtoehtoa ja nettovaikutus. Vahvistettu palkkahistoria ehdottaa lähtöarvoja paikallisesti; voit muuttaa niitä.</p>
+        <p class="muted">Valitse suunnitteluvuosi ja työviikonloput 0–52, vertaa kahta verokorttivaihtoehtoa. Vahvistettu palkkahistoria ehdottaa lähtöarvoja paikallisesti; voit muuttaa niitä.</p>
         <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
         <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html" title="Vuoden 2027 suunnittelijan laskuri" referrerpolicy="same-origin"></iframe>
         <p class="muted">OmaVeron perus- ja lisäprosentit vahvistetaan erikseen. Kyse on palkkapäivän ennakonpidätysarviosta, ei lopullisesta verosta.</p>
