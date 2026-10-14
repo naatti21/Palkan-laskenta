@@ -4,7 +4,7 @@ const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./parser.js",
   "./model.js", "./analytics.js", "./storage.js", "./learning.js", "./pdf-reader.js", "./manifest.webmanifest",
   "./vendor/pdfjs/pdf.min.mjs", "./vendor/pdfjs/pdf.worker.min.mjs",
-  "./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html"
+  "./icon-192.png", "./icon-512.png"
 ];
 
 self.addEventListener("install", event => {
