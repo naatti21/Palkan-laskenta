@@ -578,7 +578,14 @@ function renderDashboard(records) {
   const yearRecords = records.filter(r => r.taxYear === selectedYear);
   const latest = sortByPayDate(yearRecords).at(-1);
   const dash = el("dashboard");
-  dash.innerHTML = "";
+  dash.replaceChildren();
+  // Only the isolated Beta shell supplies this optional target. Production's
+  // eight-metric dashboard remains unchanged when it is absent.
+  const secondaryDash = document.getElementById("dashboardDetails");
+  secondaryDash?.replaceChildren();
+  const betaPrimary = secondaryDash
+    ? new Set(["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja"])
+    : null;
   const overall = el("overallLight");
 
   if (!latest) {
@@ -608,8 +615,9 @@ function renderDashboard(records) {
   for (const [label, value] of metrics) {
     const box = document.createElement("div");
     box.className = "metric";
-    box.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
-    dash.append(box);
+    const shownLabel = secondaryDash && label === "Netto" ? "Viimeisin netto" : label;
+    box.innerHTML = `<span>${shownLabel}</span><strong>${value}</strong>`;
+    (betaPrimary && !betaPrimary.has(label) ? secondaryDash : dash).append(box);
   }
 
   const state = paymentState(latest);
