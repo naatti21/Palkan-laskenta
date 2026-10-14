@@ -172,6 +172,7 @@ function historySuggestions(backup,weeklyHours=40){
   let holiday=0,bonus=0,other=0;
   let linesObserved=0,holidayItems=0,bonusItems=0;
   const rates=[];
+  const monthlyRates=[];
   const deductions=[];
   const ktaRates=[];
   for(const r of rows){
@@ -182,12 +183,23 @@ function historySuggestions(backup,weeklyHours=40){
       const amount=line?.amount;
       if(!validNumber(amount))continue;
       if(cat==='holiday_bonus' || ['55201','55301'].includes(code) || /\blomaraha/i.test(label)) {holiday+=amount;holidayItems++;}
-      else if(code==='40000' || /bonus\s*app/i.test(label)) {bonus+=amount;bonusItems++;}
+      else if(code==='40000'||['bonus','performance_bonus'].includes(cat)||/\b(?:bonus|tulospalkkio|tulosbonus)\b/i.test(label)) {bonus+=amount;bonusItems++;}
       else if(code==='40070')other+=amount;
     }
-    const standard=lines.find(l=>String(l.code)==='13001'&&validNumber(l.quantity)&&l.quantity>0&&validNumber(l.amount)&&l.amount>0&&!/korjaus/i.test(l.label||''));
-    const piece=standard&&lines.find(l=>String(l.code)==='13101'&&validNumber(l.quantity)&&l.quantity>0&&validNumber(l.amount)&&l.amount>=0&&Math.abs(l.quantity-standard.quantity)<0.05&&!/korjaus/i.test(l.label||''));
-    if(standard&&piece) rates.push({date:r.values.payDate,rate:(standard.amount+piece.amount)/standard.quantity});
+    const bases=lines.filter(l=>validNumber(l.quantity)&&l.quantity>0&&validNumber(l.amount)&&l.amount>0
+      && !/korjaus|oikaisu/i.test(l.label||'')
+      && (String(l.code)==='13001'||['hourly_base','hourly_wage'].includes(String(l.category||''))
+          || /^(?:tuntipalkka|palkkiotyö)(?:\s|$)/i.test(String(l.label||''))));
+    if(bases.length===1){
+      const standard=bases[0];
+      const pieces=lines.filter(l=>String(l.code)==='13101'&&validNumber(l.quantity)&&l.quantity>0&&validNumber(l.amount)&&l.amount>=0
+        &&Math.abs(l.quantity-standard.quantity)<0.05&&!/korjaus|oikaisu/i.test(l.label||''));
+      const pay=standard.amount+(pieces.length===1?pieces[0].amount:0);
+      rates.push({date:r.values.payDate,rate:pay/standard.quantity});
+    }
+    const monthly=lines.filter(l=>validNumber(l.amount)&&l.amount>0&&!/korjaus|oikaisu/i.test(l.label||'')
+      && (String(l.category||'')==='monthly_salary'||/^kuukausipalkka(?:\s|$)/i.test(String(l.label||''))));
+    if(monthly.length===1)monthlyRates.push({date:r.values.payDate,amount:monthly[0].amount});
     if(validNumber(r.values?.kta)&&r.values.kta>0)ktaRates.push({date:r.values.payDate,rate:r.values.kta});
     const gross=r.values?.grossPay;
     if(validNumber(gross)&&gross>0){
@@ -198,17 +210,27 @@ function historySuggestions(backup,weeklyHours=40){
       }
     }
   }
-  const sortedRates=rates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(r=>r.rate);
-  const avgRate=median(sortedRates);
+  const recentHourly=rates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+  const recentMonthly=monthlyRates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+  const monthlyDays=recentMonthly.slice(1).map((r,i)=>Math.abs(Date.parse(recentMonthly[i].date)-Date.parse(r.date))/86400000);
+  const monthlyCadence=monthlyDays.length>=2&&monthlyDays.every(d=>d>=25&&d<=35)
+    &&new Set(recentMonthly.slice(0,3).map(r=>r.date.slice(0,7))).size>=3;
+  const hourlyReady=recentHourly.length>=3;
+  const monthlyReady=recentMonthly.length>=3&&monthlyCadence;
+  // Never extrapolate a mixed or undocumented wage model as if it were certain.
+  const wageModel=hourlyReady&&!recentMonthly.length?'hourly':monthlyReady&&!recentHourly.length?'monthly':'unknown';
+  const avgRate=wageModel==='hourly'?median(recentHourly.map(r=>r.rate)):null;
+  const monthlyRate=wageModel==='monthly'?median(recentMonthly.map(r=>r.amount)):null;
   const ktaRate=median(ktaRates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(r=>r.rate));
-  const baseEstimate=avgRate===null?null:Math.round((avgRate*weeklyHours*52)/100)*100;
+  const baseEstimate=avgRate!==null?Math.round((avgRate*weeklyHours*52)/100)*100
+    :monthlyRate!==null?Math.round(monthlyRate*12/100)*100:null;
   const latestYtd=[...rows].reverse().find(r=>validNumber(r.values?.ytdTaxableIncome) && r.values.ytdTaxableIncome>=0);
   const latestDeductions=deductions.sort((a,b)=>b.date.localeCompare(a.date))[0];
   return {year,records:rows.length,excludedConflicts:conflicted,lineCoverage:linesObserved,total:yearly.length,
     holiday:holidayItems?Math.round(holiday*100)/100:null,
     bonus:bonusItems?Math.round(bonus*100)/100:null,
     other:other?Math.round(other*100)/100:null,
-    baseEstimate,avgHourlyRate:avgRate,ktaRate,rateSamples:sortedRates.length,weeklyHours,
+    baseEstimate,avgHourlyRate:avgRate,monthlyRate,wageModel,ktaRate,rateSamples:recentHourly.length,monthlySamples:recentMonthly.length,weeklyHours,
     deductionsRate:latestDeductions?Math.round(latestDeductions.rate*100)/100:null,
     latestYtd:latestYtd?latestYtd.values.ytdTaxableIncome:null,
     latestYtdDate:latestYtd?latestYtd.values.payDate:null};
