@@ -204,6 +204,8 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  const planner=page.frameLocator("#plannerFrame");
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
  await expect(planner.locator("#netDifferenceSummary")).toContainText("ei ole eroa");
+ await expect(planner.locator("#decemberTaxNote")).toContainText("Joulukuussa");
+ await expect(planner.locator("#decemberTaxNote")).toContainText("vain tilattu verokortti tulee voimaan");
  await planner.locator("#baseGross").fill("50000");
  await planner.locator("#weekendGross").fill("1000");
  await planner.locator("#limitA").fill("55000");
@@ -213,7 +215,16 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await planner.locator("#raise").fill("0");
  await planner.locator("#weekends").fill("13");
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
+ await expect(planner.locator("#rateUncertainty")).toHaveValue("1");
+ await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(3);
+ await expect(planner.locator("#sensitivitySummary")).toContainText("Ääriarvojen vaihteluväli");
+ await planner.locator("#sensitivityPanel > summary").click();
+ await planner.locator("#rateUncertainty").selectOption("0");
  await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(1);
+ await expect(planner.locator("#sensitivitySummary")).toContainText("Ei lisäepävarmuutta");
+ await planner.locator("#rateUncertainty").selectOption("2");
+ await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(3);
+ await expect(planner.locator("#sensitivitySummary")).toContainText("Ääriarvojen vaihteluväli");
  await expect(planner.locator("#netDifferenceChart svg circle")).toHaveCount(2);
  await expect(planner.locator("#netDifferenceSummary")).toContainText("5. työviikonlopun kohdalla");
  await expect(planner.locator("#netDifferenceSummary")).toContainText("pienentyä 6. viikonlopulla");
@@ -224,6 +235,7 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await planner.locator("#weekendGross").fill("0");
  await expect(planner.locator("#netDifferenceChart svg")).toHaveCount(0);
  await expect(planner.locator("#netDifferenceSummary")).toBeEmpty();
+ await expect(planner.locator("#sensitivitySummary")).toBeEmpty();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
 test("historical tax card percentages never become certified 2027 scenario percentages",async({page})=>{
