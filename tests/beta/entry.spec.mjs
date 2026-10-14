@@ -130,6 +130,7 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await page.locator("#monthlyDetails .month-expand summary").click();
   await expect(page.locator("#monthlyDetails")).toContainText("1 846,70");
   await expect(page.locator("#budgetSummary")).toContainText("1 922,48");
+  await page.locator("#retainedRate").fill("60");
   await page.locator("#netGoal").fill("2100");
   await expect(page.locator("#netGoalResult")).toContainText("3 500,00");
   await expect.poll(async()=>page.evaluate(async()=>(await import("/storage.js")).getSetting("insights:v1:netGoal"))).toBe("2100");
