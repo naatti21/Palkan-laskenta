@@ -578,8 +578,17 @@ function renderDashboard(records) {
   const yearRecords = records.filter(r => r.taxYear === selectedYear);
   const latest = sortByPayDate(yearRecords).at(-1);
   const dash = el("dashboard");
-  dash.innerHTML = "";
+  dash.replaceChildren();
+  // Only the isolated Beta shell supplies this optional target. Production's
+  // eight-metric dashboard remains unchanged when it is absent.
+  const secondaryDash = document.getElementById("dashboardDetails");
+  secondaryDash?.replaceChildren();
+  const betaPrimary = secondaryDash
+    ? new Set(["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja"])
+    : null;
   const overall = el("overallLight");
+  const morePanel = document.getElementById("dashboardMore");
+  if (morePanel) morePanel.hidden = !latest;
 
   if (!latest) {
     overall.className = "light neutral";
@@ -605,11 +614,19 @@ function renderDashboard(records) {
     ["Tulorajaa jäljellä", fmtMoney(remaining)],
     ["OT viime jaksolla", `${fmtNumber(valueOf(latest, "overtimeHours"))} h`]
   ];
-  for (const [label, value] of metrics) {
+  // Keep the most useful pair visible first on phone: recent net and remaining
+  // tax-card margin. All other original metrics remain accessible on one tap.
+  const primaryOrder = ["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja"];
+  const visibleMetrics = betaPrimary
+    ? [...primaryOrder.map(label => metrics.find(row => row[0] === label)),
+       ...metrics.filter(row => !betaPrimary.has(row[0]))]
+    : metrics;
+  for (const [label, value] of visibleMetrics) {
     const box = document.createElement("div");
     box.className = "metric";
-    box.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
-    dash.append(box);
+    const shownLabel = secondaryDash && label === "Netto" ? "Viimeisin netto" : label;
+    box.innerHTML = `<span>${shownLabel}</span><strong>${value}</strong>`;
+    (betaPrimary && !betaPrimary.has(label) ? secondaryDash : dash).append(box);
   }
 
   const state = paymentState(latest);
