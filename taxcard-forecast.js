@@ -86,7 +86,7 @@ export function forecastTaxCardLimit(records, year, now = new Date()) {
   const fastDate = lastDate + Math.ceil(remaining / Math.max(...gains)) * Math.min(...dayGaps) * dayMs;
   const slowDate = lastDate + Math.ceil(remaining / Math.min(...gains)) * Math.max(...dayGaps) * dayMs;
   const expected = lastDate + Math.ceil(remaining / gain) * interval * dayMs;
-  const endOfYear = Date.UTC(year, 0, 1) - dayMs;
+  const endOfYear = Date.UTC(year + 1, 0, 1) - dayMs;
   result.caveat = 'Arvio perustuu ' + gains.length + ' toteutuneeseen verokortin kertymämuutokseen. Ylityöt, lomarahat ja uusi verokortti voivat muuttaa ajankohtaa.';
   if (fastDate > endOfYear) {
     result.estimate = 'Nykyisen kehityksen perusteella tuloraja ei näytä ylittyvän tänä vuonna.';
