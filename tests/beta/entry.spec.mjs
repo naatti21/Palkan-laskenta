@@ -107,10 +107,13 @@ test("compact mobile dashboard keeps six real metrics and other values one tap a
   await expect(page.locator("#dashboardMore")).toBeVisible();
   await expect(page.locator("#dashboardMore")).not.toHaveAttribute("open","");
   await expect(page.locator("#dashboard")).toContainText("Viimeisin netto");
-  await expect(page.locator("#dashboard")).toContainText("Tulorajaa jäljellä");
+  await expect(page.locator("#dashboard")).toContainText("Kortin marginaali");
   await expect(page.locator("#dashboard")).toContainText("8 000");
-  await expect(page.locator("#dashboard")).toContainText("Verokortin kertymä");
+  await expect(page.locator("#dashboard")).toContainText("Kortin kertymä");
   await expect(page.locator("#dashboard")).toContainText("80 000");
+  await expect(page.locator("#dashboard")).toContainText("Kortin tuloraja");
+  await expect(page.locator("#taxCardContext")).toContainText("viimeisimmästä palkkalaskelmasta");
+  await expect(page.locator(".beta-compact-dashboard #yearProgressPanel")).toHaveCount(1);
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
   await expect(page.locator("#dashboard")).toContainText("Veronalainen YTD");
@@ -156,6 +159,42 @@ test("year-end goal is local, compares certified YTD separately from manual annu
  await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
  await expect(page.locator("#yearGrossForecast")).toHaveValue("79000");
  await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});
+test("updated tax card data never gets mistaken for a full calendar-year threshold", async({page})=>{
+ await page.setViewportSize({width:360,height:780});
+ await page.goto("/index.html");
+ const payload=await page.evaluate(async()=>{
+  const m=await import("/model.js");
+  const row=(id,date,limit,acc,rate,kind="payslip")=>m.migrateLegacyRecord({
+   recordSchemaVersion:1,id,kind,values:{
+     payDate:date,payPeriodStart:date.slice(0,8)+"01",payPeriodEnd:date.slice(0,8)+"15",
+     grossPay:3200,netPay:1950,ytdTaxableIncome:70000,
+     taxCardAccumulatedIncome:acc,taxLimit:limit,taxRate:rate,additionalRate:48
+   },payLines:[],fingerprints:[id],fieldMeta:{},corrections:{},notices:[],
+   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}
+  });
+  return JSON.stringify(m.makeBackup([
+    row("card-old","2026-04-23",82000,20000,29.5),
+    row("card-new","2026-10-23",16000,10000,31.5),
+    row("card-forecast","2026-12-23",100000,0,20,"forecast")
+  ]));
+ });
+ await page.getByRole("button",{name:"Data"}).click();
+ await page.locator("#backupInput").setInputFiles({name:"synthetic-cardchange.json",mimeType:"application/json",buffer:Buffer.from(payload)});
+ await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+ await page.getByRole("button",{name:"Seuranta"}).click();
+ await expect(page.locator("#dashboard")).toContainText("Kortin marginaali");
+ await expect(page.locator("#dashboard")).toContainText("6 000");
+ await expect(page.locator("#dashboard")).toContainText("16 000");
+ await expect(page.locator("#dashboard")).toContainText("70 000");
+ await expect(page.locator("#dashboard")).not.toContainText("100 000");
+ await expect(page.locator("#taxCardContext")).toContainText("eri verokortin tuloraja tai prosentti");
+ await expect(page.locator("#taxCardContext")).toContainText("vanhoja rajoja ei lasketa yhteen");
+ await expect(page.locator("#yearProgressPanel")).toBeVisible();
+ await page.reload();
+ await expect(page.locator("#dashboard")).toContainText("6 000");
+ await expect(page.locator("#taxCardContext")).toContainText("eri verokortin");
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
 test("compact monthly net graph uses real payment months, without forecast or filling missing months", async ({page})=>{
