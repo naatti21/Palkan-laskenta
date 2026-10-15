@@ -713,13 +713,13 @@ function renderBetaDashboardTrend(records) {
 }
 
 function renderDashboard(records) {
-  const yearRecords = records.filter(r => r.taxYear === selectedYear);
+  // Beta ignores forecast records in this card. The original production view
+  // retains its existing source selection until separately audited.
+  const secondaryDash = document.getElementById("dashboardDetails");
+  const yearRecords = records.filter(r => r.taxYear === selectedYear && (!secondaryDash || r.kind !== "forecast"));
   const latest = sortByPayDate(yearRecords).at(-1);
   const dash = el("dashboard");
   dash.replaceChildren();
-  // Only the isolated Beta shell supplies this optional target. Production's
-  // eight-metric dashboard remains unchanged when it is absent.
-  const secondaryDash = document.getElementById("dashboardDetails");
   secondaryDash?.replaceChildren();
   const betaPrimary = secondaryDash
     ? new Set(["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja", "Brutto", "Veronalainen YTD"])
@@ -733,23 +733,53 @@ function renderDashboard(records) {
     overall.className = "light neutral";
     overall.textContent = "–";
     el("dashboardNote").textContent = `Vuodelta ${selectedYear} ei ole vielä palkkalaskelmia.`;
+    const context = document.getElementById("taxCardContext");
+    if (context) context.textContent = "Verokortin tietoja ei voi päätellä ilman palkkalaskelmaa. Oma vuositavoite on erillinen tieto.";
     return;
   }
 
-  const status = taxStatus(latest);
+  const lastDate = valueOf(latest, "payDate");
+  const samePeriod = row => valueOf(row, "payDate") === lastDate &&
+    valueOf(row, "payPeriodStart") === valueOf(latest, "payPeriodStart") &&
+    valueOf(row, "payPeriodEnd") === valueOf(latest, "payPeriodEnd");
+  const ambiguous = Boolean(secondaryDash) && yearRecords.filter(samePeriod).length > 1;
+  const limit = valueOf(latest, "taxLimit");
+  const accumulated = valueOf(latest, "taxCardAccumulatedIncome");
+  const cardKnown = !ambiguous && typeof limit === "number" && Number.isFinite(limit) && limit > 0 &&
+    typeof accumulated === "number" && Number.isFinite(accumulated) && accumulated >= 0;
+  const status = ambiguous ? {light:"neutral",text:"Saman palkkakauden ristiriita"}
+    : taxStatus(latest);
   overall.className = `light ${status.light}`;
   overall.textContent = status.light === "neutral" ? "–" : "●";
 
-  const remaining = valueOf(latest, "taxLimit") != null && valueOf(latest, "taxCardAccumulatedIncome") != null
-    ? valueOf(latest, "taxLimit") - valueOf(latest, "taxCardAccumulatedIncome")
-    : null;
+  const remaining = secondaryDash
+    ? (cardKnown ? limit - accumulated : null)
+    : limit != null && accumulated != null ? limit - accumulated : null;
+  const cardContext = document.getElementById("taxCardContext");
+  if (cardContext) {
+    const prior = yearRecords.filter(r => r !== latest && valueOf(r, "payDate") < lastDate);
+    // Do not compare naturally increasing card accumulation. Only compare
+    // explicitly observed limit and tax-rate fields, when both values exist.
+    const altered = prior.some(r => ["taxLimit","taxRate","additionalRate"].some(key => {
+      const before = valueOf(r,key), after = valueOf(latest,key);
+      return typeof before==="number" && Number.isFinite(before) &&
+        typeof after==="number" && Number.isFinite(after) && Math.abs(before-after)>.005;
+    }));
+    cardContext.textContent = ambiguous
+      ? "Saman palkkakauden tietueissa on ristiriita. Kortin tulorajamarginaalia ei näytetä ennen Historian tarkistusta."
+      : !cardKnown
+      ? "Viimeisimmästä palkkalaskelmasta puuttuu luotettava verokortin tuloraja tai kertymä. Tarkista voimassa oleva kortti OmaVerosta."
+      : altered
+      ? "Palkkalaskelmissa on eri verokortin tuloraja tai prosentti. Näytetään vain viimeisimmän laskelman ("+fmtDate(lastDate)+") kortin marginaali — vanhoja rajoja ei lasketa yhteen. Vahvista ajantasainen koko vuoden tuloraja OmaVerosta."
+      : "Verokortin luvut ovat viimeisimmästä palkkalaskelmasta ("+fmtDate(lastDate)+"), eivät vahvistus tämän päivän kortista tai koko vuoden ansiorajasta. Tarkista OmaVerosta.";
+  }
   const metrics = [
     ["Viimeisin maksupäivä", fmtDate(valueOf(latest, "payDate"))],
     ["Brutto", fmtMoney(valueOf(latest, "grossPay"))],
     ["Netto", fmtMoney(valueOf(latest, "netPay"))],
     ["Veronalainen YTD", fmtMoney(valueOf(latest, "ytdTaxableIncome"))],
-    ["Verokortin kertymä", fmtMoney(valueOf(latest, "taxCardAccumulatedIncome"))],
-    ["Tuloraja", fmtMoney(valueOf(latest, "taxLimit"))],
+    ["Verokortin kertymä", fmtMoney(secondaryDash && !cardKnown ? null : valueOf(latest, "taxCardAccumulatedIncome"))],
+    ["Tuloraja", fmtMoney(secondaryDash && !cardKnown ? null : valueOf(latest, "taxLimit"))],
     ["Tulorajaa jäljellä", fmtMoney(remaining)],
     ["OT viime jaksolla", `${fmtNumber(valueOf(latest, "overtimeHours"))} h`]
   ];
@@ -763,14 +793,18 @@ function renderDashboard(records) {
   for (const [label, value] of visibleMetrics) {
     const box = document.createElement("div");
     box.className = "metric";
-    const shownLabel = secondaryDash && label === "Netto" ? "Viimeisin netto" : label;
+    const shownLabel = !secondaryDash ? label :
+      ({Netto:"Viimeisin netto", "Tulorajaa jäljellä":"Kortin marginaali",
+        "Verokortin kertymä":"Kortin kertymä", Tuloraja:"Kortin tuloraja"})[label] || label;
     box.innerHTML = `<span>${shownLabel}</span><strong>${value}</strong>`;
     (betaPrimary && !betaPrimary.has(label) ? secondaryDash : dash).append(box);
   }
 
   const state = paymentState(latest);
   const stateText = state === "confirmed_future" ? " Viimeisin laskelma on vahvistettu tuleva palkka." : "";
-  el("dashboardNote").textContent = `${status.text}. Tulorajaa verrataan vain verokortin omaan kertymään.${stateText}`;
+  el("dashboardNote").textContent = secondaryDash
+    ? `${status.text} (viimeisin palkkalaskelma).${stateText}`
+    : `${status.text}. Tulorajaa verrataan vain verokortin omaan kertymään.${stateText}`;
 }
 
 

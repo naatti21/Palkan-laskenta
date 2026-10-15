@@ -63,15 +63,9 @@ html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-pri
           <div class="beta-mini-chart-heading"><strong>Netto / maksukuukausi</strong><span id="dashboardMiniChartScope">Viimeiset kuukaudet</span></div>
           <div id="dashboardMiniChart"></div>
           <p id="dashboardMiniChartCaution" class="beta-mini-chart-caution" hidden></p>
-        </section>`);
-const dashboardCard = '<section class="card">\n        <div class="section-heading">\n          <div>\n            <p class="eyebrow">TILANNE</p>';
-if (!html.includes(dashboardCard)) throw new Error('Dashboard card changed; inspect compact Beta layout.');
-html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard">\n        <div class="section-heading">\n          <div>');
-const endTracking = '    </section>\n\n    <section data-view="analysis" class="hidden">';
-if (!html.includes(endTracking)) throw new Error('Tracking view boundary changed');
-// The compact PDF placeholder already explains disabled import; no duplicate footer.
-html = html.replace(endTracking, `      <details class="card beta-year-progress" id="yearProgressPanel">
-        <summary><strong>Vuoden loppusuora</strong><span id="yearProgressHeadline">Oma tavoite ja toteuma</span></summary>
+        </section>
+      <details class="beta-year-progress" id="yearProgressPanel">
+        <summary><strong>Oma vuosisuunnitelma</strong><span id="yearProgressHeadline">Oma tavoite ja toteuma</span></summary>
         <div class="beta-year-progress-content">
           <div class="beta-goal-inputs">
             <label>Oma vuosibruttotavoite (€)<input id="yearGrossGoal" type="number" min="0" max="1000000" step="100" inputmode="decimal" placeholder="Täytä oma tavoite"></label>
@@ -84,8 +78,19 @@ html = html.replace(endTracking, `      <details class="card beta-year-progress"
           <p id="yearProgressCompare" class="muted"></p>
           <p class="muted">Toteuma perustuu tallennetun palkkalaskelman veronalaiseen vuosikertymään (YTD). Vuoden ennuste on oma arvio, ei automaattinen verolaskelma. Verokortin tuloraja on eri asia kuin oma tulotavoite.</p>
         </div>
-      </details>
-    </section>
+      </details>`);
+// Keep card-specific tax status near the main KPI metrics; never present it as a full-year limit.
+const dashboardNoteMarker = '<p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>';
+if (!html.includes(dashboardNoteMarker)) throw new Error('Dashboard note changed');
+html = html.replace(dashboardNoteMarker, dashboardNoteMarker +
+  '<p id="taxCardContext" class="muted beta-taxcard-context" role="status"></p>');
+const dashboardCard = '<section class="card">\n        <div class="section-heading">\n          <div>\n            <p class="eyebrow">TILANNE</p>';
+if (!html.includes(dashboardCard)) throw new Error('Dashboard card changed; inspect compact Beta layout.');
+html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard">\n        <div class="section-heading">\n          <div>');
+const endTracking = '    </section>\n\n    <section data-view="analysis" class="hidden">';
+if (!html.includes(endTracking)) throw new Error('Tracking view boundary changed');
+// The compact PDF placeholder already explains disabled import; no duplicate footer.
+html = html.replace(endTracking, `    </section>
 
     <section data-view="analysis" class="hidden">`);
 // Apply the UI experiment ONLY inside _beta. The shared index.html stays
@@ -166,7 +171,8 @@ const betaCss = `
 .beta-mini-chart-heading span { color:#9baac2; font-size:.7rem; }
 .beta-mini-chart svg { display:block; width:100%; max-width:100%; height:auto; max-height:108px; }
 .beta-mini-chart-caution { font-size:.68rem; color:#f9c880; margin:3px 0 0; }
-.beta-year-progress { padding:10px 12px; margin:6px 0 15px; }
+.beta-taxcard-context { border-left:2px solid rgba(100,213,185,.4); padding-left:9px; line-height:1.45; }
+.beta-year-progress { padding:9px 1px; margin:8px 0 0; border-top:1px solid rgba(255,255,255,.12); background:transparent; box-shadow:none; }
 .beta-year-progress > summary { display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; font-size:.85rem; cursor:pointer; }
 .beta-year-progress > summary span { color:#aab4ca; font-size:.76rem; font-weight:450; }
 .beta-year-progress-content { margin-top:12px; }
