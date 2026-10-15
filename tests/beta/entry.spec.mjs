@@ -123,6 +123,41 @@ test("compact mobile dashboard keeps six real metrics and other values one tap a
   await expect(page.locator("#dashboard .metric")).toHaveCount(6);
   await expect(page.locator(".beta-pdf-slot")).toBeVisible();
 });
+test("year-end goal is local, compares certified YTD separately from manual annual forecast", async({page})=>{
+ await page.setViewportSize({width:360,height:780});
+ await page.goto("/index.html");
+ await expect(page.locator("#yearProgressPanel")).toBeVisible();
+ await expect(page.locator("#yearProgressHeadline")).toContainText("Aseta oma");
+ await page.locator("#yearProgressPanel > summary").click();
+ await expect(page.locator("#yearProgressStatus")).toContainText("Ei luotettavaa");
+ await page.locator("#yearGrossGoal").fill("80000");
+ await page.locator("#yearGrossGoal").press("Tab");
+ await page.locator("#yearGrossForecast").fill("79000");
+ await page.locator("#yearGrossForecast").press("Tab");
+ await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
+ const backup=await page.evaluate(async()=>{
+  const m=await import("/model.js");
+  const row=m.migrateLegacyRecord({recordSchemaVersion:1,id:"goal-synthetic-1",kind:"payslip",
+   values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
+     grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000},
+   payLines:[],fingerprints:["goal-synthetic-1"],fieldMeta:{},corrections:{},notices:[],
+   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}});
+  return JSON.stringify(m.makeBackup([row]));
+ });
+ await page.getByRole("button",{name:"Data"}).click();
+ await page.locator("#backupInput").setInputFiles({name:"synthetic-progress.json",mimeType:"application/json",buffer:Buffer.from(backup)});
+ await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+ await page.getByRole("button",{name:"Seuranta"}).click();
+ await expect(page.locator("#yearProgressHeadline")).toContainText("71 500");
+ await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
+ await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
+ await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
+ await page.reload();
+ await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
+ await expect(page.locator("#yearGrossForecast")).toHaveValue("79000");
+ await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});
 test("compact monthly net graph uses real payment months, without forecast or filling missing months", async ({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
@@ -316,6 +351,29 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await expect(planner.locator("#netDifferenceSummary")).toBeEmpty();
  await expect(planner.locator("#sensitivitySummary")).toBeEmpty();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});
+test("inverse net target solves A and B minimum weekends and does not bypass caps",async({page})=>{
+ await page.setViewportSize({width:360,height:780});
+ await page.goto("/index.html");
+ await page.getByRole("button",{name:"Analyysi"}).click();
+ const p=page.frameLocator("#plannerFrame");
+ await expect(p.locator("#inverseGoalPanel")).toBeVisible();
+ await p.locator("#inverseGoalPanel > summary").click();
+ await expect(p.locator("#inverseGoalResults")).toContainText("Anna nettotavoite");
+ await p.locator("#baseGross").fill("50000");
+ await p.locator("#weekendGross").fill("1000");
+ await p.locator("#inverseNetGoal").fill("32000");
+ await expect(p.locator("#inverseGoalResults")).toContainText("A: vähintään 4 työviikonloppua");
+ await expect(p.locator("#inverseGoalResults")).toContainText("B: vähintään 7 työviikonloppua");
+ await expect(p.locator("#inverseGoalResults")).toContainText("48 täysin vapaata");
+ await p.locator("#limitA").fill("52000");
+ await p.locator("#inverseKeepUnderLimit").check();
+ await expect(p.locator("#inverseGoalResults")).toContainText("A: nettotavoite ei toteudu");
+ await expect(p.locator("#inverseGoalResults")).toContainText("B: vähintään 7");
+ await p.locator("#inverseNetGoal").fill("10000000");
+ await expect(p.locator("#inverseGoalResults")).toContainText("ei toteudu 0–52 viikonlopulla");
+ await p.locator("#inverseNetGoal").fill("");
+ await expect(p.locator("#inverseGoalResults")).toContainText("Anna nettotavoite");
 });
 test("historical tax card percentages never become certified 2027 scenario percentages",async({page})=>{
  await page.goto("/index.html");
