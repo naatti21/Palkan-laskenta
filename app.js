@@ -1,5 +1,6 @@
 import { extractPdfText } from "./pdf-reader.js";
 import { buildYearAnalysis } from "./analytics.js";
+import { forecastTaxCardLimit } from "./taxcard-forecast.js";
 import { initInsightsUi, renderInsightsUi } from "./insights-ui.js";
 import {initScenarioUi,renderScenarioUi} from "./scenario-ui.js";
 import { parsePayslip, validate } from "./parser.js";
@@ -712,6 +713,40 @@ function renderBetaDashboardTrend(records) {
   wrap.hidden = false;
 }
 
+// The Beta card shows current card progress independently of the user's own annual goal.
+function renderTaxCardProgress(records, latest, ambiguous) {
+  const host = document.getElementById("taxCardProgress");
+  if (!host) return;
+  const summary = forecastTaxCardLimit(records, selectedYear);
+  const valid = Boolean(latest) && !ambiguous && summary.valid;
+  host.classList.toggle("is-unavailable", !valid);
+  const track = el("taxCardTrack");
+  const fill = el("taxCardFill");
+  const pct = el("taxCardPercent");
+  const amount = el("taxCardRemaining");
+  const eta = el("taxCardEstimate");
+  const detail = el("taxCardEstimateNote");
+  if (!valid) {
+    pct.textContent = "–";
+    amount.textContent = "Ei luotettavaa kertymää";
+    eta.textContent = ambiguous ? "Ristiriitainen palkkalaskelma – tarkista historia." : "Ei vielä ennustetta.";
+    detail.textContent = "Tarvitaan viimeisimmältä palkkalaskelmalta sekä verokortin tuloraja että kortin oma kertymä.";
+    track.removeAttribute("aria-valuenow");
+    fill.style.width = "0%";
+    fill.className = "";
+    return;
+  }
+  const used = Math.max(0, summary.percent);
+  pct.textContent = fmtNumber(used) + " %";
+  amount.textContent = "Jäljellä " + fmtMoney(summary.remaining);
+  eta.textContent = summary.estimate;
+  detail.textContent = summary.caveat;
+  track.setAttribute("aria-valuenow", String(Math.min(100, used)));
+  track.setAttribute("aria-valuetext", fmtNumber(used) + " prosenttia verokortin tulorajasta käytetty");
+  fill.style.width = Math.min(100, used) + "%";
+  fill.className = used >= 100 ? "at-limit" : used >= 90 ? "near-limit" : "";
+}
+
 function renderDashboard(records) {
   // Beta ignores forecast records in this card. The original production view
   // retains its existing source selection until separately audited.
@@ -722,7 +757,7 @@ function renderDashboard(records) {
   dash.replaceChildren();
   secondaryDash?.replaceChildren();
   const betaPrimary = secondaryDash
-    ? new Set(["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja", "Brutto", "Veronalainen YTD"])
+    ? new Set(["Netto", "Tulorajaa jäljellä"])
     : null;
   const overall = el("overallLight");
   renderBetaDashboardTrend(records);
@@ -733,6 +768,7 @@ function renderDashboard(records) {
     overall.className = "light neutral";
     overall.textContent = "–";
     el("dashboardNote").textContent = `Vuodelta ${selectedYear} ei ole vielä palkkalaskelmia.`;
+    renderTaxCardProgress(yearRecords, null, false);
     const context = document.getElementById("taxCardContext");
     if (context) context.textContent = "Verokortin tietoja ei voi päätellä ilman palkkalaskelmaa. Oma vuositavoite on erillinen tieto.";
     return;
@@ -747,6 +783,7 @@ function renderDashboard(records) {
   const accumulated = valueOf(latest, "taxCardAccumulatedIncome");
   const cardKnown = !ambiguous && typeof limit === "number" && Number.isFinite(limit) && limit > 0 &&
     typeof accumulated === "number" && Number.isFinite(accumulated) && accumulated >= 0;
+  renderTaxCardProgress(yearRecords, latest, ambiguous);
   const status = ambiguous ? {light:"neutral",text:"Saman palkkakauden ristiriita"}
     : taxStatus(latest);
   overall.className = `light ${status.light}`;
@@ -785,7 +822,7 @@ function renderDashboard(records) {
   ];
   // Keep the most useful pair visible first on phone: recent net and remaining
   // tax-card margin. All other original metrics remain accessible on one tap.
-  const primaryOrder = ["Netto", "Tulorajaa jäljellä", "Verokortin kertymä", "Tuloraja", "Brutto", "Veronalainen YTD"];
+  const primaryOrder = ["Netto", "Tulorajaa jäljellä"];
   const visibleMetrics = betaPrimary
     ? [...primaryOrder.map(label => metrics.find(row => row[0] === label)),
        ...metrics.filter(row => !betaPrimary.has(row[0]))]
