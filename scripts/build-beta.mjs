@@ -13,7 +13,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
   throw new Error('Use only the approved palkka-beta.pages.dev origin or a dedicated local beta test port.');
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = ['index.html', 'styles.css', 'app.js', 'parser.js', 'model.js', 'storage.js',
+const files = ['index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
@@ -55,6 +55,18 @@ html = html.replace(betaUploadState, betaUploadState +
 const dashboardBlock = '<div id="dashboard" class="metrics"></div>';
 if (!html.includes(dashboardBlock)) throw new Error('Dashboard target changed; inspect compact Beta layout.');
 html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-primary-metrics"></div>
+        <section id="taxCardProgress" class="beta-taxcard-progress" aria-labelledby="taxCardProgressTitle">
+          <div class="beta-taxcard-heading">
+            <strong id="taxCardProgressTitle">Verokortin tuloraja</strong>
+            <span id="taxCardPercent">–</span>
+          </div>
+          <div id="taxCardTrack" class="beta-taxcard-track" role="progressbar" aria-label="Verokortin tulorajan käyttö" aria-valuemin="0" aria-valuemax="100">
+            <div id="taxCardFill"></div>
+          </div>
+          <div id="taxCardRemaining" class="beta-taxcard-remaining">Ei luotettavaa kertymää</div>
+          <p id="taxCardEstimate" class="beta-taxcard-estimate" role="status" aria-live="polite">Ei vielä ennustetta.</p>
+          <p id="taxCardEstimateNote" class="beta-taxcard-note"></p>
+        </section>
         <details id="dashboardMore" class="beta-dashboard-more" hidden>
           <summary>Lisää palkkatietoja</summary>
           <div id="dashboardDetails" class="metrics beta-secondary-metrics"></div>
@@ -158,6 +170,18 @@ const betaCss = `
 .beta-primary-metrics .metric strong { font-size:clamp(.90rem,3.9vw,1.2rem); line-height:1.25; letter-spacing:-.025em; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
 .beta-primary-metrics .metric span { font-size:.72rem; line-height:1.3; }
 .beta-primary-metrics .metric:nth-child(2) { background:rgba(100,213,185,.07); outline:1px solid rgba(100,213,185,.15); }
+/* Compact, always-visible card-limit gauge. Different from the personal gross goal. */
+.beta-taxcard-progress { margin:11px 0 0; padding:11px 12px; border:1px solid rgba(148,163,184,.22); background:rgba(255,255,255,.035); border-radius:12px; }
+.beta-taxcard-heading { display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:.85rem; }
+.beta-taxcard-heading span { font-weight:800; font-size:1.15rem; font-variant-numeric:tabular-nums; color:#e5eefb; }
+.beta-taxcard-track { width:100%; height:11px; margin:8px 0; border-radius:99px; overflow:hidden; background:rgba(148,163,184,.22); }
+.beta-taxcard-track>div { height:100%; width:0; border-radius:99px; background:#64d5b9; transition:width .2s ease; }
+.beta-taxcard-track>div.near-limit { background:#fbbf24; }
+.beta-taxcard-track>div.at-limit { background:#f87171; }
+.beta-taxcard-remaining { color:#dbeafe; font-weight:700; font-size:.89rem; }
+.beta-taxcard-estimate { margin:8px 0 0; line-height:1.4; font-weight:700; font-size:.83rem; color:#eff6ff; }
+.beta-taxcard-note { margin:6px 0 0; line-height:1.45; font-size:.72rem; color:#aab4ca; }
+.beta-taxcard-progress.is-unavailable .beta-taxcard-track { opacity:.35; }
 /* Reserve a single compact import row without enabling the unverified parser. */
 .beta-pdf-slot { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 11px; margin:5px 0 7px; border-radius:11px; box-shadow:none; background:rgba(255,255,255,.022); }
 .beta-pdf-slot .file-button { display:flex; flex:0 0 auto; width:auto; padding:7px 10px; font-size:.78rem; border:1px dashed rgba(148,163,184,.35); border-radius:9px; background:rgba(255,255,255,.06); color:#d3dbe9; font-weight:650; cursor:not-allowed; opacity:.75; }
@@ -219,6 +243,7 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";')
   .replace('const CACHE = `${CACHE_PREFIX}17`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
   .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs",')
+  .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",')
   .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html"')
   .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",');
 // Enforce the same origin before any worker event handlers can register.
