@@ -124,6 +124,15 @@ html.beta-integrated .card{margin-top:8px;box-shadow:none;}
       <div class="fact mint"><small>A: arvio palkoista käteen</small><strong id="netA">–</strong><span>Ennakonpidätyksen jälkeen</span></div>
       <div class="fact"><small>B: arvio palkoista käteen</small><strong id="netB">–</strong><span>Ennakonpidätyksen jälkeen</span></div>
     </div>
+    <details id="inverseGoalPanel" class="scenario-explain">
+      <summary>Nettotavoite → montako viikonloppua?</summary>
+      <p class="hint" style="margin-top:9px">Syötä oma koko vuoden nettotavoite. Laskuri etsii A:lle ja B:lle erikseen vähimmän työviikonloppujen määrän, jolla arvio saavuttaa tavoitteesi. Tämä on verokorttien mukainen <strong>ennakonpidätyksen jälkeinen rahavirta</strong>, ei lopullisen veron optimointi.</p>
+      <div class="field"><label for="inverseNetGoal">Koko vuoden nettotavoite (€)</label>
+      <input id="inverseNetGoal" type="number" min="0" max="10000000" step="100" inputmode="decimal" placeholder="Syötä oma vuosinettotavoite"></div>
+      <label class="toggle"><input type="checkbox" id="inverseKeepUnderLimit"> Etsi vain vaihtoehdot, jotka pysyvät kunkin verokortin tulorajan sisällä</label>
+      <div id="inverseGoalResults" class="status" role="status" aria-live="polite">Anna nettotavoite nähdäksesi tarvittavan vähimmäistyömäärän.</div>
+      <p class="hint">Vapaa viikonloppu = 52 − työviikonloput. Oletuksena viikonloput ovat samanhintaisia, eikä laskelma huomioi palautumista, palkkapäiviä tai verovuoden lopullista veroa. Jos mallissa ei ole viikonlopulle lisäansiota, etua ei oleteta.</p>
+    </details>
     <div id="crossing" class="status"></div>
     <p class="smallprint" style="margin-top:9px">Vuoden kokonaisbruttoraja ylittyy simuloinnissa ilmoitetun <em>viikonloppumäärän</em> kohdalla. Tämä ei vielä ole todellinen maksupäivä: verokortin voimassaolo, vuoden aikana maksettujen palkkojen ajoitus ja mahdollinen muutosverokortti vaativat erillisen aikajanalaskennan.</p>
   </section>
@@ -357,7 +366,17 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       return {n:p.n,low,high,normal};
     });
   }
-  globalThis.PalkkaPlannerCore={computePlan,netDifferenceAnalysis,rateSensitivity};
+  function minimumWeekendsForNet(series,target,card,limit=null){
+    if(!finite(target)||target<0||target>10000000)throw new Error('Virheellinen vuosinettotavoite');
+    if(!['A','B'].includes(card))throw new Error('Tuntematon verokorttivaihtoehto');
+    if(limit!==null&&(!finite(limit)||limit<0||limit>10000000))throw new Error('Tuloraja on virheellinen');
+    if(!Array.isArray(series)||series.length!==53||
+      series.some((p,i)=>p.n!==i||!finite(p.gross)||p.gross<0||!finite(p.netA)||!finite(p.netB)))
+      throw new Error('Viikonloppuvaihtoehtojen aikasarja ei ole täydellinen');
+    const choice=series.find(p=>p['net'+card]>=target-.005 && (limit===null||p.gross<=limit+.005));
+    return choice?{n:choice.n,free:52-choice.n,gross:choice.gross,net:choice['net'+card]}:null;
+  }
+  globalThis.PalkkaPlannerCore={computePlan,netDifferenceAnalysis,rateSensitivity,minimumWeekendsForNet};
 })();
 </script>
 <script>
@@ -416,7 +435,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     el('weekendsRange').value=el('weekends').value;
     for(const chip of document.querySelectorAll('[data-weekends]'))chip.classList.toggle('active',Number(chip.dataset.weekends)===Number(el('weekends').value));
     let c,plan;
-    try{c=read();plan=PalkkaPlannerCore.computePlan(c);}catch(err){el('validation').textContent=err.message;el('validation').classList.add('error');for(const id of ['hoursResult','freeResult','grossResult','hoursResult2','netA','netB','crossing','grossChart','netChart','netDifferenceChart','netDifferenceSummary','sensitivitySummary','nextImpact','samples','allSamples','weekendBreakdown'])el(id).replaceChildren();return;}
+    try{c=read();plan=PalkkaPlannerCore.computePlan(c);}catch(err){el('validation').textContent=err.message;el('validation').classList.add('error');for(const id of ['hoursResult','freeResult','grossResult','hoursResult2','netA','netB','crossing','grossChart','netChart','netDifferenceChart','netDifferenceSummary','sensitivitySummary','inverseGoalResults','nextImpact','samples','allSamples','weekendBreakdown'])el(id).replaceChildren();return;}
     el('manualWeekendField').hidden=Boolean(plan.breakdown);
     if(plan.breakdown){
       const b=plan.breakdown;
@@ -427,6 +446,24 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     el('grossResult').textContent=money(plan.current.gross);el('netA').textContent=money(plan.current.netA);el('netB').textContent=money(plan.current.netB);
     el('crossing').innerHTML=`A: ${money(c.limitA)} ylittyy <b>${crossingText(plan.crossA)}</b>.<br>B: ${money(c.limitB)} ylittyy <b>${crossingText(plan.crossB)}</b>.<br><span class="hint">Ilman viikonloppuja vuosibrutto olisi ${money(plan.baseline)}. Yksi valitun tuntimäärän viikonloppu lisää noin ${money(plan.grossPerWeekend)}.</span>`;
     const s=plan.series;
+    const goalRaw=el('inverseNetGoal').value.trim();
+    if(goalRaw==='') el('inverseGoalResults').textContent='Anna nettotavoite nähdäksesi tarvittavan vähimmäistyömäärän.';
+    else {
+      const target=Number(goalRaw);
+      if(!Number.isFinite(target)||target<0||target>10000000)
+        el('inverseGoalResults').textContent='Anna kelvollinen vuosinettotavoite (0–10 000 000 €).';
+      else {
+        const capped=el('inverseKeepUnderLimit').checked;
+        const line=card=>{
+          const result=PalkkaPlannerCore.minimumWeekendsForNet(s,target,card,capped?c['limit'+card]:null);
+          return result?card+': vähintään '+result.n+' työviikonloppua, '+result.free+
+            ' täysin vapaata. Vuoden nettomalli '+money(result.net)+
+            (result.gross>c['limit'+card]?' (verokortin tuloraja ylittyy).':'.'):
+            card+': nettotavoite ei toteudu 0–52 viikonlopulla'+(capped?' annetun tulorajan sisällä.':'.');
+        };
+        el('inverseGoalResults').textContent=line('A')+' '+line('B');
+      }
+    }
     el('grossChart').innerHTML=lineChart(s.map(v=>({...v,limitA:c.limitA,limitB:c.limitB})),[{key:'gross',color:'#7cb4fc'},{key:'limitA',color:'#64d5b9'},{key:'limitB',color:'#f9c880'}],{axisSuffix:' €'});
     el('netChart').innerHTML=lineChart(s.slice(1),[{key:'gainA',color:'#7cb4fc'},{key:'gainB',color:'#f9c880'}],{minY:0,axisSuffix:' €'});
     const diff=PalkkaPlannerCore.netDifferenceAnalysis(s);
@@ -481,6 +518,8 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   el('weekendMethod').addEventListener('change',render);
   el('rulesConfirmed').addEventListener('change',render);
   el('rateUncertainty').addEventListener('change',render);
+  el('inverseNetGoal').addEventListener('input',render);
+  el('inverseKeepUnderLimit').addEventListener('change',render);
   el('weekendsRange').addEventListener('input',()=>{el('weekends').value=el('weekendsRange').value;render();});
   for(const chip of document.querySelectorAll('[data-weekends]'))chip.addEventListener('click',()=>{el('weekends').value=chip.dataset.weekends;render();});
   const historyInput=el('historyInput');
