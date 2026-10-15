@@ -70,7 +70,22 @@ html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard"
 const endTracking = '    </section>\n\n    <section data-view="analysis" class="hidden">';
 if (!html.includes(endTracking)) throw new Error('Tracking view boundary changed');
 // The compact PDF placeholder already explains disabled import; no duplicate footer.
-html = html.replace(endTracking, `    </section>
+html = html.replace(endTracking, `      <details class="card beta-year-progress" id="yearProgressPanel">
+        <summary><strong>Vuoden loppusuora</strong><span id="yearProgressHeadline">Oma tavoite ja toteuma</span></summary>
+        <div class="beta-year-progress-content">
+          <div class="beta-goal-inputs">
+            <label>Oma vuosibruttotavoite (€)<input id="yearGrossGoal" type="number" min="0" max="1000000" step="100" inputmode="decimal" placeholder="Täytä oma tavoite"></label>
+            <label>Arvio koko vuoden brutosta (€)<input id="yearGrossForecast" type="number" min="0" max="1000000" step="100" inputmode="decimal" placeholder="Oma arvio, ei automaattinen"></label>
+          </div>
+          <p id="yearProgressStatus" class="muted" role="status" aria-live="polite">Odottaa tietoja.</p>
+          <div class="beta-progress-track" role="img" aria-label="Toteuma suhteessa asetettuun vuosibruttotavoitteeseen">
+            <div id="yearProgressFill"></div>
+          </div>
+          <p id="yearProgressCompare" class="muted"></p>
+          <p class="muted">Toteuma perustuu tallennetun palkkalaskelman veronalaiseen vuosikertymään (YTD). Vuoden ennuste on oma arvio, ei automaattinen verolaskelma. Verokortin tuloraja on eri asia kuin oma tulotavoite.</p>
+        </div>
+      </details>
+    </section>
 
     <section data-view="analysis" class="hidden">`);
 // Apply the UI experiment ONLY inside _beta. The shared index.html stays
@@ -151,6 +166,16 @@ const betaCss = `
 .beta-mini-chart-heading span { color:#9baac2; font-size:.7rem; }
 .beta-mini-chart svg { display:block; width:100%; max-width:100%; height:auto; max-height:108px; }
 .beta-mini-chart-caution { font-size:.68rem; color:#f9c880; margin:3px 0 0; }
+.beta-year-progress { padding:10px 12px; margin:6px 0 15px; }
+.beta-year-progress > summary { display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; font-size:.85rem; cursor:pointer; }
+.beta-year-progress > summary span { color:#aab4ca; font-size:.76rem; font-weight:450; }
+.beta-year-progress-content { margin-top:12px; }
+.beta-goal-inputs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.beta-goal-inputs label { display:grid; gap:5px; font-size:.77rem; color:#cbd5e1; }
+.beta-goal-inputs input { width:100%; min-width:0; background:#121a2a; color:#f8fafc; border:1px solid rgba(148,163,184,.35); border-radius:9px; padding:9px 10px; font-size:1rem; }
+.beta-year-progress-content .muted { font-size:.76rem; line-height:1.45; margin:9px 0 0; }
+.beta-progress-track { height:9px; margin-top:10px; background:rgba(148,163,184,.18); border-radius:9px; overflow:hidden; }
+.beta-progress-track > div { width:0; height:100%; background:#64d5b9; border-radius:9px; transition:width .15s ease-out; }
 .beta-dashboard-more { margin:7px 0 0; border-top:1px solid rgba(255,255,255,.1); }
 .beta-dashboard-more[hidden] { display:none; }
 .beta-dashboard-more > summary { padding:9px 2px 3px; font-weight:650; font-size:.82rem; color:#aabbd3; cursor:pointer; }

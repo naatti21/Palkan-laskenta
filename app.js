@@ -560,12 +560,94 @@ function initPlannerBridge() {
   if (frame.contentDocument?.readyState === 'complete') loaded();
 }
 
+// Beta-only year progress: no implied tax forecast from partial payslips.
+// User-owned values live in existing local IndexedDB settings, keyed by year.
+let yearProgressLoadedYear = null;
+let yearProgressRecords = [];
+const progressKey = (year, kind) => "beta:year-progress:v1:" + year + ":" + kind;
+async function loadYearProgressValues() {
+  const goal = document.getElementById("yearGrossGoal");
+  if (!goal || yearProgressLoadedYear === selectedYear) return;
+  const year = selectedYear;
+  const [storedGoal, storedForecast] = await Promise.all([
+    getSetting(progressKey(year, "goal")), getSetting(progressKey(year, "forecast"))
+  ]);
+  if (selectedYear !== year) return;
+  goal.value = storedGoal == null ? "" : String(storedGoal);
+  el("yearGrossForecast").value = storedForecast == null ? "" : String(storedForecast);
+  yearProgressLoadedYear = year;
+}
+function readYearProgressNumber(id) {
+  const field = document.getElementById(id);
+  if (!field || field.value.trim() === "") return null;
+  const n = Number(field.value);
+  return Number.isFinite(n) && n > 0 && n <= 1000000 ? n : null;
+}
+function renderBetaYearProgress(records) {
+  const headline = document.getElementById("yearProgressHeadline");
+  if (!headline) return;
+  const info = buildYearAnalysis(records, selectedYear);
+  const goal = readYearProgressNumber("yearGrossGoal");
+  const forecast = readYearProgressNumber("yearGrossForecast");
+  // A duplicate/contradictory pay-period record disqualifies this YTD snapshot.
+  const actual = info.conflictingRecords === 0 && info.payslips > 0 &&
+    typeof info.latestYtd === "number" && Number.isFinite(info.latestYtd) &&
+    info.latestYtd >= 0 ? info.latestYtd : null;
+  const status = el("yearProgressStatus"), comparison = el("yearProgressCompare");
+  const fill = el("yearProgressFill");
+  fill.style.width = goal && actual !== null ? Math.min(100,actual/goal*100) + "%" : "0%";
+  if (goal === null) {
+    headline.textContent = "Aseta oma tulotavoite";
+    status.textContent = actual === null ? "Ei luotettavaa veronalaista vuosikertymää." :
+      "Kertyneet veronalaiset ansiot " + fmtMoney(actual) + " (palkkalaskelman YTD).";
+  } else if (actual === null) {
+    headline.textContent = "Tavoite " + fmtMoney(goal);
+    status.textContent = info.conflictingRecords ? "Ristiriitaiset palkkatiedot: toteumaa ei verrata tavoitteeseen." :
+      "Toteuma puuttuu. Tavoite " + fmtMoney(goal) + " on asetettu vuodelle " + selectedYear + ".";
+  } else {
+    headline.textContent = fmtMoney(actual) + " / " + fmtMoney(goal);
+    const difference = goal - actual;
+    status.textContent = difference >= 0
+      ? "Palkkalaskelman YTD " + fmtMoney(actual) + ". Tavoitteesta jäljellä " + fmtMoney(difference) + "."
+      : "Palkkalaskelman YTD " + fmtMoney(actual) + ". Oma tavoite ylittynyt " + fmtMoney(-difference) + ".";
+  }
+  if (forecast === null) comparison.textContent = "Koko vuoden ennuste: ei asetettu. Emme arvaa puuttuvien kuukausien tuloja.";
+  else if (goal === null) comparison.textContent = "Oma koko vuoden bruttoarvio " + fmtMoney(forecast) + ". Aseta myös tavoite vertailua varten.";
+  else {
+    const diff = forecast - goal;
+    comparison.textContent = "Oma koko vuoden bruttoarvio " + fmtMoney(forecast) +
+      (diff < 0 ? " · " + fmtMoney(-diff) + " alle tavoitteen." : diff > 0
+        ? " · " + fmtMoney(diff) + " yli tavoitteen." : " · täsmää tavoitteeseen.");
+  }
+}
+function initBetaYearProgress() {
+  if (!document.getElementById("yearGrossGoal")) return;
+  for (const [id, kind] of [["yearGrossGoal","goal"],["yearGrossForecast","forecast"]]) {
+    const field = el(id);
+    field.addEventListener("input", () => renderBetaYearProgress(yearProgressRecords));
+    field.addEventListener("change", async () => {
+      const raw = field.value.trim();
+      const parsed = raw === "" ? null : Number(raw);
+      if (parsed !== null && (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1000000)) {
+        field.setCustomValidity("Syötä positiivinen euroarvo, enintään 1 000 000.");
+        field.reportValidity();
+        return;
+      }
+      field.setCustomValidity("");
+      await setSetting(progressKey(selectedYear, kind), parsed === null ? null : String(parsed));
+    });
+  }
+}
+
 async function renderAll() {
   const records = await getAllRecords();
   plannerRecords = records;
   syncPlannerHistory();
   syncYearSelectors(records);
+  await loadYearProgressValues();
+  yearProgressRecords = records;
   renderDashboard(records);
+  renderBetaYearProgress(records);
   renderAnalysis(records);
   renderInsightsUi(records, selectedYear);
   await renderScenarioUi(records, selectedYear);
@@ -1096,6 +1178,7 @@ el("installButton").addEventListener("click", async () => {
 async function init() {
   try {
     initPlannerBridge();
+    initBetaYearProgress();
     await initInsightsUi();
     initScenarioUi();
     const migration = await migrateLegacyLocalStorage();
