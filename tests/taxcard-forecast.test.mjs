@@ -28,7 +28,11 @@ test('does not combine changed tax cards across the year', () => {
     row('2026-10-02', 5500, 14000)
   ], 2026, now);
   assert.equal(result.remaining, 8500);
-  assert.match(result.estimate, /saman verokortin/);
+  const justCurrentCard = forecastTaxCardLimit([
+    row('2026-09-04', 2500, 14000), row('2026-09-18', 4000, 14000),
+    row('2026-10-02', 5500, 14000)
+  ], 2026, now);
+  assert.equal(result.estimate, justCurrentCard.estimate);
 });
 
 test('missing limit and bad accumulation do not show a percentage', () => {
@@ -43,7 +47,7 @@ test('does not invent a payday when history is sparse or conflicting', () => {
 });
 
 test('avoids projected dates for older years and stale snapshots', () => {
-  assert.match(forecastTaxCardLimit(sample, 2025, now).estimate, /puuttuu/);
+  assert.match(forecastTaxCardLimit(sample.map(r => ({ ...r, taxYear: 2025 })), 2025, now).estimate, /ei tehdä/);
   assert.match(forecastTaxCardLimit(sample, 2026, new Date('2026-12-20T12:00:00Z')).estimate, /tuoreen/);
 });
 
