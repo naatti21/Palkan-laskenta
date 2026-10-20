@@ -15,9 +15,8 @@
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">PAIKALLINEN PALKANSEURANTA</p>
-        <h1>Palkka</h1>
-        <p>Palkkalaskelma sisään. Sovellus muistaa, seuraa ja huomaa muutokset puolestasi.</p>
+        <h1>Palkka <span class="beta-mark">BETA</span></h1>
+        <p class="hero-subtitle">Oma palkkatilanteesi yhdellä silmäyksellä.</p>
       </div>
       <div id="overallLight" class="light neutral">–</div>
     </header>
@@ -110,17 +109,56 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card dashboard-shell">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">TILANNE</p>
-            <h2>Vuoden seuranta</h2>
-          </div>
+          <h2>Palkkatilanne</h2>
           <select id="dashboardYear" class="year-select" aria-label="Seurantavuosi"></select>
         </div>
-        <div id="dashboard" class="metrics"></div>
-        <p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>
+        <div id="dashboard" class="metrics dashboard-primary"></div>
+        <section id="taxCardProgress" class="dashboard-progress" aria-label="Verokortin tulorajan seuranta">
+          <div class="dashboard-progress-heading">
+            <span>Verokortin tuloraja</span><strong id="taxCardPercent">–</strong>
+          </div>
+          <div id="taxCardTrack" class="progress-track" role="progressbar" aria-label="Verokortin tulorajan käyttö" aria-valuemin="0" aria-valuemax="100">
+            <span id="taxCardFill" class="progress-fill"></span>
+          </div>
+          <p id="taxCardRemaining" class="progress-remaining">Ei vielä tietoa</p>
+          <details class="dashboard-insight">
+            <summary>Mitä tulorajan eteneminen tarkoittaa?</summary>
+            <p id="taxCardEstimate" class="muted"></p>
+            <p id="taxCardEstimateNote" class="muted"></p>
+          </details>
+        </section>
+        <p id="dashboardNote" class="muted dashboard-status">Tallenna vähintään yksi palkkalaskelma.</p>
+        <details id="dashboardMore" class="dashboard-insight">
+          <summary>Lisää palkkatietoja</summary>
+          <div id="dashboardDetails" class="metrics"></div>
+          <p id="taxCardContext" class="muted"></p>
+        </details>
       </section>
+      <section id="dashboardMiniChartWrap" class="card dashboard-chart" hidden>
+        <div class="section-heading"><h2>Netto / maksukuukausi</h2><span id="dashboardMiniChartScope" class="muted"></span></div>
+        <div id="dashboardMiniChart"></div>
+        <p id="dashboardMiniChartCaution" class="muted" hidden></p>
+      </section>
+      <details class="card dashboard-year-plan">
+        <summary>Oma vuosisuunnitelma</summary>
+        <div class="year-goal-content">
+          <strong id="yearProgressHeadline">Aseta oma tulotavoite</strong>
+          <div class="progress-track"><span id="yearProgressFill" class="progress-fill"></span></div>
+          <p id="yearProgressStatus" class="muted"></p>
+          <p id="yearProgressCompare" class="muted"></p>
+          <div class="input-grid">
+            <label class="insight-label">Oma veronalaisen vuositulon tavoite (€)
+              <input id="yearGrossGoal" type="number" inputmode="decimal" min="1" max="1000000" placeholder="Oma tavoite" />
+            </label>
+            <label class="insight-label">Oma koko vuoden bruttoarvio (€)
+              <input id="yearGrossForecast" type="number" inputmode="decimal" min="1" max="1000000" placeholder="Vapaaehtoinen arvio" />
+            </label>
+          </div>
+          <p class="muted">Oma tavoite ja arvio eivät ole verokortin tuloraja tai verotusennuste. Tarkista verokortin tiedot OmaVerosta.</p>
+        </div>
+      </details>
     </section>
 
     <section data-view="analysis" class="hidden">
@@ -146,6 +184,9 @@
         <div id="monthlyChart" class="monthly-chart" role="img" aria-label="Maksettujen brutto- ja nettopalkkojen kuukausivertailu"></div>
         <p class="muted">Tyhjät kuukaudet eivät tarkoita 0 € tuloja. Kuukausi määräytyy todellisen maksupäivän mukaan.</p>
       </section>
+      <details class="analysis-collection">
+        <summary><strong>Palkan ja työajan erittelyt</strong><span>Vähennykset, ylityöt, työaikapankki ja kuukausierittely</span></summary>
+        <div class="analysis-collection-body">
       <section class="card">
         <p class="eyebrow">TODELLINEN MAKSU · ERILLINEN TYÖAJASTA</p>
         <h2>Mihin brutto ja netto eroavat?</h2>
@@ -181,6 +222,11 @@
         <div id="monthlyDetails" class="insight-rows"></div>
       </section>
 
+        </div>
+      </details>
+      <details class="analysis-collection">
+        <summary><strong>Lisätyön laskurit</strong><span>Vertaile lisänettoa, verokortin pidätystä ja työviikonloppuja</span></summary>
+        <div class="analysis-collection-body">
       <section class="card">
         <p class="eyebrow">OMAT VALINNAT · EI VEROLASKURI</p>
         <h2>Mitä lisätyöstä jää?</h2>
@@ -274,6 +320,11 @@
         </details>
       </section>
 
+        </div>
+      </details>
+      <details class="analysis-collection">
+        <summary><strong>Budjetti ja tavoitteet</strong><span>Vapaaehtoiset arviot, eivät toteutunutta palkkaa</span></summary>
+        <div class="analysis-collection-body">
       <section class="card">
         <p class="eyebrow">50 / 30 / 20 · SUUNNITTELUTYÖKALU</p>
         <h2>Mitä nettopalkasta voisi tehdä?</h2>
@@ -298,6 +349,8 @@
         <h2>Mitä ei ole vielä vahvistettu?</h2>
         <p class="muted">Tehdyt ylityötunnit ja niiden todellinen lisänetto suhteessa menetettyyn vapaa-aikaan, työaikapankin vahvistettu saldo, TES-rajojen vaikutus sekä pyhäpäivä- ja vuoronvaihtosäännöt vaativat työaikajärjestelmän ja sopimuksen tiedot. Niitä ei arvata.</p>
       </section>
+        </div>
+      </details>
     </section>
 
     <section data-view="history" class="hidden">
@@ -309,7 +362,7 @@
           </div>
           <select id="historyYear" class="year-select" aria-label="Historiavuosi"></select>
         </div>
-        <p class="muted">Vanhoja palkkalaskelmia voi lisätä normaalisti. Ne järjestetään maksupäivän perusteella oikealle vuodelle.</p>
+        <p class="muted">Napauta palkkapäivää nähdäksesi tallennetun erittelyn. Alkuperäisiä PDF-tiedostoja ei säilytetä.</p>
         <div id="history"></div>
       </section>
     </section>
