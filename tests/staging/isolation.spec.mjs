@@ -58,6 +58,13 @@ test('two origins isolate actual records, IndexedDB settings, localStorage and C
   expect(sw.scope).toBe(staging + '/');
   expect(sw.caches.some(n => n.startsWith('palkka-staging-v'))).toBe(true);
   expect(sw.caches.some(n => n.startsWith('palkka-pwa-v'))).toBe(false);
+  const stagedModules = await stage.evaluate(async () => {
+    const names = await caches.keys();
+    const name = names.find(n => n.startsWith('palkka-staging-v'));
+    const urls = await (await caches.open(name)).keys();
+    return urls.map(request => new URL(request.url).pathname);
+  });
+  expect(stagedModules).toContain('/taxcard-forecast.js');
 });
 
 test('staging banner, manifest, mobile navigation, offline history and local PDF.js', async ({ page, context }) => {

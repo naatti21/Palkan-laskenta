@@ -83,7 +83,7 @@ test("synthetic production-format JSON backup restores locally into beta analysi
   expect(records[0].values.overtimeHours).toBe(null);
 });
 
-test("compact dashboard shows two key metrics, card gauge and other values one tap away", async ({ page }) => {
+test("compact dashboard shows four key metrics, card gauge and other values one tap away", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await page.goto("/index.html");
   const backup = await page.evaluate(async () => {
@@ -102,8 +102,8 @@ test("compact dashboard shows two key metrics, card gauge and other values one t
   await page.locator("#backupInput").setInputFiles({name:"synthetic-dashboard.json",mimeType:"application/json",buffer:Buffer.from(backup)});
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
   await page.getByRole("button",{name:"Seuranta"}).click();
-  await expect(page.locator("#dashboard .metric")).toHaveCount(2);
-  await expect(page.locator("#dashboardDetails .metric")).toHaveCount(6);
+  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
+  await expect(page.locator("#dashboardDetails .metric")).toHaveCount(4);
   await expect(page.locator("#dashboardMore")).toBeVisible();
   await expect(page.locator("#dashboardMore")).not.toHaveAttribute("open","");
   await expect(page.locator("#dashboard")).toContainText("Viimeisin netto");
@@ -117,8 +117,8 @@ test("compact dashboard shows two key metrics, card gauge and other values one t
   await expect(page.locator(".beta-compact-dashboard #yearProgressPanel")).toHaveCount(1);
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
-  await expect(page.locator("#dashboardDetails")).toContainText("Veronalainen YTD");
-  await expect(page.locator("#dashboardDetails")).toContainText("Brutto");
+  await expect(page.locator("#dashboard")).toContainText("Veronalainen YTD");
+  await expect(page.locator("#dashboard")).toContainText("Brutto");
   await expect(page.locator("#dashboardDetails")).toContainText("Kortin kertymä");
   await expect(page.locator("#dashboardDetails")).toContainText("72 000");
   await expect(page.locator("#dashboardDetails")).toContainText("80 000");
@@ -128,7 +128,7 @@ test("compact dashboard shows two key metrics, card gauge and other values one t
   const width = await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(width).toBeLessThanOrEqual(1);
   await page.reload();
-  await expect(page.locator("#dashboard .metric")).toHaveCount(2);
+  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
   await expect(page.locator(".beta-pdf-slot")).toBeVisible();
 });
 test("year-end goal is local, compares certified YTD separately from manual annual forecast", async({page})=>{
@@ -196,7 +196,7 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
  await expect(page.locator("#taxCardEstimate")).toContainText("lisää saman verokortin");
  await page.locator("#dashboardMore > summary").click();
  await expect(page.locator("#dashboardDetails")).toContainText("16 000");
- await expect(page.locator("#dashboardDetails")).toContainText("70 000");
+ await expect(page.locator("#dashboard")).toContainText("70 000");
  await expect(page.locator("#dashboardDetails")).not.toContainText("82 000");
  await expect(page.locator("#dashboardDetails")).not.toContainText("100 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin tuloraja tai prosentti");
@@ -286,12 +286,16 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await expect(page.locator("#incomeBreakdown")).toContainText("6 367,93");
   await expect(page.locator("#overtimeBreakdown")).toContainText("11,13");
   await expect(page.locator("#bankSummary")).toContainText("−0,5");
+  await expect(page.locator(".planner-fold")).not.toHaveAttribute("open", "");
+  await page.locator(".planner-fold > summary").click();
   await expect(page.locator("#plannerFrame")).toBeVisible();
+  await page.locator(".analysis-collection").first().locator(":scope > summary").click();
   await expect(page.locator("#monthlyDetails .month-expand")).toHaveCount(1);
   await expect(page.locator(".beta-compact-months")).not.toHaveAttribute("open", "");
   await page.locator(".beta-compact-months > summary").click();
   await page.locator("#monthlyDetails .month-expand summary").click();
   await expect(page.locator("#monthlyDetails")).toContainText("1 846,70");
+  await page.locator(".analysis-collection").last().locator(":scope > summary").click();
   await expect(page.locator("#budgetSource")).toHaveValue("typical");
   await expect(page.locator("#budgetSummary")).toContainText("2 082,69");
   await page.locator("#budgetSource").selectOption("month");
@@ -318,12 +322,15 @@ test("new analytical modules load in offline beta cache", async ({ page }) => {
   })).toEqual(expect.arrayContaining(["/insights.js","/insights-ui.js"]));
   await page.getByRole("button",{name:"Analyysi"}).click();
   await expect(page.getByRole("heading",{name:"Työn ja palkan aikajana"})).toBeHidden();
+  await expect(page.locator(".planner-fold")).not.toHaveAttribute("open", "");
+  await page.locator(".planner-fold > summary").click();
   await expect(page.locator("#plannerFrame")).toBeVisible();
 });
 
 test("embedded annual planner uses local Palkka history, preserves manual edits and offers 0/3/5/10",async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
+ await expect(page.locator("#dashboardNote")).toContainText("Vuodelta 2026 ei ole vielä palkkalaskelmia");
  const backup=await page.evaluate(async()=>{
   const m=await import("/model.js");
   const rows=[1,2,3].map(n=>m.migrateLegacyRecord({recordSchemaVersion:1,id:"planner-fake-"+n,kind:"payslip",
@@ -333,9 +340,12 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
   return JSON.stringify(m.makeBackup(rows));
  });
  await page.getByRole("button",{name:"Data"}).click();
+ await expect(page.locator('[data-view="data"]')).toBeVisible();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-planner.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Analyysi"}).click();
+ await page.locator(".planner-fold > summary").click();
+ await expect(page.locator(".planner-fold")).toHaveAttribute("open", "");
  const planner=page.frameLocator("#plannerFrame");
  await expect(planner.locator("#historyStatus")).toContainText("Beta ehdotti luvut", {timeout:15000});
  await expect(planner.locator("#baseGross")).toHaveValue("52000");
@@ -364,6 +374,8 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
  await page.getByRole("button",{name:"Analyysi"}).click();
+ await page.locator(".planner-fold > summary").click();
+ await expect(page.locator(".planner-fold")).toHaveAttribute("open", "");
  const planner=page.frameLocator("#plannerFrame");
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
  await expect(planner.locator("#netDifferenceSummary")).toContainText("ei ole eroa");
@@ -405,6 +417,8 @@ test("inverse net target solves A and B minimum weekends and does not bypass cap
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
  await page.getByRole("button",{name:"Analyysi"}).click();
+ await page.locator(".planner-fold > summary").click();
+ await expect(page.locator(".planner-fold")).toHaveAttribute("open", "");
  const p=page.frameLocator("#plannerFrame");
  await expect(p.locator("#inverseGoalPanel")).toBeVisible();
  await p.locator("#inverseGoalPanel > summary").click();
