@@ -330,6 +330,7 @@ test("new analytical modules load in offline beta cache", async ({ page }) => {
 test("embedded annual planner uses local Palkka history, preserves manual edits and offers 0/3/5/10",async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
+ await expect(page.locator("#dashboardNote")).toContainText("Vuodelta 2026 ei ole vielä palkkalaskelmia");
  const backup=await page.evaluate(async()=>{
   const m=await import("/model.js");
   const rows=[1,2,3].map(n=>m.migrateLegacyRecord({recordSchemaVersion:1,id:"planner-fake-"+n,kind:"payslip",
@@ -339,6 +340,7 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
   return JSON.stringify(m.makeBackup(rows));
  });
  await page.getByRole("button",{name:"Data"}).click();
+ await expect(page.locator('[data-view="data"]')).toBeVisible();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-planner.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Analyysi"}).click();
