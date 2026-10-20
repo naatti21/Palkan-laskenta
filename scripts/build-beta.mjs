@@ -110,14 +110,17 @@ html = html.replace(endTracking, `    </section>
 const analysisMarker = '<section data-view="analysis" class="hidden">';
 if (!html.includes(analysisMarker)) throw new Error('Analysis view changed; review Beta integration.');
 const plannerCard = `
-      <section class="card planner-beta-card" aria-labelledby="plannerHeading">
+      <details class="card planner-beta-card planner-fold" aria-labelledby="plannerHeading">
+        <summary class="planner-toggle"><strong>Vuoden 2027 suunnittelija</strong><span>Avaa laskuri ja vertaa työviikonloppuja</span></summary>
+        <div class="planner-fold-content">
         <p class="eyebrow">BETA · VUOSISUUNNITTELU</p>
         <h2 id="plannerHeading">Enemmän vapaa-aikaa — riittävästi rahaa</h2>
         <p class="muted">Valitse suunnitteluvuosi ja työviikonloput 0–52, vertaa kahta verokorttivaihtoehtoa. Vahvistettu palkkahistoria ehdottaa lähtöarvoja paikallisesti; voit muuttaa niitä.</p>
         <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
         <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html" title="Vuoden 2027 suunnittelijan laskuri" referrerpolicy="same-origin"></iframe>
         <p class="muted">OmaVeron perus- ja lisäprosentit vahvistetaan erikseen. Kyse on palkkapäivän ennakonpidätysarviosta, ei lopullisesta verosta.</p>
-      </section>
+        </div>
+      </details>
 `;
 html = html.replace(analysisMarker, analysisMarker + plannerCard);
 for (const heading of [
@@ -152,6 +155,29 @@ html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
           </select>
         </label>
         ` + budgetLabel);
+// Keep primary analysis and monthly chart visible; reveal supporting detail only by choice.
+const detailStart = '<section class="card">\n        <p class="eyebrow">TODELLINEN MAKSU · ERILLINEN TYÖAJASTA</p>';
+const detailEnd = '<section class="card hidden beta-replaced">\n        <p class="eyebrow">OMAT VALINNAT · EI VEROLASKURI</p>';
+if (!html.includes(detailStart) || !html.includes(detailEnd)) throw new Error('Analysis detail grouping markers changed.');
+html = html.replace(detailStart, `<details class="analysis-collection">
+        <summary><strong>Lisää palkka- ja työaikatietoja</strong><span>Brutto, netto, ylityöt, pankkikirjaukset ja kuukausierittely</span></summary>
+        <div class="analysis-collection-body">
+      ` + detailStart);
+html = html.replace(detailEnd, `        </div>
+      </details>
+      ` + detailEnd);
+const budgetStart = '<section class="card">\n        <p class="eyebrow">50 / 30 / 20 · SUUNNITTELUTYÖKALU</p>';
+const historyBoundary = '    </section>\n\n    <section data-view="history" class="hidden">';
+if (!html.includes(budgetStart) || !html.includes(historyBoundary)) throw new Error('Analysis budget grouping markers changed.');
+html = html.replace(budgetStart, `<details class="analysis-collection">
+        <summary><strong>Budjetti ja tavoitteet</strong><span>Vapaaehtoiset laskelmat ja omat tavoitteet</span></summary>
+        <div class="analysis-collection-body">
+      ` + budgetStart);
+html = html.replace(historyBoundary, `        </div>
+      </details>
+    </section>
+
+    <section data-view="history" class="hidden">`);
 // Only the isolated generated Beta CSS gets compact mobile-first styling.
 const betaCss = `
 /* Compact Beta dashboard. Shared production stylesheet is never overwritten. */
@@ -220,7 +246,89 @@ const betaCss = `
   .beta-primary-metrics .metric strong { font-size:.92rem; }
 }
 `;
-await writeFile(`${output}/styles.css`, (await readFile('styles.css', 'utf8')) + '\n' + betaCss);
+
+const betaPolishCss = `
+/* Charcoal and mint Beta-only visual direction. UI data is unchanged. */
+:root{color-scheme:dark;background:#13191d;color:#f3f6f4;}
+body{background:linear-gradient(180deg,#171c1f,#111719 49%,#171d1e);color:#f3f6f4;}
+.shell{max-width:780px;padding:17px 13px 68px;}
+.card{background:#242a2e;border-color:rgba(255,255,255,.08);box-shadow:0 7px 23px rgba(0,0,0,.13);border-radius:17px;}
+.tabs{background:#191f23;border:1px solid #303a3c;}
+.tab.active{background:#323b3c;color:#f3f8f6;}
+.beta-heading{letter-spacing:-.04em;}
+.beta-tag{color:#b7efd3;border-color:#4a9780;background:#24433a;}
+.light.green{color:#6bdfaa;box-shadow:0 0 20px rgba(76,207,159,.24);}
+.light.yellow{color:#f2c17a;}
+.light.red{color:#f78f97;}
+.beta-compact-dashboard{padding:14px;background:#20262a;}
+.beta-compact-dashboard h2{font-size:1.16rem;}
+.beta-primary-metrics{gap:9px;}
+.beta-primary-metrics .metric{min-height:96px;padding:12px;border-radius:14px;background:#2c3235;border:1px solid rgba(255,255,255,.035);align-content:center;}
+.beta-primary-metrics .metric:first-child{background:#273b35;border-color:#446d5d;}
+.beta-primary-metrics .metric:nth-child(2){background:#273735;border-color:#416b5f;outline:none;}
+.beta-primary-metrics .metric strong{font-size:clamp(.95rem,4.2vw,1.32rem);color:#f5f9f7;}
+.beta-primary-metrics .metric span{color:#c0cdca;line-height:1.35;}
+.beta-taxcard-progress{background:#293235;border-color:#3b4b4b;border-radius:13px;}
+.beta-taxcard-heading span{color:#9ae7bc;}
+.beta-taxcard-track{background:#3b4848;}
+.beta-taxcard-track>div,.beta-progress-track>div{background:#6ce0ac;}
+.beta-taxcard-remaining{color:#bfebd6;}
+.beta-pdf-slot{background:#22292d;border-color:#33403f;}
+.beta-pdf-slot .file-button{background:#31403b;color:#beead4;border-color:#5d8575;}
+.beta-dashboard-more>summary{color:#b8e3cb;}
+.beta-year-progress>summary span{color:#c0d0ca;}
+.beta-mini-chart-heading strong{color:#f1f7f3;}
+.beta-taxcard-context{border-left-color:#6ce0ac;}
+.beta-compact-months{background:#263030;}
+.history-row.payslip-item{display:block;padding:0;margin:10px 0;border:1px solid #3b4746;border-radius:15px;background:#2a3133;overflow:hidden;}
+.history-row.payslip-item:first-child{border-top:1px solid #3b4746;}
+.history-row.payslip-item[open]{background:#263530;border-color:#64cba0;}
+.payslip-summary{display:grid;grid-template-columns:minmax(0,1fr) auto 18px;gap:9px;padding:14px 12px;min-height:74px;align-items:center;cursor:pointer;list-style:none;}
+.payslip-summary::-webkit-details-marker{display:none;}
+.payslip-heading{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.payslip-heading>strong{font-size:.96rem;}
+.payslip-heading>span{font-size:.75rem;color:#b6c3bd;overflow-wrap:anywhere;}
+.payslip-net{font-size:clamp(.88rem,3.9vw,1.08rem);color:#8cebb7;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}
+.payslip-chevron{font-size:1.25rem;color:#c5dfd1;}
+.payslip-item[open] .payslip-chevron{transform:rotate(180deg);}
+.payslip-detail{padding:4px 12px 14px;border-top:1px solid rgba(255,255,255,.09);}
+.payslip-fields,.payslip-line-list{display:grid;gap:1px;}
+.payslip-field{display:flex;justify-content:space-between;gap:14px;padding:9px 1px;border-bottom:1px solid rgba(255,255,255,.075);font-size:.83rem;}
+.payslip-field span{color:#becbc4;overflow-wrap:anywhere;}
+.payslip-field strong{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+.payslip-footnote{font-size:.75rem;margin:12px 0 0;}
+.payslip-lines{margin-top:10px;}
+.payslip-lines>summary{cursor:pointer;padding:10px 0;color:#a7eccb;font-size:.85rem;font-weight:650;}
+.planner-fold{padding:0;overflow:hidden;}
+.planner-toggle{display:grid;gap:6px;cursor:pointer;padding:16px;list-style:none;}
+.planner-toggle::-webkit-details-marker{display:none;}
+.planner-toggle strong{font-size:1.03rem;}
+.planner-toggle span{color:#b8c4c0;font-size:.78rem;}
+.planner-toggle::after{content:"Avaa laskuri ↓";color:#8ce0b7;font-size:.77rem;}
+.planner-fold[open] .planner-toggle::after{content:"Sulje laskuri ↑";}
+.planner-fold-content{padding:1px 10px 12px;}
+.analysis-collection{margin:12px 0;border:1px solid #364443;border-radius:15px;background:#252f30;}
+.analysis-collection>summary{cursor:pointer;list-style:none;display:grid;gap:5px;padding:16px;}
+.analysis-collection>summary::-webkit-details-marker{display:none;}
+.analysis-collection>summary strong{font-size:1.02rem;}
+.analysis-collection>summary span{color:#b7c3c0;font-size:.77rem;line-height:1.5;}
+.analysis-collection>summary::after{content:"Näytä ↓";font-size:.78rem;color:#8ce0b7;}
+.analysis-collection[open]>summary::after{content:"Sulje ↑";}
+.analysis-collection-body{padding:0 9px 8px;}
+.analysis-collection-body>.card{box-shadow:none;background:#2d3738;}
+summary:focus-visible{outline:2px solid #9de9c2;outline-offset:2px;}
+@media(max-width:620px){
+ .shell{padding-left:11px;padding-right:11px;}
+ .analysis-collection-body{padding:0 5px 5px;}
+ .beta-primary-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:350px){
+ .beta-primary-metrics .metric{padding:8px;}
+ .payslip-summary{padding:11px 8px;grid-template-columns:minmax(0,1fr) auto 14px;}
+}
+`;
+
+await writeFile(`${output}/styles.css`, (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss);
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
