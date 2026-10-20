@@ -757,7 +757,7 @@ function renderDashboard(records) {
   dash.replaceChildren();
   secondaryDash?.replaceChildren();
   const betaPrimary = secondaryDash
-    ? new Set(["Netto", "Tulorajaa jäljellä"])
+    ? new Set(["Netto", "Tulorajaa jäljellä", "Veronalainen YTD", "Brutto"])
     : null;
   const overall = el("overallLight");
   renderBetaDashboardTrend(records);
@@ -822,7 +822,7 @@ function renderDashboard(records) {
   ];
   // Keep the most useful pair visible first on phone: recent net and remaining
   // tax-card margin. All other original metrics remain accessible on one tap.
-  const primaryOrder = ["Netto", "Tulorajaa jäljellä"];
+  const primaryOrder = ["Netto", "Tulorajaa jäljellä", "Veronalainen YTD", "Brutto"];
   const visibleMetrics = betaPrimary
     ? [...primaryOrder.map(label => metrics.find(row => row[0] === label)),
        ...metrics.filter(row => !betaPrimary.has(row[0]))]
@@ -917,26 +917,99 @@ function renderAnalysis(records) {
 function renderHistory(records) {
   const host = el("history");
   const yearRecords = records.filter(r => r.taxYear === selectedYear);
+  host.replaceChildren();
   if (!yearRecords.length) {
-    host.innerHTML = `<p class="muted">Ei tallennettuja laskelmia vuodelta ${selectedYear}.</p>`;
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = `Ei tallennettuja laskelmia vuodelta ${selectedYear}.`;
+    host.append(empty);
     return;
   }
-  host.innerHTML = "";
+
+  const appendField = (container, label, value) => {
+    if (value == null || value === "–") return;
+    const item = document.createElement("div");
+    item.className = "payslip-field";
+    const name = document.createElement("span");
+    name.textContent = label;
+    const amount = document.createElement("strong");
+    amount.textContent = value;
+    item.append(name, amount);
+    container.append(item);
+  };
+
   for (const record of sortByPayDate(yearRecords, -1)) {
-    const row = document.createElement("div");
-    row.className = "history-row";
+    const row = document.createElement("details");
+    row.className = "history-row payslip-item";
+    const header = document.createElement("summary");
+    header.className = "payslip-summary";
+    const heading = document.createElement("span");
+    heading.className = "payslip-heading";
+    const date = document.createElement("strong");
+    date.textContent = fmtDate(valueOf(record, "payDate"));
+    const period = document.createElement("span");
+    period.textContent = `Palkkakausi ${fmtDate(valueOf(record, "payPeriodStart"))}–${fmtDate(valueOf(record, "payPeriodEnd"))}`;
+    heading.append(date, period);
     const state = paymentState(record);
-    const stateLabel = state === "confirmed_future" ? '<span class="mini-state">Vahvistettu tuleva</span>' : "";
-    row.innerHTML = `
-      <div>
-        <strong>${fmtDate(valueOf(record, "payDate"))}</strong>
-        <span>${fmtDate(valueOf(record, "payPeriodStart"))}–${fmtDate(valueOf(record, "payPeriodEnd"))}</span>
-        ${stateLabel}
-      </div>
-      <div>
-        <strong>${fmtMoney(valueOf(record, "netPay"))}</strong>
-        <span>brutto ${fmtMoney(valueOf(record, "grossPay"))} · OT ${fmtNumber(valueOf(record, "overtimeHours"))} h</span>
-      </div>`;
+    if (state === "confirmed_future" || record.kind === "forecast") {
+      const badge = document.createElement("span");
+      badge.className = "mini-state";
+      badge.textContent = record.kind === "forecast" ? "Arvio" : "Vahvistettu tuleva";
+      heading.append(badge);
+    }
+    const net = document.createElement("strong");
+    net.className = "payslip-net";
+    net.textContent = fmtMoney(valueOf(record, "netPay"));
+    const arrow = document.createElement("span");
+    arrow.className = "payslip-chevron";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "⌄";
+    header.append(heading, net, arrow);
+    row.append(header);
+
+    const detail = document.createElement("div");
+    detail.className = "payslip-detail";
+    const fields = document.createElement("div");
+    fields.className = "payslip-fields";
+    for (const [label, field] of [
+      ["Bruttopalkka", "grossPay"],
+      ["Nettopalkka", "netPay"],
+      ["Ennakonpidätys", "withholdingPeriod"],
+      ["Veronalainen YTD", "ytdTaxableIncome"],
+      ["Verokortin kertymä", "taxCardAccumulatedIncome"],
+      ["Verokortin tuloraja", "taxLimit"],
+      ["Perusprosentti", "taxRate"],
+      ["Ylityötunteja kirjattu", "overtimeHours"],
+      ["Ylityökorotukset", "overtimeCompensation"]
+    ]) {
+      const value = valueOf(record, field);
+      if (value == null) continue;
+      appendField(fields, label, field === "overtimeHours" ? fmtNumber(value) + " h" : fmtFieldValue(field, value));
+    }
+    detail.append(fields);
+    const lines = Array.isArray(record.payLines) ? record.payLines : [];
+    if (lines.length) {
+      const more = document.createElement("details");
+      more.className = "payslip-lines";
+      const toggle = document.createElement("summary");
+      toggle.textContent = `Näytä tallennetut palkkarivit (${lines.length})`;
+      more.append(toggle);
+      const list = document.createElement("div");
+      list.className = "payslip-line-list";
+      for (const line of lines) {
+        const label = [line.code, line.label].filter(Boolean).join(" · ");
+        const amount = line.amount == null ? "Ei rahasummaa" : fmtMoney(line.amount);
+        const quantity = line.quantity == null ? "" : ` · ${fmtNumber(line.quantity)} ${line.unitType || ""}`;
+        appendField(list, label || "Muu palkkarivi", amount + quantity);
+      }
+      more.append(list);
+      detail.append(more);
+    }
+    const note = document.createElement("p");
+    note.className = "muted payslip-footnote";
+    note.textContent = "Tässä näkyvät vain paikallisesti tallennetut palkkatiedot, eivät alkuperäisen PDF:n kaikki tiedot.";
+    detail.append(note);
+    row.append(detail);
     host.append(row);
   }
 }
