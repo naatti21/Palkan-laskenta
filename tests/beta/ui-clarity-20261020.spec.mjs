@@ -8,7 +8,8 @@ test("Beta dashboard remains compact and import stays gated", async ({ page }) =
   await expect(page.locator(".beta-primary-metrics")).toHaveCount(1);
   await expect(page.locator("#dashboardNote")).toContainText("ei ole vielä palkkalaskelmia");
   await expect(page.locator(".beta-taxcard-progress")).toBeVisible();
-  await expect(page.locator(".planner-fold")).toHaveCount(1);
+  await expect(page.locator('[data-view="planning"]')).toHaveCount(1);
+  await expect(page.locator(".planner-fold")).toHaveCount(0);
   await expect(page.locator(".analysis-collection")).toHaveCount(2);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
   expect(overflow).toBe(false);
@@ -59,15 +60,14 @@ test("History opens a single stored payslip and nested source lines without HTML
   await expect(item).not.toHaveAttribute("open", "");
 });
 
-test("Analysis keeps existing calculator behind an explicit user action", async ({ page }) => {
+test("Calculator is on its own tab and Analysis remains independently expandable", async ({ page }) => {
   await page.goto("/index.html");
   await page.locator('[data-view-target="analysis"]').click();
-  const planner = page.locator(".planner-fold");
-  await expect(planner).not.toHaveAttribute("open", "");
+  await expect(page.locator("#plannerFrame")).toBeHidden();
   await expect(page.locator(".analysis-collection")).toHaveCount(2);
-  await planner.locator("summary").click();
-  await expect(planner).toHaveAttribute("open", "");
-  await expect(page.locator("#plannerFrame")).toBeVisible();
   await page.locator(".analysis-collection").first().locator("summary").first().click();
   await expect(page.locator(".analysis-collection").first()).toHaveAttribute("open", "");
+  await page.locator('[data-view-target="planning"]').click();
+  await expect(page.getByRole("heading",{name:"Vuosisuunnittelu"})).toBeVisible();
+  await expect(page.locator("#plannerFrame")).toBeVisible();
 });
