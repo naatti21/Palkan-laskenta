@@ -68,11 +68,15 @@ function mountPreview() {
   host.className="card netref26";
   host.setAttribute("aria-labelledby","netref26Title");
   host.innerHTML=`
-    <div class="netref26-head"><h2 id="netref26Title">Perusansio nettona</h2><span>2026 viitearvio</span></div>
-    <p class="muted">Mitä palkasta jäisi keskimäärin käteen ilman ylityötä? Käyttää vuosiansiota, ei nykyisen verokorttisi prosenttia.</p>
+    <div class="netref26-head"><h2 id="netref26Title">Perusansio: brutto → netto</h2><span>2026 viitearvio</span></div>
+    <p class="muted">Koko vuoden perusansio ilman ylityöviikonloppuja. Yleinen vuoden 2026 vero- ja maksuarvio, ei oma verokorttisi.</p>
+    <div class="netref26-annual" aria-label="Vuoden brutto ja arvioitu netto">
+      <div><small>Vuosibrutto</small><strong id="netref26GrossAnnual">–</strong></div>
+      <div><small>Arvioitu vuosinetto</small><strong id="netref26NetAnnual">–</strong></div>
+    </div>
     <div class="netref26-cards" id="netref26Numbers">
-      <div><small>Netto / kk (12 jaksoa)</small><strong id="netref26Monthly">–</strong></div>
-      <div><small>Netto / 2 viikkoa (26 jaksoa)</small><strong id="netref26Fortnight">–</strong></div>
+      <div><small>Arvioitu netto / kk (12)</small><strong id="netref26Monthly">–</strong></div>
+      <div><small>Arvioitu netto / 2 viikkoa (26)</small><strong id="netref26Fortnight">–</strong></div>
     </div>
     <div class="netref26-summary" id="netref26Summary" role="status" aria-live="polite">
       Täytä perusansiot alempana tai hyväksy palkkahistorian ehdotus.
@@ -111,7 +115,13 @@ function mountPreview() {
     .netref26-head h2{margin:0;font-size:1.06rem;letter-spacing:-.025em;}
     .netref26-head span{white-space:nowrap;font-size:.72rem;color:#ffe1b4;background:#4b3b32;border:1px solid #745b43;padding:5px 7px;border-radius:7px;font-weight:750;}
     .netref26 .muted{margin:9px 0;font-size:.78rem;line-height:1.5;}
-    .netref26-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;}
+    .netref26-annual{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 10px;}
+    .netref26-annual>div{background:#182531;border:1px solid #3a5067;border-radius:12px;padding:11px 10px;min-width:0;}
+    .netref26-annual>div:last-child{background:#183127;border-color:#447962;}
+    .netref26-annual small{display:block;color:#c7d8e8;font-weight:650;font-size:.73rem;line-height:1.35;}
+    .netref26-annual strong{display:block;color:#d0e7ff;font-size:clamp(1.17rem,4.6vw,1.58rem);font-weight:850;letter-spacing:-.035em;white-space:nowrap;margin-top:6px;font-variant-numeric:tabular-nums;}
+    .netref26-annual>div:last-child strong{color:#a9ffd2;}
+    .netref26-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px;}
     .netref26-cards>div{background:#293644;border:1px solid #43627b;border-radius:12px;padding:11px 10px;min-width:0;}
     .netref26-cards>div:first-child{background:#243d35;border-color:#49886d;}
     .netref26-cards small{display:block;font-size:.70rem;color:#d3dfed;line-height:1.4;}
@@ -129,12 +139,13 @@ function mountPreview() {
     .netref26-source summary{cursor:pointer;color:#a9d6ff;font-size:.79rem;font-weight:750;}
     .netref26-source p{font-size:.75rem;line-height:1.55;color:#c9d8e6;}
     .netref26-source a{color:#a6d0ff;}
-    @media(max-width:350px){.netref26-head h2{font-size:.98rem}.netref26-head span{font-size:.66rem}.netref26-cards strong{font-size:1.07rem;}}
+    @media(max-width:350px){.netref26-head h2{font-size:.98rem}.netref26-head span{font-size:.66rem}.netref26-cards strong,.netref26-annual strong{font-size:1.07rem;}}
   `;
   document.head.append(css);
   history.insertAdjacentElement("afterend",host);
 
   const put=(id,value)=>{document.getElementById(id).textContent=value;};
+  const resetAnnual=()=>{put("netref26GrossAnnual","–");put("netref26NetAnnual","–");put("netref26Monthly","–");put("netref26Fortnight","–");};
   const update=()=>{
     const base=readFinite("baseGross"),raise=readFinite("raise"),raiseMonth=readFinite("raiseMonth");
     const included=document.getElementById("netref26IncludeExtra").checked;
@@ -146,7 +157,7 @@ function mountPreview() {
     put("netref26YearWarning",yearNote);
     if(!(base>0&&base<=1000000&&raise!=null&&raise>=0&&raise<=50&&
          raiseMonth!=null&&Number.isInteger(raiseMonth)&&raiseMonth>=1&&raiseMonth<=12)){
-      put("netref26Monthly","–");put("netref26Fortnight","–");
+      resetAnnual();
       put("netref26Summary","Täytä perusansiot tai käytä hyväksyttyjä palkkahistorian ehdotuksia.");
       info.hidden=true;
       return;
@@ -157,7 +168,7 @@ function mountPreview() {
       const fields=["holiday","bonus","other"].map(readFinite);
       if(fields.some(x=>x==null||x<0||x>1000000)){
         put("netref26Summary","Korjaa erikseen syötetyt lisät ennen vertailua.");
-        put("netref26Monthly","–");put("netref26Fortnight","–");
+        resetAnnual();
         info.hidden=true;return;
       }
       extra=fields.reduce((a,b)=>a+b,0);
@@ -165,13 +176,15 @@ function mountPreview() {
     const annualGross=baseAfterRaise+extra;
     const annual=referenceNet2026(annualGross);
     if(!annual){
-      put("netref26Monthly","–");put("netref26Fortnight","–");
+      resetAnnual();
       put("netref26Summary","Vuositulo on tämän kokeellisen 2026 viitemallin 20 000–140 000 € alueen ulkopuolella. Älä käytä arvausprosenttia.");
       info.hidden=true;return;
     }
+    put("netref26GrossAnnual",eur(annualGross));
+    put("netref26NetAnnual",eur(annual.net));
     put("netref26Monthly",eur(annual.net/12));
     put("netref26Fortnight",eur(annual.net/26));
-    put("netref26Summary",`Brutto ${eur(annualGross)}/v → netto ${eur(annual.net)}/v. Verojen ja maksujen yhteisosuus noin ${pct(annual.effectiveAllInPercent)} (ei verokortin perusprosentti). ${included?"Valitut lisät mukana.":"Lomarahat, bonukset ja muut erilliset tulot eivät ole mukana."}`);
+    put("netref26Summary",`Verojen ja työntekijämaksujen arvioitu yhteisosuus ${pct(annual.effectiveAllInPercent)}. Ei verokortin perusprosentti. ${included?"Valitut lisät mukana.":"Lomarahat, bonukset ja muut erilliset tulot eivät ole mukana."}`);
     const addGross=getWeekendGross();
     if(!(addGross>0)){info.hidden=true;return;}
     const plus=referenceNet2026(annualGross+addGross);

@@ -17,3 +17,9 @@ html.beta-integrated .netref26 {background:#141c25!important;border-color:#3e526
 html.beta-integrated .netref26-cards>div {background:#1a2532;border-color:#3b5d7e;}
 html.beta-integrated .netref26-cards>div:first-child {background:#182b23;border-color:#407c5b;}
 html.beta-integrated .netref26-overtime {background:#192735;}
+
+/* Prevent the old backup-file picker from forcing a 2px horizontal overhang in
+   the embedded calculator at 320px parent width (about 284px iframe width). */
+html.beta-integrated .file-picker {flex-wrap:wrap;gap:7px;min-width:0;}
+html.beta-integrated .file-picker>span:first-child {flex:1 1 125px;min-width:0;overflow-wrap:anywhere;}
+html.beta-integrated .file-picker-action {flex:0 1 auto;max-width:100%;white-space:normal;}

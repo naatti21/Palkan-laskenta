@@ -10,9 +10,11 @@ test('Beta planner converts gross annual baseline to month and fortnight net usi
   await expect(frame.locator('#netref26Monthly')).toHaveText('–');
   await frame.locator('#baseGross').fill('52000');
   await frame.locator('#planYear').fill('2026');
+  await expect(frame.locator('#netref26GrossAnnual')).toHaveText('52 000 €');
+  await expect(frame.locator('#netref26NetAnnual')).toHaveText('36 363 €');
   await expect(frame.locator('#netref26Monthly')).toHaveText('3 030 €');
   await expect(frame.locator('#netref26Fortnight')).toHaveText('1 399 €');
-  await expect(frame.locator('#netref26Summary')).toContainText('36 363 €');
+  await expect(frame.locator('#netref26Summary')).not.toContainText('36 363 €');
   await expect(frame.locator('#netref26Summary')).toContainText('30,1 %');
   await expect(frame.locator('#netref26Summary')).toContainText('eivät ole mukana');
   await expect(frame.locator('#netref26YearWarning')).toContainText('2026');
@@ -50,6 +52,8 @@ test('No invented estimates for out-of-range income or missing overtime gross',a
   const frame=page.frameLocator('#plannerFrame');
   await frame.locator('#baseGross').fill('180000');
   await expect(frame.locator('#netref26Monthly')).toHaveText('–');
+  await expect(frame.locator('#netref26GrossAnnual')).toHaveText('–');
+  await expect(frame.locator('#netref26NetAnnual')).toHaveText('–');
   await expect(frame.locator('#netref26Summary')).toContainText('alueen ulkopuolella');
   await frame.locator('#baseGross').fill('52000');
   await frame.locator('#weekends').fill('4');
