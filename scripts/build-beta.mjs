@@ -19,7 +19,7 @@ const files = ['index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'par
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
-for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css']) {
+for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css']) {
   hash.update(await readFile(themeFile)); // changing the visual theme invalidates the Beta offline cache
 }
 const revision = hash.digest('hex').slice(0, 16);
@@ -68,7 +68,11 @@ html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-pri
           </div>
           <div id="taxCardRemaining" class="beta-taxcard-remaining">Ei luotettavaa kertymää</div>
           <p id="taxCardEstimate" class="beta-taxcard-estimate" role="status" aria-live="polite">Ei vielä ennustetta.</p>
-          <p id="taxCardEstimateNote" class="beta-taxcard-note"></p>
+          <details class="beta-taxcard-provenance">
+            <summary>Ennusteen tarkkuus ja tietolähde</summary>
+            <p id="taxCardEstimateNote" class="beta-taxcard-note"></p>
+            <p id="taxCardContext" class="muted beta-taxcard-context" role="status"></p>
+          </details>
         </section>
         <details id="dashboardMore" class="beta-dashboard-more" hidden>
           <summary>Lisää palkkatietoja</summary>
@@ -97,8 +101,8 @@ html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-pri
 // Keep card-specific tax status near the main KPI metrics; never present it as a full-year limit.
 const dashboardNoteMarker = '<p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>';
 if (!html.includes(dashboardNoteMarker)) throw new Error('Dashboard note changed');
-html = html.replace(dashboardNoteMarker, dashboardNoteMarker +
-  '<p id="taxCardContext" class="muted beta-taxcard-context" role="status"></p>');
+// The tax-card source note now belongs to its own expandable panel above.
+// Avoid repeating the same verokortti explanation below the main dashboard.
 const dashboardCard = '<section class="card">\n        <div class="section-heading">\n          <div>\n            <p class="eyebrow">TILANNE</p>';
 if (!html.includes(dashboardCard)) throw new Error('Dashboard card changed; inspect compact Beta layout.');
 html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard">\n        <div class="section-heading">\n          <div>');
@@ -334,8 +338,9 @@ summary:focus-visible{outline:2px solid #9de9c2;outline-offset:2px;}
 // The contrast pass exists only inside the isolated _beta build.
 const betaV2Theme = await readFile('beta-theme-v2.css', 'utf8');
 const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
+const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');

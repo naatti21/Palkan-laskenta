@@ -1,0 +1,139 @@
+/* BETA v4 — information first. The decorative circular badges from v3 are removed.
+   Two distinct highlights, one tax-card panel, optional secondary data. No data math. */
+.beta-primary-metrics { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
+.beta-primary-metrics .metric,
+.beta-primary-metrics .metric:nth-child(1),
+.beta-primary-metrics .metric:nth-child(2) {
+  min-height:82px;
+  padding:12px 12px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:5px;
+  background:#242b36;
+  border:1px solid #465268;
+  border-radius:12px;
+  box-shadow:inset 0 2px 0 #7387a8;
+}
+.beta-primary-metrics .metric:nth-child(1) {
+  background:linear-gradient(155deg,#202d2d,#242d33);
+  border-color:#4e7967;
+  box-shadow:inset 0 2px 0 #71dfa8;
+}
+.beta-primary-metrics .metric:nth-child(2) {
+  background:linear-gradient(155deg,#222d40,#252c38);
+  border-color:#49688a;
+  box-shadow:inset 0 2px 0 #78b9ff;
+}
+.beta-primary-metrics .metric::before { content:none !important;display:none !important;background:none !important; }
+.beta-primary-metrics .metric span {
+  display:block;
+  width:100%;
+  color:#cbd7e4;
+  font-weight:650;
+  font-size:.76rem;
+  line-height:1.27;
+  letter-spacing:0;
+}
+.beta-primary-metrics .metric strong,
+.beta-primary-metrics .metric:first-child strong,
+.beta-primary-metrics .metric:nth-child(2) strong {
+  display:block;
+  width:100%;
+  margin:0;
+  color:#faffff;
+  font-size:clamp(1.05rem,4.15vw,1.40rem);
+  line-height:1.18;
+  letter-spacing:-.03em;
+  font-weight:840;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.beta-primary-metrics .metric:first-child strong { color:#b4f8d7; }
+.beta-primary-metrics .metric:nth-child(2) strong { color:#c6e0ff; }
+.beta-primary-metrics .metric-caption {
+  display:block;
+  font-size:.70rem;
+  font-weight:500;
+  color:#b5c6c6;
+  margin:0;
+  line-height:1.2;
+}
+.beta-compact-dashboard { padding:12px 12px 13px; }
+.beta-compact-dashboard .section-heading { margin-bottom:11px; }
+.beta-compact-dashboard .section-heading h2 { font-size:1.21rem;letter-spacing:-.025em; }
+.beta-dashboard-more { padding-top:9px; }
+.beta-dashboard-more>summary {color:#b1d8fa;}
+.beta-secondary-metrics {gap:8px;margin-top:9px;}
+.beta-secondary-metrics .metric {
+  background:#29313e;
+  border:1px solid #405063;
+  padding:10px 11px;
+  border-radius:11px;
+  min-height:66px;
+}
+.beta-secondary-metrics .metric span { font-size:.74rem;color:#c6d2dd; }
+.beta-secondary-metrics .metric strong {font-size:1.05rem;color:#f7fbff;}
+.beta-taxcard-progress {padding:11px 13px;margin-top:12px;}
+.beta-taxcard-heading {margin-bottom:3px;}
+.beta-taxcard-estimate {font-weight:650;margin-bottom:3px;}
+.beta-taxcard-provenance {
+  margin-top:9px;
+  border-top:1px solid #5c4852;
+  padding-top:8px;
+}
+.beta-taxcard-provenance>summary {
+  font-size:.76rem;
+  font-weight:750;
+  color:#ffb1c0;
+  cursor:pointer;
+  line-height:1.5;
+}
+.beta-taxcard-provenance>summary:focus-visible {outline:2px solid #ffbac9;outline-offset:2px;}
+.beta-taxcard-provenance .beta-taxcard-note {margin:9px 0 0;color:#d4c2cd;font-size:.75rem;}
+.beta-taxcard-provenance .beta-taxcard-context {
+  margin:8px 0 0;
+  font-size:.75rem;
+  color:#d4c2cd;
+  border-left:2px solid #d891a1;
+  padding-left:9px;
+  line-height:1.45;
+}
+.beta-compact-dashboard #dashboardNote[hidden]{display:none!important;}
+.beta-compact-dashboard #dashboardNote:not([hidden]) {
+  background:#332a31;
+  border:1px solid #725568;
+  color:#ffccd5;
+  padding:9px 10px;
+  border-radius:10px;
+  font-weight:650;
+}
+#analysisMetrics {gap:9px;}
+#analysisMetrics .metric {
+  background:#272f3c;
+  border:1px solid #46556e;
+  box-shadow:inset 0 2px 0 #75aaf5;
+  min-height:74px;
+  padding:11px 13px;
+  border-radius:12px;
+}
+#analysisMetrics .metric span {color:#c8d4e2;font-size:.78rem;}
+#analysisMetrics .metric strong {color:#eff7ff;font-size:1.15rem;}
+#analysisMetrics .metric:only-of-type {grid-column:1 / -1;}
+#analysisMetrics .analysis-coverage {color:#bcc9d7;font-size:.78rem;line-height:1.4;}
+@media(max-width:390px){
+  .beta-primary-metrics{gap:8px;}
+  .beta-primary-metrics .metric,
+  .beta-primary-metrics .metric:nth-child(1),
+  .beta-primary-metrics .metric:nth-child(2) {
+    padding:10px 9px;min-height:80px;gap:4px;
+  }
+  .beta-primary-metrics .metric span {font-size:.71rem;}
+  .beta-primary-metrics .metric strong {font-size:clamp(.96rem,4vw,1.12rem);}
+  .beta-primary-metrics .metric-caption{font-size:.67rem;}
+}
+@media(max-width:340px){
+  .beta-primary-metrics .metric strong {font-size:.91rem;}
+  .beta-primary-metrics .metric{padding:9px 7px;}
+}

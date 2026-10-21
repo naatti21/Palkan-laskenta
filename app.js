@@ -757,7 +757,7 @@ function renderDashboard(records) {
   dash.replaceChildren();
   secondaryDash?.replaceChildren();
   const betaPrimary = secondaryDash
-    ? new Set(["Netto", "Tulorajaa jäljellä", "Veronalainen YTD", "Brutto"])
+    ? new Set(["Netto", "Veronalainen YTD"])
     : null;
   const overall = el("overallLight");
   renderBetaDashboardTrend(records);
@@ -765,6 +765,7 @@ function renderDashboard(records) {
   if (morePanel) morePanel.hidden = !latest;
 
   if (!latest) {
+    el("dashboardNote").hidden = false;
     overall.className = "light neutral";
     overall.textContent = "–";
     el("dashboardNote").textContent = `Vuodelta ${selectedYear} ei ole vielä palkkalaskelmia.`;
@@ -822,18 +823,36 @@ function renderDashboard(records) {
   ];
   // Keep the most useful pair visible first on phone: recent net and remaining
   // tax-card margin. All other original metrics remain accessible on one tap.
-  const primaryOrder = ["Netto", "Tulorajaa jäljellä", "Veronalainen YTD", "Brutto"];
+  // One distinct question per Beta surface. Verokortin remaining balance, percentage
+  // and forecast are all in the dedicated tax-card panel, never duplicated in KPIs.
+  // Production retains all of its original metrics until separately audited.
+  const primaryOrder = ["Netto", "Veronalainen YTD"];
+  const betaSecondaryOrder = ["Brutto", "OT viime jaksolla"];
+  const betaSecondary = betaSecondaryOrder
+    .map(label => metrics.find(row => row[0] === label))
+    .filter(([label]) => label !== "OT viime jaksolla" ||
+      (typeof valueOf(latest, "overtimeHours") === "number" &&
+       Number.isFinite(valueOf(latest, "overtimeHours"))));
   const visibleMetrics = betaPrimary
-    ? [...primaryOrder.map(label => metrics.find(row => row[0] === label)),
-       ...metrics.filter(row => !betaPrimary.has(row[0]))]
+    ? [...primaryOrder.map(label => metrics.find(row => row[0] === label)), ...betaSecondary]
     : metrics;
   for (const [label, value] of visibleMetrics) {
     const box = document.createElement("div");
     box.className = "metric";
-    const shownLabel = !secondaryDash ? label :
-      ({Netto:"Viimeisin netto", "Tulorajaa jäljellä":"Kortin marginaali",
-        "Verokortin kertymä":"Kortin kertymä", Tuloraja:"Kortin tuloraja"})[label] || label;
-    box.innerHTML = `<span>${shownLabel}</span><strong>${value}</strong>`;
+    const name = document.createElement("span");
+    name.textContent = secondaryDash
+      ? ({Netto:"Viimeisin nettopalkka", "Veronalainen YTD":"Veronalainen kertymä",
+          Brutto:"Viimeisin bruttopalkka", "OT viime jaksolla":"Ylityöt viime jaksolla"})[label] || label
+      : label;
+    const amount = document.createElement("strong");
+    amount.textContent = value;
+    box.append(name, amount);
+    if (secondaryDash && label === "Netto") {
+      const caption = document.createElement("small");
+      caption.className = "metric-caption";
+      caption.textContent = "Maksupäivä " + fmtDate(lastDate);
+      box.append(caption);
+    }
     (betaPrimary && !betaPrimary.has(label) ? secondaryDash : dash).append(box);
   }
 
@@ -842,6 +861,10 @@ function renderDashboard(records) {
   el("dashboardNote").textContent = secondaryDash
     ? `${status.text} (viimeisin palkkalaskelma).${stateText}`
     : `${status.text}. Tulorajaa verrataan vain verokortin omaan kertymään.${stateText}`;
+  // The green tax-card status is already communicated by the percentage and
+  // remaining amount. Keep non-green warnings and future-payment provenance.
+  el("dashboardNote").hidden = Boolean(secondaryDash) &&
+    status.light === "green" && !stateText;
 }
 
 
@@ -865,13 +888,23 @@ function renderAnalysis(records) {
   el("analysisNote").textContent = info.payslips
     ? `${info.payslips} palkkalaskelmaa. ${warning}`
     : "Ei tallennettuja palkkalaskelmia valitulle vuodelle.";
-  metric("Tallennettujen laskelmien brutto", fmtMoney(info.totalGross));
-  metric("Tallennettujen laskelmien netto", fmtMoney(info.totalNet));
-  metric("Viimeisimmän laskelman YTD", fmtMoney(info.latestYtd));
+  const betaOverview = Boolean(document.getElementById("dashboardDetails"));
   const overtime = info.overtime;
-  metric("Maksetut ylityötunnit / kirjattu", overtime.recordsWithHours
-    ? `${fmtNumber(overtime.knownHours)} h ${overtime.complete ? "" : "(osittainen)"}`
-    : "Ei tietoa");
+  if (betaOverview) {
+    // Never place the sum of imported gross payslips next to the payroll-system
+    // YTD snapshot: their coverage differs even when their values look similar.
+    metric("Tallennettujen netot yhteensä", fmtMoney(info.totalNet));
+    if (overtime.recordsWithHours) {
+      metric("Kirjatut ylityötunnit", `${fmtNumber(overtime.knownHours)} h${overtime.complete ? "" : " · osittainen"}`);
+    }
+  } else {
+    metric("Tallennettujen laskelmien brutto", fmtMoney(info.totalGross));
+    metric("Tallennettujen laskelmien netto", fmtMoney(info.totalNet));
+    metric("Viimeisimmän laskelman YTD", fmtMoney(info.latestYtd));
+    metric("Maksetut ylityötunnit / kirjattu", overtime.recordsWithHours
+      ? `${fmtNumber(overtime.knownHours)} h ${overtime.complete ? "" : "(osittainen)"}`
+      : "Ei tietoa");
+  }
   const coverage = document.createElement("p");
   coverage.className = "muted analysis-coverage";
   coverage.textContent = `Ylityötietoa ${overtime.recordsWithHours}/${overtime.recordsTotal - overtime.excludedConflicts} yksiselitteisestä laskelmasta.`
