@@ -50,9 +50,16 @@ test('Gross/net front cards and final A/B summary fit phone widths without horiz
       mainOverflow:document.documentElement.scrollWidth>innerWidth+1,
       abOverflow:el.scrollWidth>el.clientWidth+1,
       frontOverflow:document.querySelector('#betaNetReference2026').scrollWidth>
-        document.querySelector('#betaNetReference2026').clientWidth+1
+        document.querySelector('#betaNetReference2026').clientWidth+1,
+      iframeWidth:innerWidth,
+      actualWidth:document.documentElement.scrollWidth,
+      offenders:[...document.querySelectorAll('body *')].filter(el=>{
+        const r=el.getBoundingClientRect();
+        return r.width>0 && r.right>innerWidth+2 && getComputedStyle(el).position!=='fixed';
+      }).slice(0,12).map(el=>({tag:el.tagName,id:el.id,classes:String(el.className).slice(0,55),
+        right:Math.round(el.getBoundingClientRect().right),scroll:el.scrollWidth,client:el.clientWidth}))
     }));
-    expect(result.mainOverflow).toBe(false);
+    expect(result.mainOverflow,JSON.stringify({width,result})).toBe(false);
     expect(result.abOverflow).toBe(false);
     expect(result.frontOverflow).toBe(false);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
