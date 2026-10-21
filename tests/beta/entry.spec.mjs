@@ -31,12 +31,24 @@ test("beta branding, exact origin and offline analytics shell", async ({ page })
   expect(cached).toContain("/beta-entry.mjs");
 });
 
-test("another origin cannot start a beta application from the same files", async ({ page }) => {
-  await page.goto("http://127.0.0.1:4178/index.html");
-  await expect(page.locator("body")).toContainText("BETA ESTETTY");
-  await expect(page.locator("main")).toHaveCount(0);
-  const worker = await page.evaluate(() => navigator.serviceWorker.getRegistrations().then(x => x.length));
-  expect(worker).toBe(0);
+test("another origin cannot start a beta application from the same files", async () => {
+  // Use a dedicated browser for the intentionally blocked origin. Some Linux
+  // Chromium builds crash after rendering the blocked-origin error; this must
+  // not corrupt the shared browser used by subsequent independent QA tests.
+  const { chromium } = await import("@playwright/test");
+  const browser = await chromium.launch({ headless:true });
+  try {
+    const context = await browser.newContext({ serviceWorkers:"allow" });
+    const page = await context.newPage();
+    await page.goto("http://127.0.0.1:4178/index.html");
+    await expect(page.locator("body")).toContainText("BETA ESTETTY");
+    await expect(page.locator("main")).toHaveCount(0);
+    const worker = await page.evaluate(() => navigator.serviceWorker.getRegistrations().then(x => x.length));
+    expect(worker).toBe(0);
+    await context.close();
+  } finally {
+    await browser.close().catch(() => {}); // crashes must not cascade into other tests
+  }
 });
 
 test("synthetic production-format JSON backup restores locally into beta analysis, survives reload", async ({ page }) => {
