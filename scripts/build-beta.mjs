@@ -19,6 +19,7 @@ const files = ['index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'par
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
+hash.update(await readFile('beta-net-reference-2026.mjs')); // Beta-only tax benchmark invalidates cache
 for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css']) {
   hash.update(await readFile(themeFile)); // changing the visual theme invalidates the Beta offline cache
 }
@@ -28,6 +29,7 @@ await rm(output, { recursive: true, force: true }); // Generated directory only;
 await mkdir(`${output}/vendor/pdfjs`, { recursive: true });
 await mkdir(`${output}/experiments/year-planner`, { recursive: true });
 for (const file of files) await copyFile(file, `${output}/${file}`);
+await copyFile('beta-net-reference-2026.mjs', `${output}/experiments/year-planner/net-reference-2026.mjs`);
 let html = await readFile('index.html', 'utf8');
 if (!html.includes('<script type="module" src="./app.js"></script>')) throw new Error('App entry changed; inspect build.');
 html = html.replace('<title>Palkka PWA</title>', '<title>Palkka BETA</title>')
@@ -349,7 +351,10 @@ if (!plannerHtml.includes('html.beta-integrated body') ||
   throw new Error('Embedded Beta planner CSS anchor changed; inspect before applying theme.');
 }
 const plannerV2Theme = await readFile('beta-planner-theme-v2.css', 'utf8');
-await writeFile(plannerPath, plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n</style>'));
+if (plannerHtml.split('</body>').length !== 2) throw new Error('Beta planner closing body changed; review net preview mounting.');
+const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n</style>');
+await writeFile(plannerPath, plannerWithTheme.replace('</body>',
+  '<script type="module" src="./net-reference-2026.mjs"></script>\n</body>'));
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
@@ -373,7 +378,7 @@ sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "p
   .replace('const CACHE = `${CACHE_PREFIX}17`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
   .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs",')
   .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",')
-  .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html"')
+  .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs"')
   .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",');
 // Enforce the same origin before any worker event handlers can register.
 sw = `if (self.location.origin !== ${JSON.stringify(rawOrigin)}) throw new Error('Beta origin mismatch');\n` + sw;
