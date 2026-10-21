@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 // Synthetic values. Layout-only tests must never ingest personal payslip data.
-test("Beta dashboard remains dense with decorative icons at narrow mobile widths", async ({ page }) => {
+test("Beta dashboard remains dense without decorative icons at narrow mobile widths", async ({ page }) => {
   await page.goto("/index.html");
   await page.evaluate(async () => {
     const { migrateLegacyRecord } = await import("/model.js");
@@ -30,7 +30,7 @@ test("Beta dashboard remains dense with decorative icons at narrow mobile widths
   for (const width of [320, 360, 412]) {
     await page.setViewportSize({width,height:790});
     await page.reload();
-    await expect(page.locator("#dashboard .metric")).toHaveCount(4);
+    await expect(page.locator("#dashboard .metric")).toHaveCount(2);
     await expect(page.locator("#dashboard")).toContainText("1 988");
     const state = await page.locator(".beta-primary-metrics .metric").evaluateAll(cards =>
       cards.map(el => {
@@ -40,20 +40,20 @@ test("Beta dashboard remains dense with decorative icons at narrow mobile widths
         return {
           height:rect.height,
           width:rect.width,
-          columns:css.gridTemplateColumns.split(" ").length,
+          layout:css.display,
           iconImage:icon.backgroundImage,
           pseudoContent:icon.content,
           hasOverflow:el.scrollWidth>el.clientWidth+1
         };
       })
     );
-    expect(state).toHaveLength(4);
+    expect(state).toHaveLength(2);
     for (const card of state) {
       expect(card.height).toBeLessThan(115);
       expect(card.height).toBeGreaterThan(70);
-      expect(card.columns).toBe(2);
-      expect(card.iconImage).toContain("data:image/svg+xml");
-      expect(card.pseudoContent).toBe('""');
+      expect(card.layout).toBe("flex");
+      expect(card.iconImage).toBe("none");
+      expect(card.pseudoContent).toBe("none");
       expect(card.hasOverflow).toBe(false);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth+1)).toBe(false);
