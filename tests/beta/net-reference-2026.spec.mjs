@@ -4,8 +4,7 @@ import { test, expect } from '@playwright/test';
 test('Beta planner converts gross annual baseline to month and fortnight net using 2026 reference',async({page})=>{
   await page.setViewportSize({width:360,height:780});
   await page.goto('/index.html');
-  await page.getByRole('button',{name:'Analyysi'}).click();
-  await page.locator('.planner-fold > summary').click();
+  await page.getByRole('button',{name:'Laskuri'}).click();
   const frame=page.frameLocator('#plannerFrame');
   await expect(frame.locator('#betaNetReference2026')).toBeVisible();
   await expect(frame.locator('#netref26Monthly')).toHaveText('–');
@@ -25,8 +24,7 @@ test('Beta planner converts gross annual baseline to month and fortnight net usi
 
 test('Overtime extra and 2027 warning remain separate from unverified tax card scenarios',async({page})=>{
   await page.goto('/index.html');
-  await page.getByRole('button',{name:'Analyysi'}).click();
-  await page.locator('.planner-fold > summary').click();
+  await page.getByRole('button',{name:'Laskuri'}).click();
   const frame=page.frameLocator('#plannerFrame');
   await frame.locator('#baseGross').fill('52000');
   await expect(frame.locator('#netref26YearWarning')).toContainText('EI ennusta vuoden 2027 verotusta');
@@ -48,8 +46,7 @@ test('Overtime extra and 2027 warning remain separate from unverified tax card s
 
 test('No invented estimates for out-of-range income or missing overtime gross',async({page})=>{
   await page.goto('/index.html');
-  await page.getByRole('button',{name:'Analyysi'}).click();
-  await page.locator('.planner-fold > summary').click();
+  await page.getByRole('button',{name:'Laskuri'}).click();
   const frame=page.frameLocator('#plannerFrame');
   await frame.locator('#baseGross').fill('180000');
   await expect(frame.locator('#netref26Monthly')).toHaveText('–');
