@@ -1,0 +1,264 @@
+/* Palkka BETA visual pass v2. Only appended to the isolated Beta build.
+   Palette: charcoal, mint (money), blue (information), coral (tax-card progress),
+   amber (planning). Status thresholds still use their original classes. */
+:root {
+  --beta-bg: #101319;
+  --beta-surface: #1d222b;
+  --beta-raised: #272d38;
+  --beta-edge: #3a4452;
+  --beta-ink: #f6f8fc;
+  --beta-muted: #b5c0d1;
+  --beta-mint: #6de3ae;
+  --beta-blue: #79baff;
+  --beta-coral: #ff8da0;
+  --beta-amber: #ffc376;
+}
+body {
+  background: var(--beta-bg);
+  color: var(--beta-ink);
+}
+.shell { width:min(780px,100%); }
+.hero { padding:13px 3px 12px; }
+.hero h1 { color:#fafcff; font-weight:850; letter-spacing:-.055em; }
+.beta-tag {
+  color:#a2f5ca;
+  background:#19342d;
+  border:1px solid #498d75;
+  box-shadow:0 0 0 1px rgba(79,197,143,.08);
+}
+.light { background:#1b2627; border-color:#53656c; }
+.light.green { color:var(--beta-mint); box-shadow:0 0 0 4px rgba(76,220,157,.055); }
+.light.yellow { color:var(--beta-amber); }
+.light.red { color:var(--beta-coral); }
+.card {
+  background:var(--beta-surface);
+  border:1px solid var(--beta-edge);
+  border-radius:16px;
+  box-shadow:0 8px 20px rgba(0,0,0,.21), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.tabs {
+  background:#191e27;
+  border:1px solid #3a4452;
+  border-radius:17px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+.tab { color:#aab5c7; font-weight:750; }
+.tab.active {
+  background:#303b42;
+  color:#f7fffb;
+  box-shadow:inset 0 -3px 0 #69dfa8, inset 0 1px 0 rgba(255,255,255,.05);
+}
+.tab:not(.active):hover { background:#242a35; color:#eef4ff; }
+.year-select {
+  background:#151a24;
+  border:1px solid #465266;
+  color:#f9fbff;
+}
+.section-heading h2, h2 { color:#f8faff; letter-spacing:-.025em; }
+.privacy,.muted,.status { color:var(--beta-muted); }
+.beta-pdf-slot {
+  background:#1f2730;
+  border-color:#394657;
+  box-shadow:inset 3px 0 0 #6fe0ac;
+}
+.beta-pdf-slot .file-button {
+  background:#263b34;
+  border:1px dashed #579c7b;
+  color:#b1f5cd;
+  font-weight:750;
+}
+.beta-pdf-note { color:#bcc6d5; }
+.beta-compact-dashboard {
+  background:#1c212a;
+  border:1px solid #414b57;
+  padding:14px;
+}
+.beta-compact-dashboard .section-heading { margin-bottom:14px; }
+.beta-compact-dashboard h2 { font-size:1.18rem; font-weight:800; }
+.beta-primary-metrics { gap:10px; }
+.beta-primary-metrics .metric {
+  position:relative;
+  overflow:hidden;
+  min-height:101px;
+  padding:14px 13px;
+  border:1px solid #3a4554;
+  border-radius:14px;
+  background:#292e37;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045);
+  gap:7px;
+}
+.beta-primary-metrics .metric::before {
+  content:"";
+  position:absolute;
+  top:14px;left:0;
+  width:3px;height:34px;
+  border-radius:0 4px 4px 0;
+  background:var(--beta-muted);
+}
+.beta-primary-metrics .metric:first-child {
+  background:linear-gradient(135deg,#22372f,#1f2b2a 95%);
+  border-color:#507d68;
+}
+.beta-primary-metrics .metric:first-child::before { background:var(--beta-mint); }
+.beta-primary-metrics .metric:nth-child(2) {
+  background:linear-gradient(135deg,#202e42,#222a35 95%);
+  border-color:#4a6787;
+  outline:none;
+}
+.beta-primary-metrics .metric:nth-child(2)::before { background:var(--beta-blue); }
+.beta-primary-metrics .metric:nth-child(3) {
+  background:linear-gradient(135deg,#232e40,#252d39);
+  border-color:#405672;
+}
+.beta-primary-metrics .metric:nth-child(3)::before { background:#8cbbff; }
+.beta-primary-metrics .metric:nth-child(4) {
+  background:#292d34;
+  border-color:#454b55;
+}
+.beta-primary-metrics .metric:nth-child(4)::before { background:#aab4c4; }
+.beta-primary-metrics .metric span {
+  color:#cbd4df;
+  font-size:.75rem;
+  font-weight:600;
+  letter-spacing:.002em;
+}
+.beta-primary-metrics .metric strong {
+  color:#fbfdff;
+  font-weight:850;
+  font-size:clamp(1.03rem,4.15vw,1.34rem);
+  line-height:1.22;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+  font-variant-numeric:tabular-nums;
+}
+.beta-primary-metrics .metric:first-child strong { color:#b1f8d2; }
+.beta-primary-metrics .metric:nth-child(2) strong { color:#c2deff; }
+.beta-taxcard-progress {
+  background:#29262e;
+  border:1px solid #755363;
+  border-radius:14px;
+  padding:14px;
+  box-shadow:inset 3px 0 0 #f1879b;
+}
+.beta-taxcard-heading { color:#f9f6fa; font-weight:750; }
+.beta-taxcard-heading span {
+  color:#ff9db0;
+  font-weight:850;
+  letter-spacing:-.02em;
+  font-size:1.25rem;
+}
+.beta-taxcard-track {
+  height:12px;
+  background:#514550;
+  margin:10px 0 11px;
+}
+.beta-taxcard-track>div {
+  background:linear-gradient(90deg,#ff8ca0,#f6a1a9);
+}
+.beta-taxcard-track>div.near-limit { background:#f6bf6d; }
+.beta-taxcard-track>div.at-limit { background:#ff6277; }
+.beta-taxcard-remaining {
+  color:#fff5f6;
+  font-size:.97rem;
+  font-weight:850;
+}
+.beta-taxcard-estimate { font-size:.80rem; color:#f4edf2; font-weight:700; line-height:1.45; }
+.beta-taxcard-note { font-size:.72rem; color:#bdb3bd; line-height:1.5; }
+.beta-taxcard-context { border-left-color:#ff8da0; }
+.beta-dashboard-more { border-top:1px solid #434a53; }
+.beta-dashboard-more>summary { color:#a8e9ce; font-weight:750; }
+.beta-secondary-metrics .metric {
+  background:#292f38;
+  border:1px solid #404a54;
+  border-radius:12px;
+}
+.beta-secondary-metrics .metric span { color:#c0cbd7; }
+.beta-secondary-metrics .metric strong { color:#f4f8ff; }
+.beta-mini-chart {
+  margin-top:13px;
+  padding-top:14px;
+  border-top:1px solid #3d4651;
+}
+.beta-mini-chart-heading strong { color:#f5f8ff; font-size:.86rem; }
+.beta-mini-chart-heading span { color:#aeb9cb; }
+#dashboardMiniChart svg rect { fill:#76baff; }
+#dashboardMiniChart svg text { fill:#b8c6db; }
+.beta-year-progress {
+  margin-top:14px;
+  padding:14px 0 3px;
+  border-top:1px solid #4b4545;
+}
+.beta-year-progress>summary {
+  color:#ffd69c;
+  font-weight:800;
+}
+.beta-year-progress>summary span { color:#e8c38d; }
+.beta-progress-track { background:#494139; }
+.beta-progress-track>div { background:var(--beta-amber); }
+.beta-goal-inputs input,.insight-label input,.insight-label select {
+  background:#171d28;
+  border:1px solid #566075;
+  color:#f9fbfe;
+}
+.beta-compact-months, .analysis-collection {
+  background:#232b34;
+  border:1px solid #414d60;
+}
+.analysis-collection>summary strong { color:#f7f9ff; }
+.analysis-collection>summary span { color:#c2cddd; }
+.analysis-collection>summary::after,.planner-toggle::after { color:#8fd4ff; }
+.analysis-collection-body>.card { background:#272f3a; border-color:#465466; }
+.planner-fold {
+  background:#262936;
+  border-color:#5e536a;
+  box-shadow:inset 3px 0 0 #f5b977;
+}
+.planner-toggle strong { color:#ffe0ad; }
+.planner-toggle span { color:#c6cbd8; }
+.planner-fold-content { background:#232936; }
+.planner-fold-content .muted { color:#c2cada; }
+.history-row.payslip-item {
+  background:#242a33;
+  border:1px solid #424d5c;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.14);
+}
+.history-row.payslip-item:first-child { border-top:1px solid #424d5c; }
+.history-row.payslip-item[open] {
+  background:#20292b;
+  border-color:#57b98d;
+  box-shadow:inset 3px 0 0 #63e3a8, 0 9px 25px rgba(0,0,0,.18);
+}
+.payslip-heading>strong { color:#f7faff; }
+.payslip-heading>span { color:#b8c4d2; }
+.payslip-net { color:#89ecc1; font-weight:850; }
+.payslip-chevron { color:#a8bacc; }
+.payslip-detail {
+  background:linear-gradient(180deg,#252e32,#22282e);
+  border-top:1px solid #40524f;
+}
+.payslip-field { border-bottom-color:#3b464d; }
+.payslip-field span { color:#bac9d2; }
+.payslip-field strong { color:#f7f9fd; }
+.payslip-field:nth-child(2) strong { color:#9beec8; }
+.payslip-lines>summary { color:#8fcbff; }
+.payslip-footnote { color:#b8c3d0; }
+button.secondary {
+  background:#303845;
+  border:1px solid #536073;
+  color:#f2f7ff;
+}
+button:not(.tab):not(.chip):not(.secondary):not(.danger) { border-radius:11px; }
+button:focus-visible,summary:focus-visible,
+input:focus-visible,select:focus-visible,.tab:focus-visible {
+  outline:2px solid #8ff2c3;
+  outline-offset:3px;
+}
+@media(max-width:390px) {
+  .beta-primary-metrics .metric { padding:11px 10px; min-height:100px; }
+  .beta-primary-metrics .metric strong { font-size:clamp(.96rem,4.05vw,1.15rem); }
+  .beta-taxcard-progress { padding:12px 11px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .beta-taxcard-track>div,.beta-progress-track>div,.payslip-chevron { transition:none; }
+}
