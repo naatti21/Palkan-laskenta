@@ -20,7 +20,7 @@ const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
 hash.update(await readFile('beta-net-reference-2026.mjs')); // Beta-only tax benchmark invalidates cache
-for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css']) {
+for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css', 'beta-black-v5.css', 'beta-planner-black-v5.css']) {
   hash.update(await readFile(themeFile)); // changing the visual theme invalidates the Beta offline cache
 }
 const revision = hash.digest('hex').slice(0, 16);
@@ -114,24 +114,31 @@ if (!html.includes(endTracking)) throw new Error('Tracking view boundary changed
 html = html.replace(endTracking, `    </section>
 
     <section data-view="analysis" class="hidden">`);
+// Five destinations in Beta only. Production and staging keep their original four tabs.
+const dataTab = '<button class="tab" data-view-target="data">Data</button>';
+if (!html.includes(dataTab)) throw new Error('Beta navigation marker changed; inspect before adding Planning.');
+html = html.replace(dataTab,
+  '<button class="tab" data-view-target="planning">Laskuri</button>\n      ' + dataTab);
 // Apply the UI experiment ONLY inside _beta. The shared index.html stays
 // untouched so production and QA staging keep their existing interface.
 const analysisMarker = '<section data-view="analysis" class="hidden">';
 if (!html.includes(analysisMarker)) throw new Error('Analysis view changed; review Beta integration.');
-const plannerCard = `
-      <details class="card planner-beta-card planner-fold" aria-labelledby="plannerHeading">
-        <summary class="planner-toggle"><strong>Vuoden 2027 suunnittelija</strong><span>Avaa laskuri ja vertaa työviikonloppuja</span></summary>
-        <div class="planner-fold-content">
-        <p class="eyebrow">BETA · VUOSISUUNNITTELU</p>
-        <h2 id="plannerHeading">Enemmän vapaa-aikaa — riittävästi rahaa</h2>
-        <p class="muted">Valitse suunnitteluvuosi ja työviikonloput 0–52, vertaa kahta verokorttivaihtoehtoa. Vahvistettu palkkahistoria ehdottaa lähtöarvoja paikallisesti; voit muuttaa niitä.</p>
+// The calculator is now a genuine fifth Beta view, not a folded card inside Analysis.
+// Its iframe stays mounted when switching tabs, preserving manual unsaved scenarios.
+const plannerView = `
+    <section data-view="planning" class="hidden beta-planning-view" aria-labelledby="plannerHeading">
+      <header class="beta-planning-header">
+        <p class="eyebrow">PALKKAKOKEILU · BETA</p>
+        <h2 id="plannerHeading">Vuosisuunnittelu</h2>
+        <p class="muted">Vertaile perusansiota, käteen jäävää rahaa ja työviikonloppujen vaikutusta. Valitse laskurista suunnitteluvuosi.</p>
+      </header>
+      <section class="card beta-planning-card">
         <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
-        <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html" title="Vuoden 2027 suunnittelijan laskuri" referrerpolicy="same-origin"></iframe>
-        <p class="muted">OmaVeron perus- ja lisäprosentit vahvistetaan erikseen. Kyse on palkkapäivän ennakonpidätysarviosta, ei lopullisesta verosta.</p>
-        </div>
-      </details>
-`;
-html = html.replace(analysisMarker, analysisMarker + plannerCard);
+        <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html"
+          title="Vuosisuunnittelun laskuri" referrerpolicy="same-origin"></iframe>
+        <p class="muted beta-planning-disclaimer">Verokorttien A/B-prosentit ovat kokeiluarvoja, kunnes tarkistat ne OmaVerosta. Vuoden 2026 nettoviitettä ei pidä tulkita vuoden 2027 vahvistetuksi verotukseksi.</p>
+      </section>
+    </section>`;
 for (const heading of [
   'Työn ja palkan aikajana',
   'Mitä lisätyöstä jää?',
@@ -185,6 +192,7 @@ html = html.replace(budgetStart, `<details class="analysis-collection">
 html = html.replace(historyBoundary, `        </div>
       </details>
     </section>
+${plannerView}
 
     <section data-view="history" class="hidden">`);
 // Only the isolated generated Beta CSS gets compact mobile-first styling.
@@ -341,8 +349,9 @@ summary:focus-visible{outline:2px solid #9de9c2;outline-offset:2px;}
 const betaV2Theme = await readFile('beta-theme-v2.css', 'utf8');
 const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
 const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
+const betaBlackV5 = await readFile('beta-black-v5.css', 'utf8');
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + betaBlackV5);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');
@@ -351,8 +360,9 @@ if (!plannerHtml.includes('html.beta-integrated body') ||
   throw new Error('Embedded Beta planner CSS anchor changed; inspect before applying theme.');
 }
 const plannerV2Theme = await readFile('beta-planner-theme-v2.css', 'utf8');
+const plannerBlackV5 = await readFile('beta-planner-black-v5.css', 'utf8');
 if (plannerHtml.split('</body>').length !== 2) throw new Error('Beta planner closing body changed; review net preview mounting.');
-const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n</style>');
+const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n' + plannerBlackV5 + '\n</style>');
 await writeFile(plannerPath, plannerWithTheme.replace('</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n</body>'));
 await writeFile(`${output}/index.html`, html);

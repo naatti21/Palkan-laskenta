@@ -1,0 +1,19 @@
+/* Planner's own iframe palette: near-black matching the parent Beta. */
+html.beta-integrated {
+  --bg:#080a0d; --panel:#141a21; --soft:#1c2430;
+  --line:#374756; --ink:#f5f8fd; --sub:#bdc9d8;
+}
+html.beta-integrated body {background:#0c1015;color:#f5f8fd;}
+html.beta-integrated .card {background:#151b24;border:1px solid #394858;}
+html.beta-integrated .fact {background:#1b2530;border:1px solid #3b4e62;}
+html.beta-integrated .fact.mint {background:#193026;border-color:#407b5d;}
+html.beta-integrated .field input,
+html.beta-integrated .field select {background:#0e151e;border:1px solid #4c5e70;color:#fff;}
+html.beta-integrated .chip {background:#1e2936;border-color:#485a70;color:#eef5fb;}
+html.beta-integrated .chip.active {background:#65ddaa;border-color:#65ddaa;color:#061810;}
+html.beta-integrated .status {background:#1b2938;border-color:#375c80;color:#e0edff;}
+html.beta-integrated .file-picker {background:#1a2734;border-color:#55758e;}
+html.beta-integrated .netref26 {background:#141c25!important;border-color:#3e5267!important;}
+html.beta-integrated .netref26-cards>div {background:#1a2532;border-color:#3b5d7e;}
+html.beta-integrated .netref26-cards>div:first-child {background:#182b23;border-color:#407c5b;}
+html.beta-integrated .netref26-overtime {background:#192735;}
