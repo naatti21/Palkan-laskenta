@@ -111,7 +111,7 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#dashboard")).not.toContainText("Kortin marginaali");
   await expect(page.locator("#dashboard")).not.toContainText("8 000");
   await expect(page.locator("#dashboard")).toContainText("Veronalainen kertymä");
-  await expect(page.locator("#dashboard")).toContainText("Maksupäivä 23.09.2026");
+  await expect(page.locator("#dashboard")).toContainText("Maksupäivä 23.9.2026");
   await expect(page.locator("#taxCardProgress")).toBeVisible();
   await expect(page.locator("#taxCardPercent")).toHaveText("90 %");
   await expect(page.locator("#taxCardRemaining")).toContainText("8 000");
