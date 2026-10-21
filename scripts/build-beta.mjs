@@ -68,7 +68,11 @@ html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-pri
           </div>
           <div id="taxCardRemaining" class="beta-taxcard-remaining">Ei luotettavaa kertymää</div>
           <p id="taxCardEstimate" class="beta-taxcard-estimate" role="status" aria-live="polite">Ei vielä ennustetta.</p>
-          <p id="taxCardEstimateNote" class="beta-taxcard-note"></p>
+          <details class="beta-taxcard-provenance">
+            <summary>Ennusteen tarkkuus ja tietolähde</summary>
+            <p id="taxCardEstimateNote" class="beta-taxcard-note"></p>
+            <p id="taxCardContext" class="muted beta-taxcard-context" role="status"></p>
+          </details>
         </section>
         <details id="dashboardMore" class="beta-dashboard-more" hidden>
           <summary>Lisää palkkatietoja</summary>
@@ -97,8 +101,8 @@ html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-pri
 // Keep card-specific tax status near the main KPI metrics; never present it as a full-year limit.
 const dashboardNoteMarker = '<p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>';
 if (!html.includes(dashboardNoteMarker)) throw new Error('Dashboard note changed');
-html = html.replace(dashboardNoteMarker, dashboardNoteMarker +
-  '<p id="taxCardContext" class="muted beta-taxcard-context" role="status"></p>');
+// The tax-card source note now belongs to its own expandable panel above.
+// Avoid repeating the same verokortti explanation below the main dashboard.
 const dashboardCard = '<section class="card">\n        <div class="section-heading">\n          <div>\n            <p class="eyebrow">TILANNE</p>';
 if (!html.includes(dashboardCard)) throw new Error('Dashboard card changed; inspect compact Beta layout.');
 html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard">\n        <div class="section-heading">\n          <div>');
