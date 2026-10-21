@@ -1,0 +1,44 @@
+/* The planner is a same-origin Beta iframe. Do not change its model or forms.
+   Rules only apply with the existing beta-integrated class. */
+html.beta-integrated {
+  --bg:#101319;
+  --panel:#1d232d;
+  --soft:#28303d;
+  --line:#465369;
+  --ink:#f7f9fd;
+  --sub:#bdc8d9;
+  --blue:#7cbbff;
+  --mint:#70e2ad;
+  --amber:#ffc778;
+  --red:#ff899b;
+}
+html.beta-integrated body { background:transparent; color:var(--ink); }
+html.beta-integrated .card {
+  background:#222937;
+  border:1px solid #4c5567;
+  border-radius:13px;
+  box-shadow:none;
+}
+html.beta-integrated .fact { background:#2b3443; border:1px solid #424f63; }
+html.beta-integrated .fact small,
+html.beta-integrated .hint, html.beta-integrated .muted { color:#becbdc; }
+html.beta-integrated .field label { color:#e1e7f2; }
+html.beta-integrated .field input,
+html.beta-integrated .field select {
+  background:#171f2b;
+  color:#f7faff;
+  border-color:#627089;
+}
+html.beta-integrated .chip { background:#30394b; border-color:#566881; color:#ebf3ff; }
+html.beta-integrated .chip.active { background:#70e2ad; border-color:#70e2ad; color:#12251d; }
+html.beta-integrated .status { background:#223347; border-color:#507094; color:#e4eefb; }
+html.beta-integrated .status.error { background:#4b2a32; border-color:#b66a7b; color:#ffe8ec; }
+html.beta-integrated .tag { color:#ffdbac; background:#4b3a32; }
+html.beta-integrated .file-picker { background:#253344; border-color:#7088a5; }
+html.beta-integrated .file-picker-action { background:#394d65; }
+html.beta-integrated details { border-top-color:#48566b; }
+html.beta-integrated summary { color:#f1f6fe; }
+html.beta-integrated .table th { color:#ccd7e5; }
+html.beta-integrated .chart .gridline { stroke:#5b677c; }
+html.beta-integrated .table tr.selected-point { background:rgba(112,226,173,.13); }
+html.beta-integrated .table tr.threshold-point { background:rgba(255,199,120,.11); }
