@@ -125,7 +125,7 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#dashboardDetails")).not.toContainText("Kortin kertymä");
   await expect(page.locator("#dashboardDetails")).not.toContainText("Kortin tuloraja");
   await expect(page.locator("#dashboardDetails")).not.toContainText("Viimeisin maksupäivä");
-  await expect(page.locator("#dashboardDetails")).toContainText("OT viime jaksolla");
+  await expect(page.locator("#dashboardDetails")).toContainText("Ylityöt viime jaksolla");
   const width = await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(width).toBeLessThanOrEqual(1);
   await page.reload();
