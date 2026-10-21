@@ -71,9 +71,10 @@ test("synthetic production-format JSON backup restores locally into beta analysi
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
   await page.getByRole("button", { name: "Analyysi" }).click();
   await expect(page.locator("#analysisNote")).toContainText("1 palkkalaskelmaa");
-  await expect(page.locator("#analysisMetrics")).toContainText("3 212,79");
+  await expect(page.locator("#analysisMetrics")).not.toContainText("3 212,79");
+  await expect(page.locator("#monthlyChart .chart-bar-gross")).toHaveCount(1);
   await expect(page.locator("#analysisMetrics")).toContainText("1 831,61");
-  await expect(page.locator("#analysisMetrics")).toContainText("Ei tietoa");
+  await expect(page.locator("#analysisMetrics")).toContainText("Ylityötietoa 0/1");
   await page.reload();
   await page.getByRole("button", { name: "Analyysi" }).click();
   await expect(page.locator("#analysisMetrics")).toContainText("1 831,61");
@@ -83,7 +84,7 @@ test("synthetic production-format JSON backup restores locally into beta analysi
   expect(records[0].values.overtimeHours).toBe(null);
 });
 
-test("compact dashboard shows four key metrics, card gauge and other values one tap away", async ({ page }) => {
+test("compact dashboard shows two distinct key metrics, card gauge and other values one tap away", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await page.goto("/index.html");
   const backup = await page.evaluate(async () => {
@@ -102,13 +103,15 @@ test("compact dashboard shows four key metrics, card gauge and other values one 
   await page.locator("#backupInput").setInputFiles({name:"synthetic-dashboard.json",mimeType:"application/json",buffer:Buffer.from(backup)});
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
   await page.getByRole("button",{name:"Seuranta"}).click();
-  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
-  await expect(page.locator("#dashboardDetails .metric")).toHaveCount(4);
+  await expect(page.locator("#dashboard .metric")).toHaveCount(2);
+  await expect(page.locator("#dashboardDetails .metric")).toHaveCount(2);
   await expect(page.locator("#dashboardMore")).toBeVisible();
   await expect(page.locator("#dashboardMore")).not.toHaveAttribute("open","");
   await expect(page.locator("#dashboard")).toContainText("Viimeisin netto");
-  await expect(page.locator("#dashboard")).toContainText("Kortin marginaali");
-  await expect(page.locator("#dashboard")).toContainText("8 000");
+  await expect(page.locator("#dashboard")).not.toContainText("Kortin marginaali");
+  await expect(page.locator("#dashboard")).not.toContainText("8 000");
+  await expect(page.locator("#dashboard")).toContainText("Veronalainen kertymä");
+  await expect(page.locator("#dashboard")).toContainText("Maksupäivä 23.09.2026");
   await expect(page.locator("#taxCardProgress")).toBeVisible();
   await expect(page.locator("#taxCardPercent")).toHaveText("90 %");
   await expect(page.locator("#taxCardRemaining")).toContainText("8 000");
@@ -117,18 +120,16 @@ test("compact dashboard shows four key metrics, card gauge and other values one 
   await expect(page.locator(".beta-compact-dashboard #yearProgressPanel")).toHaveCount(1);
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
-  await expect(page.locator("#dashboard")).toContainText("Veronalainen YTD");
-  await expect(page.locator("#dashboard")).toContainText("Brutto");
-  await expect(page.locator("#dashboardDetails")).toContainText("Kortin kertymä");
-  await expect(page.locator("#dashboardDetails")).toContainText("72 000");
-  await expect(page.locator("#dashboardDetails")).toContainText("80 000");
-  await expect(page.locator("#dashboardDetails")).toContainText("Kortin tuloraja");
-  await expect(page.locator("#dashboardDetails")).toContainText("Viimeisin maksupäivä");
+  await expect(page.locator("#dashboard")).toContainText("Veronalainen kertymä");
+  await expect(page.locator("#dashboardDetails")).toContainText("Viimeisin bruttopalkka");
+  await expect(page.locator("#dashboardDetails")).not.toContainText("Kortin kertymä");
+  await expect(page.locator("#dashboardDetails")).not.toContainText("Kortin tuloraja");
+  await expect(page.locator("#dashboardDetails")).not.toContainText("Viimeisin maksupäivä");
   await expect(page.locator("#dashboardDetails")).toContainText("OT viime jaksolla");
   const width = await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(width).toBeLessThanOrEqual(1);
   await page.reload();
-  await expect(page.locator("#dashboard .metric")).toHaveCount(4);
+  await expect(page.locator("#dashboard .metric")).toHaveCount(2);
   await expect(page.locator(".beta-pdf-slot")).toBeVisible();
 });
 test("year-end goal is local, compares certified YTD separately from manual annual forecast", async({page})=>{
@@ -189,13 +190,13 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
  await page.locator("#backupInput").setInputFiles({name:"synthetic-cardchange.json",mimeType:"application/json",buffer:Buffer.from(payload)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Seuranta"}).click();
- await expect(page.locator("#dashboard")).toContainText("Kortin marginaali");
- await expect(page.locator("#dashboard")).toContainText("6 000");
+ await expect(page.locator("#dashboard")).not.toContainText("Kortin marginaali");
+ await expect(page.locator("#dashboard")).not.toContainText("6 000");
  await expect(page.locator("#taxCardPercent")).toHaveText("63 %");
  await expect(page.locator("#taxCardRemaining")).toContainText("6 000");
  await expect(page.locator("#taxCardEstimate")).toContainText("lisää saman verokortin");
  await page.locator("#dashboardMore > summary").click();
- await expect(page.locator("#dashboardDetails")).toContainText("16 000");
+ await expect(page.locator("#taxCardContext")).toContainText("kortin marginaali");
  await expect(page.locator("#dashboard")).toContainText("70 000");
  await expect(page.locator("#dashboardDetails")).not.toContainText("82 000");
  await expect(page.locator("#dashboardDetails")).not.toContainText("100 000");
@@ -203,7 +204,7 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
  await expect(page.locator("#taxCardContext")).toContainText("vanhoja rajoja ei lasketa yhteen");
  await expect(page.locator("#yearProgressPanel")).toBeVisible();
  await page.reload();
- await expect(page.locator("#dashboard")).toContainText("6 000");
+ await expect(page.locator("#taxCardRemaining")).toContainText("6 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin");
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
