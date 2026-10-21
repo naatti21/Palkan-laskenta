@@ -19,7 +19,7 @@ const files = ['index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'par
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
-for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css']) {
+for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css']) {
   hash.update(await readFile(themeFile)); // changing the visual theme invalidates the Beta offline cache
 }
 const revision = hash.digest('hex').slice(0, 16);
@@ -333,8 +333,9 @@ summary:focus-visible{outline:2px solid #9de9c2;outline-offset:2px;}
 
 // The contrast pass exists only inside the isolated _beta build.
 const betaV2Theme = await readFile('beta-theme-v2.css', 'utf8');
+const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');

@@ -1,0 +1,110 @@
+/* Palkka BETA visual pass v3: tighter information density with decorative,
+   non-interactive iconography. Added after v2. Values and model unchanged. */
+.beta-compact-dashboard { padding:11px 12px 12px; }
+.beta-compact-dashboard .section-heading { margin-bottom:10px; }
+.beta-compact-dashboard .section-heading h2 { font-size:1.15rem; }
+.beta-primary-metrics { gap:8px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.beta-primary-metrics .metric {
+  min-height:84px;
+  padding:9px 11px 10px;
+  display:grid;
+  grid-template-columns:32px minmax(0,1fr);
+  grid-template-rows:minmax(30px,auto) auto;
+  align-items:center;
+  align-content:center;
+  column-gap:8px;
+  row-gap:2px;
+  border-radius:13px;
+}
+.beta-primary-metrics .metric::before {
+  content:"";
+  position:static;
+  grid-column:1;
+  grid-row:1;
+  width:32px;
+  height:32px;
+  border:1px solid var(--icon-ring,#557b70);
+  border-radius:50%;
+  background-color:var(--icon-bg,#26463a);
+  background-image:var(--icon-image);
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:18px 18px;
+  box-shadow:none;
+}
+.beta-primary-metrics .metric:nth-child(1) {
+  --icon-ring:#346d58;--icon-bg:#234638;
+}
+.beta-primary-metrics .metric:nth-child(2) {
+  --icon-ring:#3a5b82;--icon-bg:#223a57;
+}
+.beta-primary-metrics .metric:nth-child(3) {
+  --icon-ring:#475c80;--icon-bg:#2a3a58;
+}
+.beta-primary-metrics .metric:nth-child(4) {
+  --icon-ring:#775939;--icon-bg:#483729;
+}
+.beta-primary-metrics .metric:nth-child(1)::before { background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2372e7af%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cellipse%20cx%3D%2212%22%20cy%3D%225%22%20rx%3D%227.5%22%20ry%3D%222.8%22%2F%3E%3Cpath%20d%3D%22M4.5%205v5c0%201.55%203.35%202.8%207.5%202.8s7.5-1.25%207.5-2.8V5M4.5%2010v5c0%201.55%203.35%202.8%207.5%202.8s7.5-1.25%207.5-2.8v-5M4.5%2015v3c0%201.55%203.35%202.8%207.5%202.8s7.5-1.25%207.5-2.8v-3%22%2F%3E%3C%2Fsvg%3E"); }
+.beta-primary-metrics .metric:nth-child(2)::before { background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2389bdff%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m4%2016%206-6%204%204%206-7M15%207h5v5%22%2F%3E%3Cpath%20d%3D%22M4%2020h16%22%2F%3E%3C%2Fsvg%3E"); }
+.beta-primary-metrics .metric:nth-child(3)::before { background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239abaff%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2019V11M10%2019V7M15%2019V13M20%2019V4%22%2F%3E%3Cpath%20d%3D%22M3%2019h19%22%2F%3E%3C%2Fsvg%3E"); }
+.beta-primary-metrics .metric:nth-child(4)::before { background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23ffd091%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%204h10l3%203v13H4V4h3Z%22%2F%3E%3Cpath%20d%3D%22M17%204v4h3M7%2012h10M7%2016h10M7%209h5%22%2F%3E%3C%2Fsvg%3E"); }
+.beta-primary-metrics .metric span {
+  grid-column:2;
+  grid-row:1;
+  align-self:center;
+  margin:0;
+  font-size:.73rem;
+  line-height:1.24;
+  color:#d0d9e6;
+  font-weight:630;
+}
+.beta-primary-metrics .metric strong,
+.beta-primary-metrics .metric:first-child strong,
+.beta-primary-metrics .metric:nth-child(2) strong {
+  grid-column:1 / -1;
+  grid-row:2;
+  margin:1px 0 0;
+  font-size:clamp(1.06rem,4.2vw,1.32rem);
+  line-height:1.17;
+  letter-spacing:-.035em;
+  color:#f7fbff;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.beta-primary-metrics .metric:first-child strong { color:#a7f6cc; }
+.beta-primary-metrics .metric:nth-child(2) strong { color:#c5dfff; }
+.beta-primary-metrics .metric:nth-child(3) strong { color:#e0ebff; }
+.beta-primary-metrics .metric:nth-child(4) strong { color:#ffe0b1; }
+.beta-taxcard-progress {
+  margin-top:10px;
+  padding:11px 12px;
+}
+.beta-taxcard-heading { margin-bottom:1px; }
+.beta-taxcard-track { margin:7px 0 8px; }
+.beta-taxcard-remaining { margin:0 0 6px; }
+.beta-taxcard-estimate { margin:6px 0 4px; line-height:1.39; }
+.beta-taxcard-note { margin:3px 0 0; line-height:1.42; }
+.beta-dashboard-more { margin-top:10px; padding-top:10px; }
+.beta-dashboard-more>summary { padding:2px 0; }
+.beta-secondary-metrics { gap:7px; }
+.beta-secondary-metrics .metric { padding:9px 11px; min-height:68px; }
+.beta-mini-chart { margin-top:10px; padding-top:10px; }
+.beta-year-progress { margin-top:11px; padding-top:11px; }
+.beta-pdf-slot { padding:11px 13px; }
+.history-row.payslip-item { margin:8px 0; }
+.history-row.payslip-item .payslip-summary { min-height:67px; padding:11px 12px; }
+.payslip-heading { gap:2px; }
+.payslip-detail { padding-bottom:11px; }
+.payslip-field { padding:8px 1px; }
+@media(max-width:390px) {
+  .beta-primary-metrics .metric { padding:9px 9px; min-height:84px; column-gap:6px; grid-template-columns:30px minmax(0,1fr); }
+  .beta-primary-metrics .metric::before { width:30px;height:30px; background-size:17px 17px; }
+  .beta-primary-metrics .metric span { font-size:.70rem; }
+  .beta-primary-metrics .metric strong { font-size:clamp(.96rem,4.15vw,1.14rem); }
+}
+@media(max-width:340px){
+ .beta-primary-metrics {gap:6px;}
+ .beta-primary-metrics .metric {padding:8px 7px;grid-template-columns:26px minmax(0,1fr);}
+ .beta-primary-metrics .metric::before{width:26px;height:26px;background-size:15px 15px;}
+ .beta-primary-metrics .metric strong{font-size:.92rem;}
+}
