@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const readEuros=text=>Number(text.replace(/[\\s\\u00a0\\u202f€]/g,'').replace('−','-').replace(',','.'));
+const readEuros=text=>Number(text.replace(/[\s\u00a0\u202f€]/g,'').replace('−','-').replace(',','.'));
 const shown=n=>Math.round(n).toLocaleString('fi-FI')+' €';
 
 // The real A/B model must remain the source of truth; UI cards only reformat its results.
