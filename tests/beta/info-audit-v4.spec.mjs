@@ -32,7 +32,9 @@ test("Beta shows independent values once and keeps tax details available on dema
   await expect(page.locator("#dashboard")).not.toContainText("Brutto");
   await expect(page.locator("#taxCardRemaining")).toContainText("18 453,61");
   await expect(page.locator("#taxCardPercent")).toHaveText("54 %");
-  await expect(page.locator("#dashboardNote")).toBeHidden();
+  // A confirmed future pay date is an important exception: keep its provenance visible.
+  await expect(page.locator("#dashboardNote")).toBeVisible();
+  await expect(page.locator("#dashboardNote")).toContainText("vahvistettu tuleva palkka");
 
   const taxDetails = page.locator(".beta-taxcard-provenance");
   await expect(taxDetails).not.toHaveAttribute("open","");
