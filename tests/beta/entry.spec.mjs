@@ -299,9 +299,7 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await expect(page.locator("#incomeBreakdown")).toContainText("6 367,93");
   await expect(page.locator("#overtimeBreakdown")).toContainText("11,13");
   await expect(page.locator("#bankSummary")).toContainText("−0,5");
-  await expect(page.locator(".planner-fold")).not.toHaveAttribute("open", "");
-  await page.locator(".planner-fold > summary").click();
-  await expect(page.locator("#plannerFrame")).toBeVisible();
+  await expect(page.locator("#plannerFrame")).toBeHidden();
   await page.locator(".analysis-collection").first().locator(":scope > summary").click();
   await expect(page.locator("#monthlyDetails .month-expand")).toHaveCount(1);
   await expect(page.locator(".beta-compact-months")).not.toHaveAttribute("open", "");
@@ -335,8 +333,9 @@ test("new analytical modules load in offline beta cache", async ({ page }) => {
   })).toEqual(expect.arrayContaining(["/insights.js","/insights-ui.js"]));
   await page.getByRole("button",{name:"Analyysi"}).click();
   await expect(page.getByRole("heading",{name:"Työn ja palkan aikajana"})).toBeHidden();
-  await expect(page.locator(".planner-fold")).not.toHaveAttribute("open", "");
-  await page.locator(".planner-fold > summary").click();
+  await expect(page.locator("#plannerFrame")).toBeHidden();
+  await page.getByRole("button",{name:"Laskuri"}).click();
+  await expect(page.getByRole("heading",{name:"Vuosisuunnittelu"})).toBeVisible();
   await expect(page.locator("#plannerFrame")).toBeVisible();
 });
 
@@ -356,9 +355,8 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(page.locator('[data-view="data"]')).toBeVisible();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-planner.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
- await page.getByRole("button",{name:"Analyysi"}).click();
- await page.locator(".planner-fold > summary").click();
- await expect(page.locator(".planner-fold")).toHaveAttribute("open", "");
+ await page.getByRole("button",{name:"Laskuri"}).click();
+ await expect(page.locator("#plannerFrame")).toBeVisible();
  const planner=page.frameLocator("#plannerFrame");
  await expect(planner.locator("#historyStatus")).toContainText("Beta ehdotti luvut", {timeout:15000});
  await expect(planner.locator("#baseGross")).toHaveValue("52000");
@@ -378,7 +376,7 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(planner.locator("#samples")).toContainText("5");
  await planner.locator("#baseGross").fill("61000");
  await page.getByRole("button",{name:"Historia"}).click();
- await page.getByRole("button",{name:"Analyysi"}).click();
+ await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(planner.locator("#baseGross")).toHaveValue("61000");
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
  await expect(page.locator("#pdfInput")).toBeDisabled();
@@ -386,9 +384,8 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
 test("cumulative net difference identifies maximum lead and shrinking phase",async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
- await page.getByRole("button",{name:"Analyysi"}).click();
- await page.locator(".planner-fold > summary").click();
- await expect(page.locator(".planner-fold")).toHaveAttribute("open", "");
+ await page.getByRole("button",{name:"Laskuri"}).click();
+ await expect(page.locator("#plannerFrame")).toBeVisible();
  const planner=page.frameLocator("#plannerFrame");
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
  await expect(planner.locator("#netDifferenceSummary")).toContainText("ei ole eroa");
@@ -429,9 +426,8 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
 test("inverse net target solves A and B minimum weekends and does not bypass caps",async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
- await page.getByRole("button",{name:"Analyysi"}).click();
- await page.locator(".planner-fold > summary").click();
- await expect(page.locator(".planner-fold")).toHaveAttribute("open", "");
+ await page.getByRole("button",{name:"Laskuri"}).click();
+ await expect(page.locator("#plannerFrame")).toBeVisible();
  const p=page.frameLocator("#plannerFrame");
  await expect(p.locator("#inverseGoalPanel")).toBeVisible();
  await p.locator("#inverseGoalPanel > summary").click();
@@ -453,7 +449,7 @@ test("inverse net target solves A and B minimum weekends and does not bypass cap
 });
 test("historical tax card percentages never become certified 2027 scenario percentages",async({page})=>{
  await page.goto("/index.html");
- await page.getByRole("button",{name:"Analyysi"}).click();
+ await page.getByRole("button",{name:"Laskuri"}).click();
  const planner=page.frameLocator("#plannerFrame");
  await expect(planner.locator("#rateConfirmedA")).not.toBeChecked();
  await expect(planner.locator("#rateConfirmedB")).not.toBeChecked();
