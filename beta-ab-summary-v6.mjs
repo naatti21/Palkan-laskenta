@@ -245,31 +245,119 @@ function mount() {
   `;
   document.head.append(css);
   const put=(id,value)=>{document.getElementById(id).textContent=value;};
-  const reset=()=>{
-    for(const id of ['betaABGross','betaABYearA','betaABYearB','betaABMonthA','betaABMonthB','betaABPeriodA','betaABPeriodB'])put(id,'–');
+  const weekFieldA=document.getElementById('betaWeekendsA');
+  const weekFieldB=document.getElementById('betaWeekendsB');
+  let followOriginalWeekends=true;
+  const originalWeekends=()=>{
+    const raw=document.getElementById('weekends')?.value;
+    const v=Number(raw);
+    return raw!=='' && Number.isInteger(v) && v>=0 && v<=52 ? v : null;
+  };
+  const chosenWeekends=field=>{
+    if(field.value.trim()==='')return null;
+    const value=Number(field.value);
+    return Number.isInteger(value)&&value>=0&&value<=52?value:null;
+  };
+  const syncIfFollowing=()=>{
+    if(!followOriginalWeekends)return;
+    const chosen=originalWeekends();
+    if(chosen==null)return;
+    weekFieldA.value=String(chosen);
+    weekFieldB.value=String(chosen);
+  };
+  const breakdown=plan=>{
+    const fields=['weekends','sat','sun','baseGross','holiday','bonus','other',
+      'raise','raiseMonth','weekendGross','hourlyRate','ktaRate','limitA','limitB',
+      'rateA','rateB','extraA','extraB','otherDeductions'];
+    const inputs=Object.fromEntries(fields.map(id=>[id,progressVal(id)]));
+    if(fields.some(id=>inputs[id]===null))return null;
+    const a=chosenWeekends(weekFieldA),b=chosenWeekends(weekFieldB);
+    const common=originalWeekends();
+    if(a==null||b==null||common==null)return null;
+    try{
+      const computed=globalThis.PalkkaPlannerCore?.computePlan({
+        ...inputs,weekends:Math.max(common,a,b),
+        weekendMethod:document.getElementById('weekendMethod')?.value||'manual',
+        rulesConfirmed:!!document.getElementById('rulesConfirmed')?.checked
+      });
+      if(!computed)return null;
+      return {computed,a,b,common,
+        reference:computed.series[common],
+        rowA:computed.series[a],rowB:computed.series[b]};
+    }catch{return null;}
+  };
+  const signed=n=>(n>=0?'+':'−')+money(Math.abs(n));
+  const reset=message=>{
+    for(const id of ['betaABGross','betaABGrossA','betaABGrossB',
+      'betaABYearA','betaABYearB','betaABMonthA','betaABMonthB',
+      'betaABPeriodA','betaABPeriodB'])put(id,'–');
     put('betaABCount','–');
-    put('betaABDifference','Tarkista puuttuvat tai virheelliset lähtöarvot.');
+    put('betaABDifference',message||'Tarkista puuttuvat tai virheelliset lähtöarvot.');
+    put('betaABBreakdown','');
     document.getElementById('betaProgressChart')?.replaceChildren();
     const summary=document.getElementById('betaProgressSummary');
-    if(summary)summary.textContent='Täytä laskurin lähtöarvot, niin vertailukäyrä ilmestyy.';
+    if(summary)summary.textContent='Täytä kelvolliset laskurin lähtöarvot, niin vertailukäyrä ilmestyy.';
   };
   const update=()=>{
-    const gross=displayedEuro('grossResult'),a=displayedEuro('netA'),b=displayedEuro('netB');
-    if(gross==null||a==null||b==null||gross<0){reset();return;}
+    syncIfFollowing();
+    const sharedGross=displayedEuro('grossResult');
+    const sharedA=displayedEuro('netA'),sharedB=displayedEuro('netB');
+    if(sharedGross==null||sharedA==null||sharedB==null||sharedGross<0){
+      reset();return;
+    }
+    const state=breakdown();
+    if(!state){
+      reset('A- ja B-viikonloppujen määrän on oltava kokonaisluku 0–52. Varmista myös viikonlopun bruttokorvaus ja laskurin muut lähtöarvot.');
+      return;
+    }
+    const {computed,a:nA,b:nB,reference,rowA,rowB}=state;
+    if(Math.abs(reference.gross-sharedGross)>2 ||
+       Math.abs(reference.netA-sharedA)>2 ||
+       Math.abs(reference.netB-sharedB)>2) {
+      reset('Laskuri päivittää vielä vertailuarvoja. Tarkista lähtöarvot.');
+      return;
+    }
     const year=document.getElementById('planYear')?.value||'–';
-    const weekends=document.getElementById('weekends')?.value||'0';
-    put('betaABGross',money(gross));
-    put('betaABCount',`Vuosi ${year} · ${weekends} työviikonloppua`);
+    const a=rowA.netA,b=rowB.netB;
+    const same=nA===nB;
+    put('betaABGross',same?money(rowA.gross):'Eri vuositulot');
+    put('betaABGrossA',money(rowA.gross));
+    put('betaABGrossB',money(rowB.gross));
+    put('betaABCount',same
+      ?'Vuosi '+year+' · '+nA+' työviikonloppua'
+      :'Vuosi '+year+' · A: '+nA+' työviikonloppua · B: '+nB+' työviikonloppua');
     put('betaABYearA',money(a));put('betaABYearB',money(b));
     put('betaABMonthA',money(a/12));put('betaABMonthB',money(b/12));
     put('betaABPeriodA',money(a/26));put('betaABPeriodB',money(b/26));
     const delta=a-b;
     const text=Math.abs(delta)<.5?'A:n ja B:n arvioitu vuosikassavirta on sama.'
-      :`${delta>0?'A':'B'}:lla jää näillä ennakonpidätysoletuksilla vuodessa käteen
-      ${money(Math.abs(delta))} enemmän (noin ${money(Math.abs(delta)/12)}/kk).`;
+      :same
+      ?(delta>0?'A':'B')+':lla jää näillä ennakonpidätysoletuksilla vuodessa käteen '+
+        money(Math.abs(delta))+' enemmän (noin '+money(Math.abs(delta)/12)+'/kk).'
+      :(delta>0?'A':'B')+'-vaihtoehdossa jää vuodessa käteen '+
+        money(Math.abs(delta))+' enemmän. Ero sisältää sekä työn määrän että verokorttien ennakonpidätyksen vaikutuksen.';
     put('betaABDifference',text);
-    drawProgressChart(gross,a,b,year,weekends);
+    if(!same){
+      // Symmetrical two-factor decomposition: exact sum of the observed A-B
+      // cash-flow gap without assigning the nonlinear interaction to either side.
+      const withholdingPart=((rowA.netA-rowA.netB)+(rowB.netA-rowB.netB))/2;
+      const workloadPart=((rowA.netA-rowB.netA)+(rowA.netB-rowB.netB))/2;
+      put('betaABBreakdown','Nettoero A − B: työmäärän vaikutus '+signed(workloadPart)+
+        ' · korttien pidätyseron vaikutus '+signed(withholdingPart)+
+        '. Laskurin kaksisuuntainen vertailuerittely, ei lopullinen veropäätös.');
+    }else put('betaABBreakdown','Sama työmäärä molemmissa: erotus kuvaa tämän laskurin verokorttioletusten eroa.');
+    drawProgressChart(computed,rowA,rowB,year,nA,nB);
   };
+  syncIfFollowing();
+  for(const field of [weekFieldA,weekFieldB]){
+    field.addEventListener('input',()=>{followOriginalWeekends=false;update();});
+    field.addEventListener('change',update);
+  }
+  document.getElementById('betaWeekendsReset').addEventListener('click',()=>{
+    followOriginalWeekends=true;
+    syncIfFollowing();
+    update();
+  });
   for(const id of ['grossResult','netA','netB']){
     const node=document.getElementById(id);
     if(node)new MutationObserver(update).observe(node,{childList:true,characterData:true,subtree:true});
