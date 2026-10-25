@@ -1,7 +1,7 @@
 // Beta-only readout for the existing A/B planner — no parallel tax calculation.
 // Reads the planner's displayed annual gross / annual after-withholding net.
 // Monthly and fortnight values are arithmetic annual averages, never pay-date promises.
-import { NET_ANCHORS_2026, referenceNet2026 } from './beta-net-reference-2026.mjs';
+import { NET_ANCHORS_2026, referenceNet2026 } from './net-reference-2026.mjs';
 
 // 2026 comparison, not a personalized tax calculator. Annual A/B estimates
 // are planner cash flow; their deduction share is NOT an official tax rate.
@@ -28,8 +28,8 @@ const progressSvg=(tag,attrs={},label)=>{
 };
 const progressVal=id=>{
   const text=document.getElementById(id)?.value;
-  if(text==null||text.trim()==='')return null;
-  const n=Number(text);
+  if(text==null)return null;
+  const n=Number(text); // Planner also treats an empty optional number as zero.
   return Number.isFinite(n)?n:null;
 };
 function drawProgressChart(fallbackGross,fallbackA,fallbackB,year,weekends) {
