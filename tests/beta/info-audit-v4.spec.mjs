@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 
 // Synthetic payroll information only. Checks presentation vs. data-provenance.
 test("Beta shows independent values once and keeps tax details available on demand", async ({ page }) => {
+  // Keep the synthetic 23.10.2026 pay date in the future, regardless of when CI runs.
+  await page.clock.setFixedTime(new Date("2026-10-20T12:00:00+03:00"));
   await page.goto("/index.html");
   const backup = await page.evaluate(async () => {
     const model = await import("/model.js");
