@@ -19,7 +19,7 @@ test('Beta planner converts gross annual baseline to month and fortnight net usi
   await expect(frame.locator('#netref26Summary')).toContainText('eivät ole mukana');
   await expect(frame.locator('#netref26YearWarning')).toContainText('2026');
   await expect(frame.locator('#netref26YearWarning')).not.toContainText('EI ennusta');
-  await expect(page.locator('#pdfInput')).toBeDisabled();
+  await expect(page.locator('#pdfInput')).toBeEnabled();
   const over = await frame.locator('#betaNetReference2026').evaluate(el=>el.scrollWidth>el.clientWidth+1);
   expect(over).toBe(false);
 });
