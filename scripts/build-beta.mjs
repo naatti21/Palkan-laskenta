@@ -39,24 +39,20 @@ html = html.replace('<title>Palkka PWA</title>', '<title>Palkka BETA</title>')
   .replace('<p class="eyebrow">PAIKALLINEN PALKANSEURANTA</p>', '')
   .replace('<p>Palkkalaskelma sisään. Sovellus muistaa, seuraa ja huomaa muutokset puolestasi.</p>', '')
   .replace('<script type="module" src="./app.js"></script>', '<script type="module" src="./beta-entry.mjs"></script>');
-// This is a data-review beta. Import trusted structured backups to analyze them,
-// but do not let an unapproved PDF parser automatically create new pay records.
+// Isolated QA candidate: test the existing production parser in Beta.
+// Do not deploy this branch; publish only after independent import QA.
 if (!html.includes('<input id="pdfInput" type="file" accept="application/pdf" />')) {
   throw new Error('PDF input changed; review beta safety gate.');
 }
-html = html.replace(
-  '<input id="pdfInput" type="file" accept="application/pdf" />',
-  '<input id="pdfInput" type="file" accept="application/pdf" disabled />'
-);
 const uploadCard = '<section class="card upload-card">';
 if (!html.includes(uploadCard)) throw new Error('Beta upload card missing; review safety gate.');
 html = html.replace(uploadCard, '<section class="card upload-card beta-pdf-slot">');
 html = html.replace('<span>Valitse palkkalaskelma PDF</span>',
-  '<span>PDF-tuonti</span>');
+  '<span>Lisää palkkalaskelma PDF</span>');
 const betaUploadState = '<p id="status" class="status">Ei ladattua dokumenttia.</p>';
 if (!html.includes(betaUploadState)) throw new Error('Upload state marker missing');
 html = html.replace(betaUploadState, betaUploadState +
-  '<p class="beta-pdf-note">Odottaa tarkistusta · aiempi historia Data-välilehdeltä</p>');
+  '<p class="beta-pdf-note">PDF luetaan paikallisesti · epäselvät tiedot tarkistetaan</p>');
 // Display just the important measurements first. Additional known, real values
 // stay one tap away in a native details element, with no recalculation.
 const dashboardBlock = '<div id="dashboard" class="metrics"></div>';
@@ -352,8 +348,15 @@ const betaV2Theme = await readFile('beta-theme-v2.css', 'utf8');
 const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
 const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
 const betaBlackV5 = await readFile('beta-black-v5.css', 'utf8');
+const betaImportCss = `
+/* QA candidate: restore existing PDF import visibly without changing parser or storage. */
+.beta-pdf-slot { flex-wrap:wrap; }
+.beta-pdf-slot .file-button { cursor:pointer; opacity:1; }
+.beta-pdf-slot #status { display:block; flex-basis:100%; margin:0; font-size:.73rem; line-height:1.45; }
+.beta-pdf-slot .privacy { display:none; }
+`;
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + betaBlackV5);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + betaBlackV5 + '\n' + betaImportCss);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');
