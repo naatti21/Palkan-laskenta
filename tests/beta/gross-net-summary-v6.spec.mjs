@@ -34,7 +34,7 @@ test('Final A/B comparison presents annual gross, actual model net and period av
   await expect(frame.locator('#betaABYearB')).toHaveText(changedB.trim());
   await expect(frame.locator('#betaABYearA')).toHaveText((await frame.locator('#netA').textContent()).trim());
   await expect(frame.locator('#betaABDifference')).toContainText('A:lla jää');
-  await expect(page.locator('#pdfInput')).toBeDisabled();
+  await expect(page.locator('#pdfInput')).toBeEnabled();
 });
 
 test('Gross/net front cards and final A/B summary fit phone widths without horizontal overflow',async({page})=>{

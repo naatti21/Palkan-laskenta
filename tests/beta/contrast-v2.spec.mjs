@@ -5,7 +5,7 @@ test("Beta v5 keeps near-black neutral surfaces and semantic accents", async ({ 
   for (const width of [360, 412]) {
     await page.setViewportSize({width, height:860});
     await page.goto("/index.html");
-    await expect(page.locator("#pdfInput")).toBeDisabled();
+    await expect(page.locator("#pdfInput")).toBeEnabled();
     await expect(page.locator(".beta-compact-dashboard")).toBeVisible();
     await expect(page.locator("#taxCardProgress")).toBeVisible();
     const colors = await page.evaluate(() => {
@@ -52,5 +52,5 @@ test("Annual planner shares near-black Beta v5 palette only inside its isolated 
   expect(palette.ink).toBe("#f5f8fd");
   expect(palette.mint).toBe("#70e2ad");
   expect(palette.panel).toBe("rgb(21, 27, 36)");
-  await expect(page.locator("#pdfInput")).toBeDisabled();
+  await expect(page.locator("#pdfInput")).toBeEnabled();
 });

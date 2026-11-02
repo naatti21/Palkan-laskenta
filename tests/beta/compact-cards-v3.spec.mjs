@@ -57,7 +57,7 @@ test("Beta dashboard remains dense without decorative icons at narrow mobile wid
       expect(card.hasOverflow).toBe(false);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth+1)).toBe(false);
-    await expect(page.locator("#pdfInput")).toBeDisabled();
+    await expect(page.locator("#pdfInput")).toBeEnabled();
     await expect(page.locator("#history")).toBeHidden();
   }
 });

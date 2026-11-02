@@ -1,0 +1,153 @@
+name: Publish isolated PDF-import phone QA
+
+on:
+  push:
+    branches: ["qa/beta-pdf-import-round1-20261102"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: palkka-import-qa-publish
+  cancel-in-progress: true
+
+jobs:
+  publish-phone-qa:
+    if: github.ref == 'refs/heads/qa/beta-pdf-import-round1-20261102'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BETA_ORIGIN: https://palkka-import-qa.pages.dev
+    steps:
+      - name: Check out reviewed QA branch
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test parser, learning, PDF import and isolation
+        run: npm test
+
+      - name: Build isolated Cloudflare mobile preview
+        run: npm run build:beta
+
+      - name: Fail closed unless exact phone QA package
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, stat } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const info = JSON.parse(await readFile('_beta/build-info.json', 'utf8'));
+          assert.equal(info.origin, process.env.BETA_ORIGIN);
+          assert.equal(info.commit, process.env.GITHUB_SHA);
+          assert.equal(info.environment, 'beta-import-qa');
+          const html = await readFile('_beta/index.html', 'utf8');
+          assert.match(html, /Palkka TUONTITESTI/);
+          assert.match(html, /id="pdfInput" type="file" accept="application\/pdf"/);
+          assert.doesNotMatch(html, /id="pdfInput"[^>]*disabled/);
+          assert.match(html, /PDF luetaan paikallisesti/);
+          const entry = await readFile('_beta/beta-entry.mjs','utf8');
+          assert.ok(entry.includes(process.env.BETA_ORIGIN));
+          const manifest = JSON.parse(await readFile('_beta/manifest.webmanifest','utf8'));
+          assert.equal(manifest.name, 'Palkka TUONTITESTI');
+          for (const path of ['index.html','app.js','parser.js','learning.js',
+              'storage.js','model.js','pdf-reader.js','beta-entry.mjs','sw.js',
+              'vendor/pdfjs/pdf.min.mjs','vendor/pdfjs/pdf.worker.min.mjs']) {
+            assert.ok((await stat('_beta/'+path)).isFile(), path);
+          }
+          console.log('Verified separate import QA package at SHA',info.commit);
+          NODE
+
+      - name: Archive tested phone QA bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: palkka-import-qa-phone
+          path: _beta/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Verify Cloudflare credentials exist
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_API_TOKEN" && test -n "$CF_ACCOUNT_ID" ||
+            { echo "Cannot deploy without existing Cloudflare Actions secrets"; exit 1; }
+
+      - name: Create or verify *separate* direct-upload QA project
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.error, urllib.request
+          account=os.environ['CF_ACCOUNT_ID']
+          assert re.fullmatch(r'[0-9a-fA-F]{32}',account), 'Invalid account'
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/pages/projects'
+          def call(method,url,payload=None):
+              headers={'Authorization':'Bearer '+os.environ['CF_API_TOKEN'],'Content-Type':'application/json'}
+              body=None if payload is None else json.dumps(payload).encode()
+              req=urllib.request.Request(url,method=method,headers=headers,data=body)
+              with urllib.request.urlopen(req,timeout=30) as response:
+                  result=json.load(response)
+              assert result.get('success'), 'Cloudflare request failed'
+              return result['result']
+          try:
+              project=call('GET',base+'/palkka-import-qa')
+          except urllib.error.HTTPError as err:
+              if err.code!=404: raise
+              project=call('POST',base,{'name':'palkka-import-qa','production_branch':'import-qa'})
+          assert project.get('name')=='palkka-import-qa'
+          assert project.get('subdomain')=='palkka-import-qa.pages.dev'
+          assert project.get('production_branch')=='import-qa'
+          assert (project.get('source') or {}).get('type') not in ('github','gitlab')
+          print('Verified isolated direct-upload QA project; existing beta unchanged')
+          PY
+
+      - name: Deploy ONLY to separate QA project
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _beta --project-name=palkka-import-qa --branch=import-qa --commit-hash=${{ github.sha }}
+
+      - name: Confirm Cloudflare QA deployment
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PY'
+          import json,os,urllib.request,time
+          expected=os.environ['GITHUB_SHA']
+          url='https://api.cloudflare.com/client/v4/accounts/'+os.environ['CF_ACCOUNT_ID']+'/pages/projects/palkka-import-qa/deployments?env=production&per_page=1'
+          headers={'Authorization':'Bearer '+os.environ['CF_API_TOKEN'],'Cache-Control':'no-cache'}
+          verified=False
+          for _ in range(8):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req,timeout=20) as response: data=json.load(response)
+              assert data.get('success'), 'Cloudflare API failed'
+              for row in data.get('result',[]):
+                  sha=((row.get('deployment_trigger') or {}).get('metadata') or {}).get('commit_hash')
+                  if sha==expected and (row.get('latest_stage') or {}).get('status')=='success' and row.get('environment')=='production':
+                      verified=True
+              if verified: break
+              time.sleep(4)
+          assert verified, 'QA deployment not confirmed'
+          url='https://palkka-import-qa.pages.dev'
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
+              f.write('## Palkka TUONTITESTI\n')
+              f.write('- Isolated URL: '+url+'\n')
+              f.write('- Commit: '+expected+'\n')
+              f.write('- Existing Palkka Beta and production: unchanged\n')
+              f.write('- Independent mobile QA: NOT RUN\n')
+          print('QA deployment verified:',url,expected)
+          PY

@@ -66,7 +66,7 @@ test("Beta shows independent values once and keeps tax details available on dema
   await expect(page.locator("#analysisMetrics")).not.toContainText("Tallennettujen laskelmien brutto");
   await expect(page.locator("#analysisMetrics")).not.toContainText("Viimeisimmän laskelman YTD");
   await expect(page.locator("#monthlyChart .chart-bar-gross")).toHaveCount(1);
-  await expect(page.locator("#pdfInput")).toBeDisabled();
+  await expect(page.locator("#pdfInput")).toBeEnabled();
 });
 
 test("Tax-card warnings are never hidden as routine green status", async ({page}) => {
