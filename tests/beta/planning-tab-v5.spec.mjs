@@ -28,7 +28,7 @@ test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
     await expect(page.locator('#plannerFrame')).toBeVisible();
     await expect(page.locator('[data-view="analysis"]')).toBeHidden();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
-    await expect(page.locator('#pdfInput')).toBeDisabled();
+    await expect(page.locator('#pdfInput')).toBeEnabled();
   }
 });
 
