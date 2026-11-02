@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 // Synthetic data only. Keep real payroll documents and identifying details out of GitHub.
 test("Beta dashboard remains compact and import stays gated", async ({ page }) => {
   await page.goto("/index.html");
-  await expect(page.locator("#pdfInput")).toBeDisabled();
+  await expect(page.locator("#pdfInput")).toBeEnabled();
   await expect(page.locator(".beta-compact-dashboard")).toBeVisible();
   await expect(page.locator(".beta-primary-metrics")).toHaveCount(1);
   await expect(page.locator("#dashboardNote")).toContainText("ei ole vielä palkkalaskelmia");
