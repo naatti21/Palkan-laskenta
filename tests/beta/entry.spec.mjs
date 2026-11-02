@@ -6,9 +6,9 @@ test("beta branding, exact origin and offline analytics shell", async ({ page })
   await expect(page.locator("#beta-banner")).toHaveCount(0);
   await expect(page.locator("#beta-tag")).toBeVisible();
   await expect(page.locator(".beta-pdf-slot")).toBeVisible();
-  await expect(page.locator(".beta-pdf-note")).toContainText("Odottaa tarkistusta");
-  await expect(page.locator("#pdfInput")).toBeDisabled();
-  await expect(page.locator(".beta-pdf-note")).toContainText("Data-välilehdeltä");
+  await expect(page.locator(".beta-pdf-note")).toContainText("PDF luetaan paikallisesti");
+  await expect(page.locator("#pdfInput")).toBeEnabled();
+  await expect(page.locator(".beta-pdf-note")).toContainText("epäselvät tiedot tarkistetaan");
   await expect(page.locator("#dashboardMiniChartWrap")).toBeHidden();
   await expect(page.locator("#dashboardMore")).toBeHidden();
   await expect(page).toHaveTitle("Palkka BETA");
@@ -249,7 +249,7 @@ test("compact monthly net graph uses real payment months, without forecast or fi
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
  await page.reload();
  await expect(page.locator("#dashboardMiniChart svg rect")).toHaveCount(3);
- await expect(page.locator("#pdfInput")).toBeDisabled();
+ await expect(page.locator("#pdfInput")).toBeEnabled();
 });
 test("beta source does not overwrite QA staging, main or browser origin", async ({ page }) => {
   await page.goto("/index.html");
@@ -319,7 +319,7 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await page.reload();
   await page.getByRole("button",{name:"Analyysi"}).click();
   await expect(page.locator("#netGoal")).toHaveValue("2100");
-  await expect(page.locator("#pdfInput")).toBeDisabled();
+  await expect(page.locator("#pdfInput")).toBeEnabled();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
 
@@ -379,7 +379,7 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(planner.locator("#baseGross")).toHaveValue("61000");
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
- await expect(page.locator("#pdfInput")).toBeDisabled();
+ await expect(page.locator("#pdfInput")).toBeEnabled();
 });
 test("cumulative net difference identifies maximum lead and shrinking phase",async({page})=>{
  await page.setViewportSize({width:360,height:780});
