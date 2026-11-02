@@ -102,3 +102,78 @@ test("QA-import-06: import does not require external PDF runtime requests", asyn
   await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
   expect(remote).toEqual([]);
 });
+
+
+test("QA-import-07: user teaches a new layout once; the next PDF of the same layout imports without retyping", async ({page}) => {
+  await page.goto("/index.html");
+  const unusual = ({period, date, net, gross, ytd}) => [
+    "PALKKALASKELMA",
+    "Palkkakausi " + period,
+    "Maksupäivä " + date,
+    "Maksetaan " + net,
+    "KAUDEN YHTEENVETO",
+    "Jakson veropohja " + gross,
+    "VUODEN YHTEENVETO",
+    "Kertyvä veropohja " + ytd
+  ];
+  const first = unusual({
+    period:"3.8.2026 - 16.8.2026", date:"28.8.2026",
+    net:"2 678,39", gross:"4 698,11", ytd:"63 832,82"
+  });
+  await page.locator("#pdfInput").setInputFiles(synthetic("new-template-first.pdf",first));
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await expect(page.locator('#reviewGrid input[data-key="grossPay"]')).toBeVisible();
+  await expect(page.locator('#reviewGrid input[data-key="ytdTaxableIncome"]')).toBeVisible();
+  expect(await getRecords(page)).toHaveLength(0);
+
+  await page.locator('#reviewGrid input[data-key="grossPay"]').fill("4698,11");
+  await page.locator('#reviewGrid input[data-key="ytdTaxableIncome"]').fill("63832,82");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText("Korjaus tallennettu");
+  const profiles = await page.evaluate(async () => {
+    const { getSetting } = await import("/storage.js");
+    return await getSetting("learnedLayoutProfiles:v1");
+  });
+  expect(profiles).toHaveLength(1);
+  expect(profiles[0].mappings.map(m => m.field).sort()).toEqual(["grossPay","ytdTaxableIncome"]);
+
+  const next = unusual({
+    period:"17.8.2026 - 30.8.2026", date:"11.9.2026",
+    net:"1 881,34", gross:"3 300,02", ytd:"67 132,84"
+  });
+  await page.locator("#pdfInput").setInputFiles(synthetic("same-template-next.pdf",next));
+  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
+  const records = await getRecords(page);
+  expect(records).toHaveLength(2);
+  const last = records.find(r => r.values.payDate === "2026-09-11");
+  expect(last?.values.grossPay).toBe(3300.02);
+  expect(last?.values.ytdTaxableIncome).toBe(67132.84);
+  expect(last?.values.netPay).toBe(1881.34);
+});
+
+test("QA-import-08: new ambiguous format still requires review even after the user taught an older one", async ({page}) => {
+  await page.goto("/index.html");
+  const first = [
+    "PALKKALASKELMA", "Palkkakausi 3.8.2026 - 16.8.2026",
+    "Maksupäivä 28.8.2026", "Maksetaan 2 678,39",
+    "KAUDEN YHTEENVETO", "Jakson veropohja 4 698,11",
+    "VUODEN YHTEENVETO", "Kertyvä veropohja 63 832,82"
+  ];
+  await page.locator("#pdfInput").setInputFiles(synthetic("format-one.pdf",first));
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  await page.locator('#reviewGrid input[data-key="grossPay"]').fill("4698,11");
+  await page.locator('#reviewGrid input[data-key="ytdTaxableIncome"]').fill("63832,82");
+  await page.locator("#saveButton").click();
+  await expect(page.locator("#status")).toContainText("Korjaus tallennettu");
+
+  // Only headings differ; same-looking amounts must not bypass source evidence.
+  const changed = [
+    "PALKKALASKELMA", "Palkkakausi 17.8.2026 - 30.8.2026",
+    "Maksupäivä 11.9.2026", "Maksetaan 1 881,34",
+    "ERILLISKORVAUKSET", "Jakson veropohja 3 300,02",
+    "SEURAAVAN VUODEN ARVIOT", "Kertyvä veropohja 67 132,84"
+  ];
+  await page.locator("#pdfInput").setInputFiles(synthetic("format-changed.pdf",changed));
+  await expect(page.locator("#reviewSection")).toBeVisible();
+  expect(await getRecords(page)).toHaveLength(1);
+});
