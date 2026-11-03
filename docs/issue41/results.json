@@ -1,0 +1,67 @@
+{
+  "base": "c3cd97bf7fbee2f5faa99793faf2a494591bfd49",
+  "node_baseline": {
+    "pass": 230,
+    "fail": 0
+  },
+  "node_final": {
+    "pass": 235,
+    "fail": 3,
+    "skip": 0,
+    "exit": 1
+  },
+  "new_node": {
+    "pass": 8,
+    "fail": 0
+  },
+  "baseline_adversarial": {
+    "pass": 3,
+    "fail": 4
+  },
+  "baseline_service_worker": {
+    "pass": 0,
+    "fail": 1
+  },
+  "browser": {
+    "e2e": {
+      "startTime": "2026-11-03T19:23:39.348Z",
+      "duration": 33460.339,
+      "expected": 37,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "staging": {
+      "startTime": "2026-11-03T19:24:14.180Z",
+      "duration": 12191.215,
+      "expected": 4,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "beta": {
+      "startTime": "2026-11-03T19:24:27.831Z",
+      "duration": 45988.357,
+      "expected": 51,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "browser_version": "Chromium 154.0.8037.57 (system executable; pinned Playwright browser download blocked HTTP 403)",
+  "builds": {
+    "staging": "PASS, local origin only",
+    "beta": "PASS, local origin only"
+  },
+  "source_sha256": {
+    "model.js": "12df4123bafe299fc57989da2f96926d542fb5ecf98ba7d01355640d08e33576",
+    "storage.js": "8ffb44b1a0575c5e04c3bd77a00720858baa18ec483f8092a3b611170e213638",
+    "sw.js": "efa185f6659fd976790b65e05def5b965c96c50959445577cfe7bd39f63c6fab",
+    "tests/issue41-adversarial.test.mjs": "5d6a279527abfdf68b3b9d07dc9dd433bfa7f46c07f919ac225803eb9ea94436",
+    "tests/issue41-service-worker.test.mjs": "3481e4955d9a3c054f0482648ffb5604f372d3e42e30d8f2d5cbeb7c1b2fd550",
+    "tests/e2e/issue41.spec.mjs": "4d2af04457e22ba3301722590d0e9f9668f5a10395c7b379080d5708e5e74610"
+  },
+  "github_ci": "NOT VERIFIED",
+  "physical_android": "NOT RUN",
+  "recommendation": "NO-GO for mobile test publication"
+}
