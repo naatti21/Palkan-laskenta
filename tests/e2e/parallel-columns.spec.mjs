@@ -134,9 +134,10 @@ test("QA F3: previous year value is editable in the review UI", async ({ page })
   await page.locator("#saveButton").click();
   await expect(page.locator("#status")).toContainText(/Korjaus tallennettu|rakennehavainto päivitettiin/i);
   const records = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()));
-  expect(records).toHaveLength(1);
-  expect(records[0].values.previousYearTaxableIncome).toBe(60000);
-  expect(records[0].corrections.previousYearTaxableIncome.parserValue).toBe(60123.12);
+  expect(records).toHaveLength(2);
+  const active = records.find(r => r.resolution !== "superseded");
+  expect(active.values.previousYearTaxableIncome).toBe(60000);
+  expect(active.corrections.previousYearTaxableIncome.parserValue).toBe(60123.12);
 });
 
 test("QA RC-P0-01: conflicting period gross cannot autosave; both candidates visible; manual correction persists", async ({ page }) => {

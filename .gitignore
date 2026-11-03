@@ -4,3 +4,5 @@ _site/
 _staging/
 playwright-report/
 test-results/
+
+_beta/

@@ -192,8 +192,16 @@ export async function mergeManyRecords(records) {
     // must never let a foreign descendant suppress an unrelated local revision.
     const mapping = new Map();
     const prepared = [];
-    for (const incoming of incomingRecords) {
-      if (mapping.has(incoming.id)) throw new Error("Varmuuskopiossa on toistuva versiotunniste. Historiaa ei muutettu.");
+    const seen = new Set();
+    for (let incoming of incomingRecords) {
+      if (seen.has(incoming.id)) {
+        if (incomingRecords.some(r => r.supersedes.includes(incoming.id))) throw new Error("Varmuuskopion versiosuhde on epäselvä. Historiaa ei muutettu.");
+        const duplicate = prepared.find(p => sameRecordContent(p.incoming, incoming));
+        if (duplicate) { merged++; continue; }
+        const previous = rows.find(r => r.importRevisionId === incoming.id && sameRecordContent(r, incoming));
+        incoming = { ...incoming, id: previous?.id || crypto.randomUUID(), importRevisionId: incoming.id };
+      }
+      seen.add(incoming.id);
       const same = rows.find(r => r.payEventId === incoming.payEventId &&
         (r.id === incoming.id || r.importRevisionId === incoming.id) && sameRecordContent(r, incoming));
       const collision = rows.some(r => r.id === incoming.id);

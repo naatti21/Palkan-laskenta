@@ -63,3 +63,15 @@ test('two tabs serialize simultaneous identical PDF imports',async({page,context
   await expect(page.locator('#pdfInput')).toBeEnabled();await expect(other.locator('#pdfInput')).toBeEnabled();
   expect((await state(page)).analysis.totalNet).toBe(1900);
 });
+test('missing payment date can be repaired from History',async({page})=>{
+  await page.goto('/index.html');
+  await page.evaluate(async()=>{const s=await import('/storage.js'),m=await import('/model.js');
+    await s.mergeManyRecords([m.migrateLegacyRecord({recordSchemaVersion:1,id:'missing-date',values:{grossPay:3000,netPay:1900,ytdTaxableIncome:24000}})]);});
+  await page.reload();await page.getByRole('button',{name:'Historia',exact:true}).click();
+  await page.getByRole('button',{name:'Ratkaise palkkatapahtuma'}).click();
+  await expect(page.locator('#reviewSection')).toBeVisible();
+  await page.locator('#reviewGrid input[data-key="payDate"]').fill('2026-08-28');
+  await page.locator('#saveButton').click();
+  await expect(page.locator('#status')).toContainText('Korjaus tallennettu');
+  expect((await state(page)).analysis.totalNet).toBe(1900);
+});

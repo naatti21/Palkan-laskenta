@@ -557,7 +557,7 @@ test("R3-01: legacy-migraatio säilyttää saman tapahtuman ristiriitaversiot en
   expect(result.source).toBeNull();
 });
 
-test("R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei tee kopiota", async ({ page }) => {
+test("R3-02: alkuperäisen PDF:n uusintatuonti säilyttää käyttäjäkorjauksen ja arkiston", async ({ page }) => {
   await page.goto("/index.html");
   const basePdf = makeTextPdf([
     "PALKKALASKELMA",
@@ -584,18 +584,19 @@ test("R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei te
   await expect(page.locator("#resultSection")).toBeVisible();
 
   await upload();
-  await expect(page.locator("#conflictSection")).toBeVisible();
-  await page.locator("#keepBothConflictButton").click();
+  await expect(page.locator("#status")).toContainText("ilman tuplaa");
+  await expect(page.locator("#conflictSection")).toBeHidden();
 
   await upload();
-  await expect(page.locator("#conflictSection")).toBeVisible();
-  await page.locator("#keepBothConflictButton").click();
+  await expect(page.locator("#status")).toContainText("ilman tuplaa");
+  await expect(page.locator("#conflictSection")).toBeHidden();
 
   const records = await page.evaluate(async () => {
     const storage = await import("/storage.js");
     return await storage.getAllRecords();
   });
   expect(records).toHaveLength(2);
+  expect(records.filter(r=>r.resolution!=="superseded").map(r=>r.values.netPay)).toEqual([2700]);
   expect(records.map(r => r.values.netPay).sort((a,b)=>a-b)).toEqual([2678.39, 2700]);
 });
 

@@ -193,3 +193,15 @@ test('a missing payment date can be corrected without losing the original row',a
   await store.upsertRecord(applyUserCorrections(a,{payDate:'2026-08-28'}));
   assert.equal((await analysis()).totalNet,1900);assert.equal((await all()).length,2);
 });
+test('negative recovery is accepted by the existing parser validation gate',async()=>{
+  const {validate}=await import('../parser.js');
+  const fields={grossPay:{value:-100},netPay:{value:-60},ytdTaxableIncome:{value:23900}};
+  assert.equal(validate(fields).filter(n=>n.level==='blocking').length,0);
+  assert.ok(validate({grossPay:{value:100},netPay:{value:200}}).some(n=>n.code==='net-greater-than-gross'));
+});
+test('legacy flat records with colliding generated IDs preserve differing values on repeated restore',async()=>{
+  const flat={payDate:'2026-08-28',payPeriodStart:'2026-08-01',payPeriodEnd:'2026-08-15',grossPay:3000,netPay:1900,ytdTaxableIncome:24000};
+  const records=[migrateLegacyRecord({...flat,withholdingPeriod:-800}),migrateLegacyRecord({...flat,withholdingPeriod:-750})];
+  await store.mergeManyRecords(records);await store.mergeManyRecords(records);
+  assert.equal((await all()).length,2);assert.equal((await analysis()).totalNet,null);
+});

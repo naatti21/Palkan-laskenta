@@ -88,7 +88,10 @@ test('staging banner, manifest, mobile navigation, offline history and local PDF
   await page.getByRole('button', { name: 'Historia', exact: true }).click();
   await expect(page.locator('#recordCount')).toContainText('1 palkkalaskelmaa');
   await page.getByRole('button', { name: 'Seuranta', exact: true }).click();
-  await upload(page, '28.11.2026', '2 200,00');
+  await page.locator('#pdfInput').setInputFiles({name:'synthetic.pdf',mimeType:'application/pdf',buffer:pdf('28.11.2026','2 200,00')});
+  await expect(page.locator('#conflictSection')).toBeVisible();
+  await page.locator('#keepBothConflictButton').click();
+  await expect(page.locator('#resultTitle')).toContainText('Molemmat');
   expect((await records(page)).length).toBe(2);
   const icons = await page.evaluate(async () => Promise.all(['/icon-192.png', '/icon-512.png'].map(async p => (await fetch(p)).ok)));
   expect(icons).toEqual([true, true]);
