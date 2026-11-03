@@ -17,7 +17,8 @@
     "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {
-    "@playwright/test": "1.57.0"
+    "@playwright/test": "1.57.0",
+    "fake-indexeddb": "6.2.7"
   },
   "type": "module"
 }

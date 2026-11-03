@@ -395,11 +395,11 @@ manifest.short_name = qaPreview ? 'Palkka TESTI' : 'Palkka BETA';
 manifest.description = qaPreview ? 'Erillinen PDF-tuonnin testiversio. Tallennus vain tässä selaimessa.' : 'Erillinen beta-versio. Palkkatiedot tallentuvat vain tähän selaimeen.';
 await writeFile(`${output}/manifest.webmanifest`, JSON.stringify(manifest, null, 2) + '\n');
 let sw = await readFile('sw.js', 'utf8');
-if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const CACHE = `${CACHE_PREFIX}17`;')) {
+if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const CACHE = `${CACHE_PREFIX}18`;')) {
   throw new Error('Service worker changed; inspect staging cache transformation.');
 }
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";')
-  .replace('const CACHE = `${CACHE_PREFIX}17`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
+  .replace('const CACHE = `${CACHE_PREFIX}18`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
   .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs",')
   .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",')
   .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs"')

@@ -12,6 +12,8 @@ import {
 } from "./learning.js";
 import {
   VALUE_KEYS,
+  projectPayroll,
+  visibleRevisions,
   applyUserCorrections,
   makeBackup,
   makeRecordFromParsed,
@@ -103,7 +105,7 @@ function setView(name) {
 }
 
 async function sha256(text) {
-  const bytes = new TextEncoder().encode(text);
+  const bytes = typeof text === "string" ? new TextEncoder().encode(text) : text;
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -751,7 +753,9 @@ function renderDashboard(records) {
   // Beta ignores forecast records in this card. The original production view
   // retains its existing source selection until separately audited.
   const secondaryDash = document.getElementById("dashboardDetails");
-  const yearRecords = records.filter(r => r.taxYear === selectedYear && (!secondaryDash || r.kind !== "forecast"));
+  const projection = projectPayroll(records);
+  const yearRecords = projection.active.filter(r => r.taxYear === selectedYear);
+  const unresolved = projection.unresolved.some(r => !r.taxYear || r.taxYear === selectedYear);
   const latest = sortByPayDate(yearRecords).at(-1);
   const dash = el("dashboard");
   dash.replaceChildren();
@@ -768,8 +772,8 @@ function renderDashboard(records) {
     el("dashboardNote").hidden = false;
     overall.className = "light neutral";
     overall.textContent = "–";
-    el("dashboardNote").textContent = `Vuodelta ${selectedYear} ei ole vielä palkkalaskelmia.`;
-    renderTaxCardProgress(yearRecords, null, false);
+    el("dashboardNote").textContent = unresolved ? "Historiassa on ratkaisemattomia palkkatietoja. Tarkista ne ennen laskentaa." : `Vuodelta ${selectedYear} ei ole vielä palkkalaskelmia.`;
+    renderTaxCardProgress(records, null, false);
     const context = document.getElementById("taxCardContext");
     if (context) context.textContent = "Verokortin tietoja ei voi päätellä ilman palkkalaskelmaa. Oma vuositavoite on erillinen tieto.";
     return;
@@ -779,12 +783,12 @@ function renderDashboard(records) {
   const samePeriod = row => valueOf(row, "payDate") === lastDate &&
     valueOf(row, "payPeriodStart") === valueOf(latest, "payPeriodStart") &&
     valueOf(row, "payPeriodEnd") === valueOf(latest, "payPeriodEnd");
-  const ambiguous = Boolean(secondaryDash) && yearRecords.filter(samePeriod).length > 1;
+  const ambiguous = unresolved || yearRecords.filter(r => valueOf(r, "payDate") === lastDate).length > 1;
   const limit = valueOf(latest, "taxLimit");
   const accumulated = valueOf(latest, "taxCardAccumulatedIncome");
   const cardKnown = !ambiguous && typeof limit === "number" && Number.isFinite(limit) && limit > 0 &&
     typeof accumulated === "number" && Number.isFinite(accumulated) && accumulated >= 0;
-  renderTaxCardProgress(yearRecords, latest, ambiguous);
+  renderTaxCardProgress(records, latest, ambiguous);
   const status = ambiguous ? {light:"neutral",text:"Saman palkkakauden ristiriita"}
     : taxStatus(latest);
   overall.className = `light ${status.light}`;
@@ -813,9 +817,9 @@ function renderDashboard(records) {
   }
   const metrics = [
     ["Viimeisin maksupäivä", fmtDate(valueOf(latest, "payDate"))],
-    ["Brutto", fmtMoney(valueOf(latest, "grossPay"))],
-    ["Netto", fmtMoney(valueOf(latest, "netPay"))],
-    ["Veronalainen YTD", fmtMoney(valueOf(latest, "ytdTaxableIncome"))],
+    ["Brutto", fmtMoney(ambiguous ? null : valueOf(latest, "grossPay"))],
+    ["Netto", fmtMoney(ambiguous ? null : valueOf(latest, "netPay"))],
+    ["Veronalainen YTD", fmtMoney(ambiguous ? null : valueOf(latest, "ytdTaxableIncome"))],
     ["Verokortin kertymä", fmtMoney(secondaryDash && !cardKnown ? null : valueOf(latest, "taxCardAccumulatedIncome"))],
     ["Tuloraja", fmtMoney(secondaryDash && !cardKnown ? null : valueOf(latest, "taxLimit"))],
     ["Tulorajaa jäljellä", fmtMoney(remaining)],
@@ -949,7 +953,8 @@ function renderAnalysis(records) {
 
 function renderHistory(records) {
   const host = el("history");
-  const yearRecords = records.filter(r => r.taxYear === selectedYear);
+  const projection = projectPayroll(records);
+  const yearRecords = records.filter(r => r.taxYear === selectedYear || !r.taxYear);
   host.replaceChildren();
   if (!yearRecords.length) {
     const empty = document.createElement("p");
@@ -983,6 +988,31 @@ function renderHistory(records) {
     const period = document.createElement("span");
     period.textContent = `Palkkakausi ${fmtDate(valueOf(record, "payPeriodStart"))}–${fmtDate(valueOf(record, "payPeriodEnd"))}`;
     heading.append(date, period);
+    const versionState = document.createElement("span");
+    const unresolved = projection.unresolved.includes(record);
+    versionState.textContent = !projection.visible.includes(record) ? "Korvattu versio – ei laskennassa" : unresolved ? "Ratkaisematon – ei laskennassa" : "Huomioidaan laskennassa";
+    heading.append(versionState);
+    if (unresolved) {
+      const resolve = document.createElement("button");
+      resolve.textContent = "Ratkaise palkkatapahtuma";
+      resolve.addEventListener("click", event => {
+        event.preventDefault();
+        currentParsed = null; currentRawText = ""; currentLearnedProfile = null;
+        const conflict = findRecordConflict(records, record, { ignoreRecordId: record.id });
+        setView("tracking");
+        if (conflict) { renderConflict(record, conflict); }
+        else {
+          currentRecord = record;
+          currentParsed = makeManualParsed();
+          for (const key of VALUE_KEYS) currentParsed.fields[key].value = record.values[key];
+          currentParsed.payLines = record.payLines;
+          currentReviewWasManualConfirmation = false;
+          renderReview(currentParsed);
+          el("status").textContent = "Täydennä puuttuvat tiedot. Alkuperäinen versio säilytetään.";
+        }
+      });
+      heading.append(resolve);
+    }
     const state = paymentState(record);
     if (state === "confirmed_future" || record.kind === "forecast") {
       const badge = document.createElement("span");
@@ -1067,6 +1097,7 @@ async function renderLearnedProfileSummary() {
 function renderConflict(record, conflict) {
   currentPendingRecord = record;
   currentConflict = conflict;
+  currentConflict.expected = conflict.candidates || [conflict.existing];
   el("resultSection").classList.add("hidden");
   el("reviewSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
@@ -1075,6 +1106,18 @@ function renderConflict(record, conflict) {
   const host = el("conflictSummary");
   host.innerHTML = "";
 
+  const choices = conflict.candidates || [conflict.existing];
+  const label = document.createElement("label");
+  label.textContent = "Korvattava aiempi laskelma";
+  const select = document.createElement("select");
+  select.id = "replacementTarget";
+  for (const candidate of choices) {
+    const option = document.createElement("option"); option.value = candidate.id;
+    option.textContent = `${fmtDate(candidate.values.payDate)} · ${fmtDate(candidate.values.payPeriodStart)}–${fmtDate(candidate.values.payPeriodEnd)} · netto ${fmtMoney(candidate.values.netPay)}`;
+    select.append(option);
+  }
+  select.addEventListener("change", () => { currentConflict.existing = choices.find(r => r.id === select.value); });
+  label.append(select); host.append(label);
   const identityRows = [
     ["Maksupäivä", fmtFieldValue("payDate", record.values?.payDate)],
     ["Palkkakausi", `${fmtFieldValue("payPeriodStart", record.values?.payPeriodStart)} – ${fmtFieldValue("payPeriodEnd", record.values?.payPeriodEnd)}`]
@@ -1094,7 +1137,7 @@ function renderConflict(record, conflict) {
     host.append(row);
   }
 
-  el("status").textContent = "Samalle palkka-ajalle löytyi eri luvut. Mitään ei yhdistetty automaattisesti.";
+  el("status").textContent = "Laskelma saattaa liittyä aiempaan maksuun. Mitään ei yhdistetty automaattisesti. Valitse korvattava laskelma tai vahvista erillinen maksu.";
 }
 
 async function conflictForRecord(record, ignoreRecordId = null) {
@@ -1120,7 +1163,7 @@ async function processPdf(file) {
   currentLearnedProfile = await findLearnedProfile(currentParsed.structureSignals);
   const learnedResult = await applyProfileMappings(currentParsed, currentRawText, currentLearnedProfile);
   currentParsed = learnedResult.parsed;
-  currentFingerprint = await sha256(safeFingerprintPayload(currentParsed));
+  currentFingerprint = await sha256(await file.arrayBuffer());
   el("rawText").textContent = currentRawText;
 
   if (currentParsed.documentType !== "payslip") {
@@ -1160,20 +1203,42 @@ async function processPdf(file) {
   el("status").textContent = "Palkkalaskelma tunnistettiin, mutta yksi tai useampi ydinkohta tarvitsee tarkistuksen.";
 }
 
-el("pdfInput").addEventListener("change", async event => {
+let payrollBusy = false;
+function payrollAction(action) {
+  return async event => {
+    if (payrollBusy) return;
+    payrollBusy = true;
+    const controls = ["pdfInput", "backupInput", "saveButton", "replaceConflictButton", "keepBothConflictButton", "cancelConflictButton"]
+      .map(el).filter(Boolean);
+    controls.forEach(control => { control.disabled = true; });
+    try { await action(event); }
+    catch (error) {
+      el("status").textContent = error.message;
+      if (error.incoming) {
+        const conflict = await conflictForRecord(error.incoming);
+        if (conflict) renderConflict(error.incoming, conflict);
+      }
+    } finally { payrollBusy = false; controls.forEach(control => { control.disabled = false; }); }
+  };
+}
+
+el("pdfInput").addEventListener("change", payrollAction(async event => {
   const file = event.target.files?.[0];
   if (!file) return;
   try {
     await processPdf(file);
   } catch (err) {
-    console.error(err);
+    if (err.incoming) {
+      const conflict = await conflictForRecord(err.incoming);
+      if (conflict) { renderConflict(err.incoming, conflict); return; }
+    }
     el("status").textContent = `PDF:n luku epäonnistui: ${err.message}`;
   } finally {
     event.target.value = "";
   }
-});
+}));
 
-el("saveButton").addEventListener("click", async () => {
+el("saveButton").addEventListener("click", payrollAction(async () => {
   if (!currentParsed) return;
   const editedValues = collectEditedValues();
   const base = currentRecord || makeRecordFromParsed(currentParsed, currentFingerprint);
@@ -1209,15 +1274,16 @@ el("saveButton").addEventListener("click", async () => {
   el("status").textContent = learned
     ? "Korjaus tallennettu. Palkkalaskelman rakennehavainto päivitettiin paikallisesti."
     : "Korjaus tallennettu.";
-});
+}));
 
-el("replaceConflictButton")?.addEventListener("click", async () => {
+el("replaceConflictButton")?.addEventListener("click", payrollAction(async () => {
   if (!currentPendingRecord || !currentConflict?.existing?.id) return;
   const confirmed = currentReviewWasManualConfirmation || Object.keys(currentPendingRecord.corrections || {}).length > 0;
   const mappingUpdates = confirmed
     ? await learnMappingsFromCorrections(currentRawText, currentPendingRecord.corrections)
     : [];
-  const replacement = await replaceRecord(currentConflict.existing.id, currentPendingRecord);
+  let replacement;
+  try { replacement = await replaceRecord(currentConflict.existing.id, currentPendingRecord, currentConflict.expected); } catch (error) { el("status").textContent = error.message; await renderAll(); return; }
   await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed, mappingUpdates });
   renderSuccess(replacement, false);
   el("resultBadge").textContent = "Korvattu";
@@ -1225,23 +1291,24 @@ el("replaceConflictButton")?.addEventListener("click", async () => {
   el("resultSubtitle").textContent = "Samalle palkka-ajalle ollut aiempi versio korvattiin tällä laskelmalla.";
   await renderAll();
   el("status").textContent = "Ristiriita ratkaistiin korvaamalla aiempi versio.";
-});
+}));
 
-el("keepBothConflictButton")?.addEventListener("click", async () => {
+el("keepBothConflictButton")?.addEventListener("click", payrollAction(async () => {
   if (!currentPendingRecord) return;
   const confirmed = currentReviewWasManualConfirmation || Object.keys(currentPendingRecord.corrections || {}).length > 0;
   const mappingUpdates = confirmed
     ? await learnMappingsFromCorrections(currentRawText, currentPendingRecord.corrections)
     : [];
-  const separate = await saveRecordSeparately(currentPendingRecord);
+  let separate;
+  try { separate = await saveRecordSeparately(currentPendingRecord, currentConflict.expected); } catch (error) { el("status").textContent = error.message; await renderAll(); return; }
   await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed, mappingUpdates });
   renderSuccess(separate, false);
   el("resultBadge").textContent = "Molemmat";
   el("resultTitle").textContent = "Molemmat laskelmat säilytettiin";
-  el("resultSubtitle").textContent = "Saman palkka-ajan eri versiot pidetään erillisinä historiassa.";
+  el("resultSubtitle").textContent = "Molemmat vahvistetut maksut huomioidaan laskennassa kerran.";
   await renderAll();
   el("status").textContent = "Ristiriita ratkaistiin säilyttämällä molemmat versiot.";
-});
+}));
 
 el("cancelConflictButton")?.addEventListener("click", () => {
   currentPendingRecord = null;

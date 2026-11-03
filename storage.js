@@ -3,11 +3,12 @@ import {
   mergeRecords,
   migrateLegacyRecord,
   recordContentKey,
+  visibleRevisions,
   sameRecordContent
 } from "./model.js";
 
 const DB_NAME = "palkka-pwa";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const RECORD_STORE = "payslips";
 const SETTINGS_STORE = "settings";
 const LEGACY_KEY = "palkka-pwa-proto:v1";
@@ -45,7 +46,10 @@ export function openDb() {
           db.createObjectStore(SETTINGS_STORE, { keyPath: "key" });
         }
       };
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        request.result.onversionchange = () => { request.result.close(); dbPromise = null; };
+        resolve(request.result);
+      };
       request.onerror = () => reject(request.error || new Error("Paikallisen tietokannan avaaminen epäonnistui."));
     });
   }
@@ -61,245 +65,158 @@ export async function getAllRecords() {
   return records.map(migrateLegacyRecord).filter(Boolean);
 }
 
-async function getByDuplicateKey(duplicateKey) {
-  if (!duplicateKey) return null;
-  const db = await openDb();
-  const tx = db.transaction(RECORD_STORE, "readonly");
-  const done = transactionDone(tx);
-  const record = await requestToPromise(tx.objectStore(RECORD_STORE).index("duplicateKey").get(duplicateKey));
-  await done;
-  return record ? migrateLegacyRecord(record) : null;
-}
-
-async function getByFingerprint(fingerprint) {
-  if (!fingerprint) return null;
-  const records = await getAllRecords();
-  return records.find(record => (record.fingerprints || []).includes(fingerprint)) || null;
-}
-
-async function getById(id) {
-  if (!id) return null;
-  const db = await openDb();
-  const tx = db.transaction(RECORD_STORE, "readonly");
-  const done = transactionDone(tx);
-  const record = await requestToPromise(tx.objectStore(RECORD_STORE).get(id));
-  await done;
-  return record ? migrateLegacyRecord(record) : null;
-}
-
-export async function replaceRecord(existingId, record) {
-  const incoming = migrateLegacyRecord(record);
-  if (!incoming) throw new Error("Korvaava palkkatieto ei ole kelvollinen.");
-
-  const existing = await getById(existingId);
-  if (!existing) throw new Error("Korvattavaa palkkalaskelmaa ei löytynyt.");
-
-  const replacement = migrateLegacyRecord({
-    ...incoming,
-    id: existing.id,
-    createdAt: existing.createdAt || incoming.createdAt,
-    updatedAt: new Date().toISOString(),
-    fingerprints: [...new Set([...(incoming.fingerprints || [])].filter(Boolean))]
-  });
-
-  const db = await openDb();
-  const tx = db.transaction(RECORD_STORE, "readwrite");
-  tx.objectStore(RECORD_STORE).put(replacement);
-  await transactionDone(tx);
-  return replacement;
-}
-
-export async function upsertRecord(record) {
-  const incoming = migrateLegacyRecord(record);
-  if (!incoming) throw new Error("Tallennettava palkkatieto ei ole kelvollinen.");
-
-  const fingerprint = incoming.fingerprints?.[0] || "";
-  const duplicate = await getByFingerprint(fingerprint) || await getByDuplicateKey(incoming.duplicateKey);
-  const merged = duplicate ? mergeRecords(duplicate, incoming) : incoming;
-
-  if (duplicate && merged.id !== duplicate.id) merged.id = duplicate.id;
-
-  const db = await openDb();
-  const tx = db.transaction(RECORD_STORE, "readwrite");
-  tx.objectStore(RECORD_STORE).put(merged);
-  await transactionDone(tx);
-  return { record: merged, mergedDuplicate: Boolean(duplicate) };
-}
-
-function contentHash(text) {
-  let hash = 2166136261;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
-}
-
-function compatibleRecord(records, incoming, ignoreId = null) {
-  const incomingFingerprints = new Set(incoming.fingerprints || []);
-  return records.find(existing => {
-    if (ignoreId && existing.id === ignoreId) return false;
-    if (sameRecordContent(existing, incoming)) return true;
-
-    const relation = classifyRecordRelation(existing, incoming);
-    if (relation.type === "same_event_conflict") return false;
-
-    if ((existing.fingerprints || []).some(fp => incomingFingerprints.has(fp))) return true;
-    return relation.type === "exact_duplicate" || relation.type === "same_event_compatible";
-  }) || null;
-}
-
-function makeSeparateRecord(incoming, records) {
-  const fingerprint = incoming.fingerprints?.[0] || "";
-  const suffix = fingerprint
-    ? fingerprint.slice(0, 12)
-    : contentHash(recordContentKey(incoming)).slice(0, 12);
-  const base = `${incoming.id || "payslip"}__variant_${suffix}`;
-  let id = base;
-  let counter = 1;
-
-  while (records.some(record => record.id === id && !sameRecordContent(record, incoming))) {
-    id = `${base}_${counter++}`;
-  }
-
-  const existing = records.find(record => record.id === id);
-  if (existing && sameRecordContent(existing, incoming)) return existing;
-
-  return migrateLegacyRecord({
-    ...incoming,
-    id,
-    updatedAt: incoming.updatedAt || new Date().toISOString()
-  });
-}
-
-function planRecordMerge(existingRecords, incomingRecords) {
-  const working = existingRecords.map(migrateLegacyRecord).filter(Boolean);
-  let added = 0;
-  let merged = 0;
-  let conflictsPreserved = 0;
-
-  for (const raw of incomingRecords) {
-    const incoming = migrateLegacyRecord(raw);
-    if (!incoming) throw new Error("Palautettava palkkatieto ei ole kelvollinen.");
-
-    const already = compatibleRecord(working, incoming);
-    if (already && (sameRecordContent(already, incoming) || (incoming.fingerprints || []).some(fp => (already.fingerprints || []).includes(fp)))) {
-      const next = mergeRecords(already, incoming);
-      const index = working.findIndex(record => record.id === already.id);
-      working[index] = next;
-      merged += 1;
-      continue;
-    }
-
-    const sameId = working.find(existing => existing.id === incoming.id) || null;
-    if (sameId) {
-      const relation = classifyRecordRelation(sameId, incoming);
-      if (relation.type === "same_event_conflict" || relation.type === "distinct") {
-        const acceptedVariant = compatibleRecord(working, incoming, sameId.id);
-        if (acceptedVariant) {
-          const next = mergeRecords(acceptedVariant, incoming);
-          const index = working.findIndex(record => record.id === acceptedVariant.id);
-          working[index] = next;
-          merged += 1;
-          continue;
-        }
-        const separate = makeSeparateRecord(incoming, working);
-        if (!working.some(record => record.id === separate.id)) working.push(separate);
-        added += 1;
-        conflictsPreserved += 1;
-        continue;
-      }
-
-      const next = mergeRecords(sameId, incoming);
-      const index = working.findIndex(record => record.id === sameId.id);
-      working[index] = next;
-      merged += 1;
-      continue;
-    }
-
-    const duplicate = compatibleRecord(working, incoming);
-    if (duplicate) {
-      const next = mergeRecords(duplicate, incoming);
-      const index = working.findIndex(record => record.id === duplicate.id);
-      working[index] = next;
-      merged += 1;
-      continue;
-    }
-
-    const conflict = working.find(existing =>
-      classifyRecordRelation(existing, incoming).type === "same_event_conflict"
-    );
-    if (conflict) {
-      working.push(incoming);
-      added += 1;
-      conflictsPreserved += 1;
-      continue;
-    }
-
-    working.push(incoming);
-    added += 1;
-  }
-
-  return { records: working, added, merged, conflictsPreserved };
-}
-
-async function replaceAllRecordsAtomically(records) {
+// Read, decide and write under the same IndexedDB lock (also serializes other tabs).
+async function mutateRecords(decide) {
   const db = await openDb();
   const tx = db.transaction(RECORD_STORE, "readwrite");
   const done = transactionDone(tx);
   const store = tx.objectStore(RECORD_STORE);
-
-  try {
-    store.clear();
-    for (const record of records) store.put(record);
-    await done;
-  } catch (err) {
-    try { tx.abort(); } catch {}
-    try { await done; } catch {}
-    throw err;
-  }
+  let result;
+  let failure;
+  const request = store.getAll();
+  request.onsuccess = () => {
+    try {
+      const rows = request.result.map(migrateLegacyRecord);
+      result = decide(rows, row => store.put(migrateLegacyRecord(row)));
+    } catch (error) { failure = error; tx.abort(); }
+  };
+  try { await done; } catch (error) { throw failure || error; }
+  return result;
 }
 
-export async function saveRecordSeparately(record) {
+function candidates(rows, incoming) {
+  return visibleRevisions(rows).filter(row => row.id !== incoming.id &&
+    classifyRecordRelation(row, incoming).type === "same_event_conflict");
+}
+function conflictError(rows, incoming = null) {
+  const error = new Error("Historia muuttui tai maksu on epäselvä. Tarkista laskelmat uudelleen ennen tallennusta.");
+  error.code = "PAY_EVENT_CONFLICT";
+  error.candidates = rows;
+  error.incoming = incoming;
+  return error;
+}
+function assertExpected(rows, expected, incoming) {
+  if (!expected) return;
+  const currentCandidates = candidates(rows, incoming);
+  if (currentCandidates.some(r => !expected.some(e => e.id === r.id))) throw conflictError(rows);
+  for (const snapshot of expected) {
+    const current = visibleRevisions(rows).find(r => r.id === snapshot.id);
+    if (!current || recordContentKey(current) !== recordContentKey(snapshot) ||
+        JSON.stringify(current.distinctFrom) !== JSON.stringify(snapshot.distinctFrom)) throw conflictError(rows);
+  }
+}
+function archiveReplacement(rows, put, existing, incoming) {
+  if (!visibleRevisions(rows).some(r => r.id === existing.id)) throw conflictError(rows);
+  const replacement = migrateLegacyRecord({ ...incoming, id: crypto.randomUUID(),
+    payEventId: existing.payEventId, resolution: "active",
+    distinctFrom: [...new Set([...existing.distinctFrom, ...incoming.distinctFrom])],
+    supersedes: [...new Set([...existing.supersedes, existing.id, ...incoming.supersedes])],
+    updatedAt: new Date().toISOString() });
+  put({ ...existing, resolution: "superseded" });
+  put(replacement);
+  return replacement;
+}
+export async function replaceRecord(existingId, record, expected = null) {
+  const incoming = migrateLegacyRecord(record);
+  return mutateRecords((rows, put) => {
+    assertExpected(rows, expected, incoming);
+    const existing = rows.find(r => r.id === existingId);
+    if (!existing) throw conflictError(rows);
+    if (existing.id === incoming.id && sameRecordContent(existing, incoming)) return existing;
+    // A stored unresolved input is also an ancestor of the chosen revision.
+    const storedIncoming = rows.find(r => r.id === incoming.id && r.id !== existingId && sameRecordContent(r, incoming));
+    if (storedIncoming) incoming.supersedes = [...incoming.supersedes, storedIncoming.id];
+    return archiveReplacement(rows, put, existing, incoming);
+  });
+}
+export async function upsertRecord(record) {
   const incoming = migrateLegacyRecord(record);
   if (!incoming) throw new Error("Tallennettava palkkatieto ei ole kelvollinen.");
-
-  const records = await getAllRecords();
-  const accepted = compatibleRecord(records, incoming);
-  if (accepted) {
-    const merged = mergeRecords(accepted, incoming);
-    if (!sameRecordContent(accepted, merged) || accepted.updatedAt !== merged.updatedAt) {
-      const db = await openDb();
-      const tx = db.transaction(RECORD_STORE, "readwrite");
-      tx.objectStore(RECORD_STORE).put(merged);
-      await transactionDone(tx);
+  return mutateRecords((rows, put) => {
+    const sameId = rows.find(r => r.id === incoming.id);
+    if (sameId && sameRecordContent(sameId, incoming)) return { record: sameId, mergedDuplicate: true };
+    // A user edit is an immutable revision, never an overwrite of an old backup ancestor.
+    if (sameId && (Object.keys(incoming.corrections).length || Object.keys(sameId.corrections).length)) {
+      const conflicts = candidates(rows, incoming);
+      if (conflicts.length) throw conflictError(conflicts, incoming);
+      return { record: archiveReplacement(rows, put, sameId, incoming), mergedDuplicate: true };
     }
-    return merged;
-  }
-
-  const separate = makeSeparateRecord(incoming, records);
-  const db = await openDb();
-  const tx = db.transaction(RECORD_STORE, "readwrite");
-  tx.objectStore(RECORD_STORE).put(separate);
-  await transactionDone(tx);
-  return separate;
+    const source = incoming.sourceHash && rows.filter(r => r.sourceHash === incoming.sourceHash);
+    if (source?.length) {
+      const active = visibleRevisions(rows).filter(r => source.some(s => r.id === s.id || r.supersedes.includes(s.id)));
+      if (active.length === 1) return { record: active[0], mergedDuplicate: true };
+      throw conflictError(active, incoming);
+    }
+    const conflicts = candidates(rows, incoming);
+    if (conflicts.length || sameId) throw conflictError(conflicts, incoming);
+    put(incoming);
+    return { record: incoming, mergedDuplicate: false };
+  });
 }
-
+export async function saveRecordSeparately(record, expected = null) {
+  const incoming = migrateLegacyRecord(record);
+  return mutateRecords((rows, put) => {
+    assertExpected(rows, expected, incoming);
+    const repeated = rows.find(r => r.decisionInputId === incoming.id && sameRecordContent(r, incoming));
+    if (repeated) return repeated;
+    const stored = rows.find(r => r.id === incoming.id && sameRecordContent(r, incoming));
+    const relevant = visibleRevisions(rows).filter(r => r.id !== incoming.id && classifyRecordRelation(r, incoming).type !== "distinct");
+    if (stored && !relevant.length) return stored;
+    const separate = { ...incoming, decisionInputId: incoming.id,
+      id: crypto.randomUUID(),
+      payEventId: crypto.randomUUID(),
+      supersedes: stored ? [...stored.supersedes, stored.id] : incoming.supersedes,
+      resolution: "active", distinctFrom: [...incoming.distinctFrom] };
+    if (stored) put({ ...stored, resolution: "superseded" });
+    // Persist a pairwise decision, never a blanket exemption for future corrections.
+    for (const other of relevant) {
+      separate.distinctFrom.push(other.payEventId);
+      put({ ...other, distinctFrom: [...new Set([...other.distinctFrom, separate.payEventId])] });
+    }
+    // Same ID may be a legacy collision with changed values.
+    if (!stored) for (const other of rows.filter(r => r.id === incoming.id)) {
+      separate.distinctFrom.push(other.payEventId);
+      put({ ...other, distinctFrom: [...new Set([...other.distinctFrom, separate.payEventId])] });
+    }
+    separate.distinctFrom = [...new Set(separate.distinctFrom)];
+    put(separate);
+    return migrateLegacyRecord(separate);
+  });
+}
 export async function mergeManyRecords(records) {
-  const existing = await getAllRecords();
-  const plan = planRecordMerge(existing, records);
-
-  const currentSnapshot = JSON.stringify(existing);
-  const nextSnapshot = JSON.stringify(plan.records);
-  if (currentSnapshot !== nextSnapshot) {
-    await replaceAllRecordsAtomically(plan.records);
-  }
-
-  return {
-    added: plan.added,
-    merged: plan.merged,
-    conflictsPreserved: plan.conflictsPreserved
-  };
+  const incomingRecords = records.map(migrateLegacyRecord);
+  if (incomingRecords.some(r => !r)) throw new Error("Virheellinen varmuuskopio.");
+  return mutateRecords((rows, put) => {
+    let added = 0, merged = 0, conflictsPreserved = 0;
+    // Resolve the entire incoming graph before writing any node. An ID collision
+    // must never let a foreign descendant suppress an unrelated local revision.
+    const mapping = new Map();
+    const prepared = [];
+    for (const incoming of incomingRecords) {
+      if (mapping.has(incoming.id)) throw new Error("Varmuuskopiossa on toistuva versiotunniste. Historiaa ei muutettu.");
+      const same = rows.find(r => r.payEventId === incoming.payEventId &&
+        (r.id === incoming.id || r.importRevisionId === incoming.id) && sameRecordContent(r, incoming));
+      const collision = rows.some(r => r.id === incoming.id);
+      const id = same?.id || (collision ? crypto.randomUUID() : incoming.id);
+      mapping.set(incoming.id, id);
+      prepared.push({ incoming, same, id, collision });
+    }
+    for (const { incoming, same, id, collision } of prepared) {
+      const supersedes = incoming.supersedes.map(ancestor => mapping.get(ancestor) || ancestor);
+      if (same) {
+        const next = { ...same,
+          resolution: same.resolution === "superseded" || incoming.resolution === "superseded" ? "superseded" : same.resolution,
+          supersedes: [...new Set([...same.supersedes, ...supersedes])],
+          distinctFrom: [...new Set([...same.distinctFrom, ...incoming.distinctFrom])] };
+        rows[rows.indexOf(same)] = next; put(next); merged++; continue;
+      }
+      const next = { ...incoming, id, supersedes,
+        importRevisionId: collision ? incoming.id : incoming.importRevisionId };
+      if (collision || candidates(rows, next).length) conflictsPreserved++;
+      rows.push(next); put(next); added++;
+    }
+    return { added, merged, conflictsPreserved };
+  });
 }
 
 export async function clearAllRecords() {
