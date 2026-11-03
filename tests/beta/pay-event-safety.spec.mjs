@@ -75,3 +75,20 @@ test('missing payment date can be repaired from History',async({page})=>{
   await expect(page.locator('#status')).toContainText('Korjaus tallennettu');
   expect((await state(page)).analysis.totalNet).toBe(1900);
 });
+test('choosing another replacement target updates the comparison and replaces only that target',async({page})=>{
+  await page.goto('/index.html');
+  await page.evaluate(async()=>{const s=await import('/storage.js'),m=await import('/model.js');
+    await s.mergeManyRecords([1000,1200,1400].map((net,i)=>m.migrateLegacyRecord({recordSchemaVersion:1,id:'choice-'+i,
+      values:{payDate:'2026-08-28',payPeriodStart:'2026-08-01',payPeriodEnd:'2026-08-15',grossPay:3000,netPay:net,ytdTaxableIncome:24000}})));});
+  await page.locator('#pdfInput').setInputFiles(pdf('1 950,00','target-test'));
+  await expect(page.locator('#conflictSection')).toBeVisible();
+  await page.locator('#replacementTarget').selectOption('choice-2');
+  await expect(page.locator('#replacementTarget')).toHaveValue('choice-2');
+  await expect(page.locator('#conflictSummary')).toContainText(/1\s*400,00.*→.*1\s*950,00/);
+  await page.locator('#replaceConflictButton').click();
+  await expect(page.locator('#resultBadge')).toHaveText('Korvattu');
+  const result=await state(page);
+  expect(result.rows.find(r=>r.id==='choice-2').resolution).toBe('superseded');
+  expect(result.visible.map(r=>r.values.netPay).sort((a,b)=>a-b)).toEqual([1000,1200,1950]);
+  expect(result.analysis.totalNet).toBeNull();
+});

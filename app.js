@@ -13,6 +13,7 @@ import {
 import {
   VALUE_KEYS,
   projectPayroll,
+  recordDifferences,
   visibleRevisions,
   applyUserCorrections,
   makeBackup,
@@ -1116,7 +1117,11 @@ function renderConflict(record, conflict) {
     option.textContent = `${fmtDate(candidate.values.payDate)} · ${fmtDate(candidate.values.payPeriodStart)}–${fmtDate(candidate.values.payPeriodEnd)} · netto ${fmtMoney(candidate.values.netPay)}`;
     select.append(option);
   }
-  select.addEventListener("change", () => { currentConflict.existing = choices.find(r => r.id === select.value); });
+  select.value = conflict.existing.id;
+  select.addEventListener("change", () => {
+    const existing = choices.find(r => r.id === select.value);
+    renderConflict(record, { ...conflict, existing, differences: recordDifferences(existing, record) });
+  });
   label.append(select); host.append(label);
   const identityRows = [
     ["Maksupäivä", fmtFieldValue("payDate", record.values?.payDate)],
