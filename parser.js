@@ -728,7 +728,7 @@ export function validate(fields) {
     });
   }
 
-  if (v("grossPay") != null && v("netPay") != null && v("netPay") > v("grossPay")) {
+  if (v("grossPay") != null && v("netPay") != null && v("grossPay") >= 0 && v("netPay") > v("grossPay")) {
     notices.push({
       level: "blocking", code: "net-greater-than-gross",
       message: "Nettopalkka on bruttopalkkaa suurempi — tarkista tulkinta.",

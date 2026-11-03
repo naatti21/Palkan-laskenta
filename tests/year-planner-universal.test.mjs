@@ -2,12 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
+import { projectPayroll } from "../model.js";
 
 const html=readFileSync(new URL("../experiments/year-planner/index.html",import.meta.url),"utf8");
 const historyJs=html.match(/<script id="planner-history-core">([\s\S]*?)<\/script>/)?.[1];
 const planJs=html.match(/<script id="planner-core">([\s\S]*?)<\/script>/)?.[1];
 assert.ok(historyJs&&planJs,"Embedded pure models exist");
-const context={};vm.runInNewContext(historyJs,context);vm.runInNewContext(planJs,context);
+const context={payrollProjection:projectPayroll};vm.runInNewContext(historyJs,context);vm.runInNewContext(planJs,context);
 const suggest=context.PalkkaPlannerHistory.historySuggestions;
 const compute=context.PalkkaPlannerCore.computePlan;
 const pay=(month,lines,day="09",kta=24)=>({
@@ -37,7 +38,7 @@ test("ordinary hourly wage can be recognized without production premium",()=>{
 });
 test("unknown or conflicting salary models never invent a base salary",()=>{
   assert.equal(suggest(backup([pay(1,[]),pay(2,[]),pay(3,[])])).baseEstimate,null);
-  const mixed=backup([...hourly,...monthly.map((v,i)=>({...v,values:{...v.values,payDate:"2026-0"+(i+4)+"-10"}}))]);
+  const mixed=backup([...hourly,...monthly.map((v,i)=>({...v,values:{...v.values,payDate:"2026-0"+(i+4)+"-10",payPeriodStart:"2026-0"+(i+4)+"-01",payPeriodEnd:"2026-0"+(i+4)+"-08"}}))]);
   const r=suggest(mixed);
   assert.equal(r.wageModel,"unknown");assert.equal(r.baseEstimate,null);
 });
@@ -65,12 +66,17 @@ test("unfilled weekend estimate is not treated as a zero-pay prediction",()=>{
 });
 test("unknown record year and duplicate payroll events fail conservatively",()=>{
   assert.throws(()=>suggest(backup([])),/palkkalaskelmia/);
-  const r=suggest(backup([...hourly,hourly[0]]));
-  assert.equal(r.excludedConflicts,2);
+  assert.throws(()=>suggest(backup([...hourly,hourly[0]])),/ristiriidat/);
 });
 test("UI explicitly marks user-confirmed TES and bonus optional, keeps full comparison",()=>{
  assert.ok(html.includes('id="rulesConfirmed"'));
  assert.ok(html.includes('id="planYear"'));
  assert.ok(html.includes('id="allSamples"'));
  assert.ok(html.includes('id="wageModelNote"'));
+});
+test('confirmed separate same-day payments never select arbitrary YTD',()=>{
+ const a={...hourly[0],payEventId:'pay-a',resolution:'confirmed-distinct'};
+ const b={...a,payEventId:'pay-b',values:{...a.values,ytdTaxableIncome:9999}};
+ const first=suggest(backup([a,b])), second=suggest(backup([b,a]));
+ assert.equal(first.latestYtd,null);assert.equal(second.latestYtd,null);
 });

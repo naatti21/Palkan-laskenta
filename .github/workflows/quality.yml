@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install test dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Run unit and scenario tests
         run: node --test tests/*.test.mjs
 
@@ -51,9 +54,11 @@ jobs:
         run: npm run test:e2e
 
       - name: Run isolated Beta integration tests
+        if: success() || failure()
         run: npm run test:beta
 
       - name: Run staging isolation tests
+        if: success() || failure()
         run: npm run test:staging
 
       - name: Upload failure report

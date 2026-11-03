@@ -182,6 +182,10 @@ html.beta-integrated .card{margin-top:8px;box-shadow:none;}
   </section>
   <footer>Paikallinen, itsenäinen demotiedosto · ei verkkopyyntöjä, ei seurantaa, ei tietojen tallennusta · kokeiluluvut eivät ole vero- tai palkkaneuvontaa. Varmuuskopion valinta ei palauta sitä Palkka-sovellukseen.</footer>
 </main>
+<script type="module">
+import { projectPayroll } from "../../model.js";
+globalThis.payrollProjection = projectPayroll;
+</script>
 <script id="planner-history-core">
 (function(){
 'use strict';
@@ -190,19 +194,18 @@ const isDate=s=>typeof s==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 function median(xs){const a=[...xs].sort((x,y)=>x-y);return a.length?(a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2):null;}
 function historySuggestions(backup,weeklyHours=40){
   if(!backup || backup.app!=='Palkka PWA' || !Array.isArray(backup.records) ||
-     !Number.isFinite(backup.backupSchemaVersion) || !Number.isFinite(backup.recordSchemaVersion))
+     ![2,3].includes(backup.backupSchemaVersion) || ![1,2].includes(backup.recordSchemaVersion))
       throw new Error('Tiedosto ei ole tunnistettu Palkka-varmuuskopio.');
   if(!validNumber(weeklyHours)||weeklyHours<1||weeklyHours>60)throw new Error('Viikkotyöaika ei ole kelvollinen.');
   if(backup.records.length>10000)throw new Error('Varmuuskopiossa on liikaa tietueita.');
-  const original=backup.records.filter(r=>r&&r.kind!=='forecast'&&isDate(r.values?.payDate)&&r.values?.payDate.slice(0,4)>='2000');
+  const projection=globalThis.payrollProjection(backup.records);
+  const original=projection.visible.filter(r=>r&&r.kind!=='forecast'&&isDate(r.values?.payDate)&&r.values?.payDate.slice(0,4)>='2000');
   if(!original.length)throw new Error('Varmuuskopiossa ei ole päivämäärällisiä palkkalaskelmia.');
   const year=Math.max(...original.map(r=>Number(r.values.payDate.slice(0,4))));
   const yearly=original.filter(r=>Number(r.values.payDate.slice(0,4))===year);
-  // Same payment event can have mutually contradictory versions: never silently use either for aggregates.
-  const key=r=>[r.values.payDate,r.values.payPeriodStart||'?',r.values.payPeriodEnd||'?'].join('|');
-  const counts=new Map();for(const r of yearly)counts.set(key(r),(counts.get(key(r))||0)+1);
-  const conflicted=yearly.filter(r=>counts.get(key(r))>1).length;
-  const rows=yearly.filter(r=>counts.get(key(r))===1).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
+  const conflicted=yearly.filter(r=>projection.unresolved.includes(r)).length;
+  const rows=yearly.filter(r=>projection.active.includes(r)).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
+  if(conflicted || projection.unresolved.some(r=>!r.values?.payDate)) throw new Error('Ratkaise historian ristiriidat ennen vuosilaskurin ehdotuksia.');
   if(!rows.length)throw new Error('Viimeisimmän vuoden tiedot ovat ristiriitaisia.');
   let holiday=0,bonus=0,other=0;
   let linesObserved=0,holidayItems=0,bonusItems=0;
@@ -259,7 +262,8 @@ function historySuggestions(backup,weeklyHours=40){
   const ktaRate=median(ktaRates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(r=>r.rate));
   const baseEstimate=avgRate!==null?Math.round((avgRate*weeklyHours*52)/100)*100
     :monthlyRate!==null?Math.round(monthlyRate*12/100)*100:null;
-  const latestYtd=[...rows].reverse().find(r=>validNumber(r.values?.ytdTaxableIncome) && r.values.ytdTaxableIncome>=0);
+  const newest=rows.at(-1);
+  const latestYtd=rows.filter(r=>r.values.payDate===newest?.values.payDate).length===1 && validNumber(newest?.values.ytdTaxableIncome) ? newest : null;
   const latestDeductions=deductions.sort((a,b)=>b.date.localeCompare(a.date))[0];
   return {year,records:rows.length,excludedConflicts:conflicted,lineCoverage:linesObserved,total:yearly.length,
     holiday:holidayItems?Math.round(holiday*100)/100:null,

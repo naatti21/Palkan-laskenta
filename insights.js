@@ -1,3 +1,4 @@
+import { projectPayroll } from "./model.js";
 // Deterministic, read-only salary insights. Source records are never modified.
 // Payment-year observations and earned-period dates are intentionally separate.
 const OVERTIME = new Set(["20040","20050","20060","20070","20080","1220","1230","1240"]);
@@ -23,13 +24,12 @@ function payIdentity(record) {
   return [v.payDate, v.payPeriodStart || "?", v.payPeriodEnd || "?"].join("|");
 }
 function safeRecords(records, year) {
-  const all = (Array.isArray(records) ? records : [])
+  const projection = projectPayroll(Array.isArray(records) ? records : []);
+  const all = projection.visible
     .filter(r=>r && r.kind !== "forecast" && validDate(r.values?.payDate) &&
       Number(r.values.payDate.slice(0,4)) === year);
-  const counts = new Map();
-  for (const r of all) counts.set(payIdentity(r),(counts.get(payIdentity(r))||0)+1);
-  const conflicts = all.filter(r=>counts.get(payIdentity(r))>1);
-  const safe = all.filter(r=>counts.get(payIdentity(r))===1).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
+  const conflicts = all.filter(r => projection.unresolved.includes(r));
+  const safe = all.filter(r => projection.active.includes(r)).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
   return {all,safe,conflicts};
 }
 function overtimeRows(record) {

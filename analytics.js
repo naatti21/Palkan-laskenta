@@ -1,3 +1,4 @@
+import { projectPayroll } from "./model.js";
 // Payment-date analytics for already stored payslips.
 // This module never changes source records or reconstructs work dates from pay dates.
 const MONTHS = ["tammi", "helmi", "maalis", "huhti", "touko", "kesä", "heinä", "elo", "syys", "loka", "marras", "joulu"];
@@ -42,14 +43,14 @@ function sumOvertime(records) {
 
 export function buildYearAnalysis(records, year) {
   if (!Number.isInteger(year) || year < 1900 || year > 2200) throw new Error("Virheellinen analyysivuosi");
-  const yearly = (Array.isArray(records) ? records : [])
+  const projection = projectPayroll(Array.isArray(records) ? records : []);
+  const yearly = projection.visible
     .filter(r => r && r.kind !== "forecast" && isPayDate(r.values?.payDate, year))
     .sort((a, b) => a.values.payDate.localeCompare(b.values.payDate));
-  const duplicates = new Map();
-  for (const r of yearly) duplicates.set(identity(r), (duplicates.get(identity(r)) || 0) + 1);
-  const hasAmbiguous = r => duplicates.get(identity(r)) > 1;
+  const hasAmbiguous = r => projection.unresolved.includes(r);
   const clean = yearly.filter(r => !hasAmbiguous(r));
-  const rejected = yearly.length - clean.length;
+  const unknownDate = projection.unresolved.some(r => !r.values?.payDate);
+  const rejected = yearly.length - clean.length + (unknownDate ? 1 : 0);
 
   const months = Array.from({ length: 12 }, (_, index) => {
     const number = index + 1;
@@ -79,7 +80,7 @@ export function buildYearAnalysis(records, year) {
     totalGross,
     totalNet,
     // Snapshot from the newest payslip, NOT the sum of monthly/yearly YTD values.
-    latestYtd: finiteNumber(last?.values?.ytdTaxableIncome),
+    latestYtd: rejected || yearly.filter(r => r.values.payDate === last?.values.payDate).length > 1 ? null : finiteNumber(last?.values?.ytdTaxableIncome),
     lastPaymentDate: last?.values?.payDate ?? null,
     overtime: {
       ...hours,

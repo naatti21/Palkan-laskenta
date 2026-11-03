@@ -1,3 +1,4 @@
+import { projectPayroll } from "./model.js";
 // Tax-card withholding simulation for additional cash wages.
 // NO prediction of final tax, contractual weekend pay, pension rates, or performed hours.
 // No source records are changed; inputs are annual tax-card assumptions as of a pay date.
@@ -66,12 +67,15 @@ export function weekendSimulation(s,{weekendGross,weekendHours,weekendCount,free
 // Reviewable tax-card defaults: never conflate taxable YTD with tax card accumulated income.
 // Default ONLY when explicit card limit, accumulated income and both percent fields are present.
 export function deriveTaxDefaults(records,year) {
- const xs=(Array.isArray(records)?records:[]).filter(r=>
+ const projection = projectPayroll(Array.isArray(records)?records:[]);
+ const uncertain = projection.unresolved.some(r => !r.values?.payDate || r.values.payDate.startsWith(String(year)));
+ const xs=(uncertain ? [] : projection.active).filter(r=>
   r?.kind!=="forecast"&&typeof r?.values?.payDate==="string"&&
   /^\d{4}-\d{2}-\d{2}$/.test(r.values.payDate)&&
   r.values.payDate.startsWith(String(year)+"-"))
   .sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
- const last=xs.at(-1);
+ const latest=xs.at(-1);
+ const last=xs.filter(r => r.values.payDate === latest?.values.payDate).length > 1 ? null : latest;
  const v=last?.values||{};
  const r={sourceDate:v.payDate||null,baseRate:v.taxRate,extraRate:v.additionalRate,
    limit:v.taxLimit,accumulated:v.taxCardAccumulatedIncome};

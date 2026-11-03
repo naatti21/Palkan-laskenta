@@ -43,7 +43,7 @@ test('missing limit and bad accumulation do not show a percentage', () => {
 test('does not invent a payday when history is sparse or conflicting', () => {
   assert.match(forecastTaxCardLimit(sample.slice(-2), 2026, now).estimate, /lisää/);
   const duplicate = [...sample, row('2026-10-02', 9600)];
-  assert.match(forecastTaxCardLimit(duplicate, 2026, now).estimate, /Useita/);
+  assert.match(forecastTaxCardLimit(duplicate, 2026, now).estimate, /ristiriidat/);
 });
 
 test('avoids projected dates for older years and stale snapshots', () => {

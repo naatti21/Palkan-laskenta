@@ -136,7 +136,7 @@ test("saman palkkatapahtuman ristiriita voidaan säilyttää erillisenä ilman h
   expect(result.separateId).not.toBe(result.originalId);
 });
 
-test("korvaa aiempi -polku pitää yhden tietueen ja vaihtaa arvot", async ({ page }) => {
+test("korvaa aiempi -polku arkistoi alkuperäisen ja aktivoi uuden version", async ({ page }) => {
   await page.goto("/index.html");
 
   const result = await page.evaluate(async () => {
@@ -178,13 +178,13 @@ test("korvaa aiempi -polku pitää yhden tietueen ja vaihtaa arvot", async ({ pa
     return {
       count: records.length,
       id: replacement.id,
-      netPay: records[0].values.netPay,
-      fingerprints: records[0].fingerprints
+      netPay: model.visibleRevisions(records)[0].values.netPay,
+      fingerprints: model.visibleRevisions(records)[0].fingerprints
     };
   });
 
-  expect(result.count).toBe(1);
-  expect(result.id).toBe("original");
+  expect(result.count).toBe(2);
+  expect(result.id).not.toBe("original");
   expect(result.netPay).toBe(2728.39);
   expect(result.fingerprints).toEqual(["fp-corrected"]);
 });
@@ -403,10 +403,10 @@ test("R2-02: toinen käyttäjäkorjaus voittaa ensimmäisen mutta parseriarvo s�
 
     const first = model.applyUserCorrections(original, { netPay: 2400 });
     await storage.upsertRecord(first);
-    const storedFirst = (await storage.getAllRecords())[0];
+    const storedFirst = model.visibleRevisions(await storage.getAllRecords())[0];
     const second = model.applyUserCorrections(storedFirst, { netPay: 2500 });
     await storage.upsertRecord(second);
-    const storedSecond = (await storage.getAllRecords())[0];
+    const storedSecond = model.visibleRevisions(await storage.getAllRecords())[0];
 
     return {
       netPay: storedSecond.values.netPay,
@@ -557,7 +557,7 @@ test("R3-01: legacy-migraatio säilyttää saman tapahtuman ristiriitaversiot en
   expect(result.source).toBeNull();
 });
 
-test("R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei tee kopiota", async ({ page }) => {
+test("R3-02: alkuperäisen PDF:n uusintatuonti säilyttää käyttäjäkorjauksen ja arkiston", async ({ page }) => {
   await page.goto("/index.html");
   const basePdf = makeTextPdf([
     "PALKKALASKELMA",
@@ -584,18 +584,19 @@ test("R3-02: saman jo säilytetyn konfliktiversion uusi Säilytä molemmat ei te
   await expect(page.locator("#resultSection")).toBeVisible();
 
   await upload();
-  await expect(page.locator("#conflictSection")).toBeVisible();
-  await page.locator("#keepBothConflictButton").click();
+  await expect(page.locator("#status")).toContainText("ilman tuplaa");
+  await expect(page.locator("#conflictSection")).toBeHidden();
 
   await upload();
-  await expect(page.locator("#conflictSection")).toBeVisible();
-  await page.locator("#keepBothConflictButton").click();
+  await expect(page.locator("#status")).toContainText("ilman tuplaa");
+  await expect(page.locator("#conflictSection")).toBeHidden();
 
   const records = await page.evaluate(async () => {
     const storage = await import("/storage.js");
     return await storage.getAllRecords();
   });
   expect(records).toHaveLength(2);
+  expect(records.filter(r=>r.resolution!=="superseded").map(r=>r.values.netPay)).toEqual([2700]);
   expect(records.map(r => r.values.netPay).sort((a,b)=>a-b)).toEqual([2678.39, 2700]);
 });
 

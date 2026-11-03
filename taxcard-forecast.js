@@ -1,3 +1,4 @@
+import { projectPayroll } from "./model.js";
 // Beta: tax-card progress and cautious estimate from observed payroll snapshots.
 // No full-year YTD substitution: accumulation and limit must belong to one card.
 const dayMs = 86400000;
@@ -31,9 +32,12 @@ function unchangedCard(a, b) {
   return true;
 }
 export function forecastTaxCardLimit(records, year, now = new Date()) {
-  const slips = (records || []).filter(row => row && row.taxYear === year && row.kind !== 'forecast')
+  const projection = projectPayroll(records || []);
+  if (projection.unresolved.some(r => !r.values?.payDate || Number(r.values.payDate.slice(0,4)) === year)) return { valid: false, estimate: "Ratkaise Historian ristiriidat ennen tulorajan seurantaa." };
+  const slips = projection.active.filter(row => row && row.taxYear === year && row.kind !== 'forecast')
     .sort((a, b) => String(val(a, 'payDate') || '').localeCompare(String(val(b, 'payDate') || '')));
   const latest = slips.at(-1);
+  if (latest && slips.filter(r => val(r, "payDate") === val(latest, "payDate")).length > 1) return { valid: false, estimate: "Samana päivänä on useita kertymäkuvia. Vahvista ajantasainen verokortti." };
   const limit = money(val(latest, 'taxLimit'));
   const used = money(val(latest, 'taxCardAccumulatedIncome'));
   if (!latest || limit === null || limit <= 0 || used === null || used < 0) {

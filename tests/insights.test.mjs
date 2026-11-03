@@ -33,13 +33,14 @@ test("year starts with December 2025 work but January 2026 payment",()=>{
   assert.equal(x.months[0].net,3844.96);
 });
 
-test("same earning period but different pay dates are independent bonus/pay events",()=>{
+test("explicitly confirmed same-period payments on different dates are independent",()=>{
   const records=[
     record("salary","2026-04-02","2026-03-16","2026-03-29",3612.66,2186.03,[ot("20040",6.06,149.50)]),
     record("bonus","2026-04-17","2026-03-16","2026-03-29",5237,3168.91,[],{bonus:[
       {code:"40000",amount:4837,quantity:null},{code:"40070",amount:400,quantity:null}
     ]})
   ];
+  records.forEach((r,i) => { r.payEventId = `confirmed-${i}`; r.resolution = "confirmed-distinct"; });
   const x=buildInsightReport(records,2026);
   assert.equal(x.excludedConflicts,0);
   assert.equal(x.months[3].net,5354.94);

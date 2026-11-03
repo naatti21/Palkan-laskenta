@@ -1,5 +1,5 @@
-export const RECORD_SCHEMA_VERSION = 1;
-export const BACKUP_SCHEMA_VERSION = 2;
+export const RECORD_SCHEMA_VERSION = 2;
+export const BACKUP_SCHEMA_VERSION = 3;
 
 const LEARNED_SIGNAL_ALLOWLIST = new Set([
   "title:palkkalaskelma", "title:palkkaerittely",
@@ -69,14 +69,14 @@ function validateBackupRecordInput(input, index, allowLegacyFlat = false) {
     throw new Error(`${context} ei ole kelvollinen tietue.`);
   }
 
-  const values = input.recordSchemaVersion === RECORD_SCHEMA_VERSION && input.values
+  const values = [1, 2].includes(input.recordSchemaVersion) && input.values
     ? input.values
     : allowLegacyFlat ? input : null;
 
   if (!values || typeof values !== "object" || Array.isArray(values)) {
     throw new Error(`${context}: values puuttuu tai ei ole kelvollinen.`);
   }
-  if (!allowLegacyFlat && input.recordSchemaVersion !== RECORD_SCHEMA_VERSION) {
+  if (!allowLegacyFlat && ![1, 2].includes(input.recordSchemaVersion)) {
     throw new Error(`${context}: tietueskeemaa ei tueta.`);
   }
 
@@ -235,6 +235,7 @@ export function payEventKeyFromValues(values = {}) {
 }
 
 const CONFLICT_VALUE_KEYS = [
+  "payDate", "payPeriodStart", "payPeriodEnd",
   "grossPay", "netPay", "ytdTaxableIncome", "previousYearTaxableIncome",
   "taxCardAccumulatedIncome", "withholdingPeriod", "withholdingYtd",
   "taxRate", "taxLimit", "additionalRate", "kta", "pp",
@@ -274,19 +275,22 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   const incoming = migrateLegacyRecord(incomingInput);
   if (!existing || !incoming) return { type: "distinct", differences: [] };
 
-  const existingEventKey = payEventKeyFromValues(existing.values);
-  const incomingEventKey = payEventKeyFromValues(incoming.values);
-  const sameEvent = existingEventKey && incomingEventKey && existingEventKey === incomingEventKey;
-  const differences = sameEvent ? recordDifferences(existing, incoming) : [];
-
-  if (sameEvent && differences.length) {
-    return { type: "same_event_conflict", eventKey: existingEventKey, differences };
-  }
-  if (existing.duplicateKey && incoming.duplicateKey && existing.duplicateKey === incoming.duplicateKey) {
-    return { type: "exact_duplicate", eventKey: existingEventKey || incomingEventKey || null, differences: [] };
-  }
-  if (sameEvent) {
-    return { type: "same_event_compatible", eventKey: existingEventKey, differences: [] };
+  const differences = recordDifferences(existing, incoming);
+  const a = existing.values, b = incoming.values;
+  const eventKey = payEventKeyFromValues(a);
+  if (existing.payEventId !== incoming.payEventId && (
+    existing.distinctFrom.includes(incoming.payEventId) || incoming.distinctFrom.includes(existing.payEventId) ||
+    (existing.resolution === "confirmed-distinct" && incoming.resolution === "confirmed-distinct")
+  )) return { type: "distinct", differences: [] };
+  const sameSource = existing.sourceHash && existing.sourceHash === incoming.sourceHash;
+  const sameRevision = existing.id === incoming.id && sameRecordContent(existing, incoming);
+  if (sameSource || sameRevision) return { type: "exact_duplicate", eventKey, differences };
+  const overlap = a.payPeriodStart && a.payPeriodEnd && b.payPeriodStart && b.payPeriodEnd &&
+    a.payPeriodStart <= b.payPeriodEnd && b.payPeriodStart <= a.payPeriodEnd;
+  const incomplete = !a.payPeriodStart || !a.payPeriodEnd || !b.payPeriodStart || !b.payPeriodEnd;
+  if (existing.payEventId === incoming.payEventId || overlap ||
+      (a.payDate === b.payDate && incomplete) || !a.payDate || !b.payDate) {
+    return { type: "same_event_conflict", eventKey, differences };
   }
   return { type: "distinct", eventKey: null, differences: [] };
 }
@@ -296,17 +300,22 @@ export function findRecordConflict(records, incomingInput, options = {}) {
   if (!incoming) return null;
   const ignoreRecordId = options?.ignoreRecordId || null;
 
-  for (const existing of Array.isArray(records) ? records : []) {
-    if (ignoreRecordId && existing?.id === ignoreRecordId) continue;
-    const relation = classifyRecordRelation(existing, incoming);
-    if (relation.type === "same_event_conflict") return { existing, ...relation };
-  }
+  const storedInput = records.some(r => r.id === incoming.id && sameRecordContent(r, incoming));
+  const sourceMatches = visibleRevisions(records).filter(r => incoming.sourceHash && r.sourceHash === incoming.sourceHash);
+  const candidates = visibleRevisions(records).filter(existing =>
+    (!ignoreRecordId || existing.id !== ignoreRecordId) &&
+    existing.id !== (storedInput ? incoming.id : null) &&
+    (classifyRecordRelation(existing, incoming).type === "same_event_conflict" ||
+      ((storedInput || sourceMatches.length > 1) && classifyRecordRelation(existing, incoming).type === "exact_duplicate")));
+  if (candidates.length) return { existing: candidates[0], candidates,
+    ...classifyRecordRelation(candidates[0], incoming) };
+
   return null;
 }
 
 
 export function recordIdFrom(values = {}, fingerprint = "") {
-  const duplicateKey = duplicateKeyFromValues(values, fingerprint) || `manual|${Date.now()}`;
+  const duplicateKey = duplicateKeyFromValues(values, fingerprint) || `legacy|${values.payDate || ""}|${values.payPeriodStart || ""}|${values.payPeriodEnd || ""}`;
   return duplicateKey.replace(/[^a-zA-Z0-9:_|.-]/g, "_");
 }
 
@@ -334,7 +343,12 @@ export function makeRecordFromParsed(parsed, fingerprint = "") {
   const duplicateKey = duplicateKeyFromValues(safeValueMap, fingerprint);
   return {
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
-    id: recordIdFrom(safeValueMap, fingerprint),
+    id: crypto.randomUUID(),
+    payEventId: crypto.randomUUID(),
+    resolution: "active",
+    supersedes: [],
+    distinctFrom: [],
+    sourceHash: /^[a-f0-9]{64}$/.test(fingerprint) ? fingerprint : null,
     kind: "payslip",
     taxYear: taxYearFromDate(safeValueMap.payDate),
     duplicateKey,
@@ -397,6 +411,7 @@ export function recordContentKey(input) {
   if (!record) return "";
   return JSON.stringify({
     kind: record.kind,
+    sourceHash: record.sourceHash,
     values: record.values,
     fingerprints: [...(record.fingerprints || [])].sort(),
     fieldMeta: record.fieldMeta,
@@ -443,6 +458,7 @@ export function mergeRecords(existingInput, incomingInput) {
   const duplicateKey = duplicateKeyFromValues(mergedValues, mergedFingerprints[0] || "");
 
   const candidate = migrateLegacyRecord({
+    ...existing,
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
     id: existing.id || incoming.id || recordIdFrom(mergedValues, mergedFingerprints[0] || ""),
     kind: existing.kind || incoming.kind || "payslip",
@@ -466,7 +482,8 @@ export function mergeRecords(existingInput, incomingInput) {
 export function migrateLegacyRecord(input) {
   if (!input || typeof input !== "object") return null;
 
-  if (input.recordSchemaVersion === RECORD_SCHEMA_VERSION && input.values) {
+  if (input.recordSchemaVersion != null && ![1, 2].includes(input.recordSchemaVersion)) throw new Error("Tuntematon tietueskeema.");
+  if (input.values) {
     const values = safeValues(input.values);
     const fingerprints = Array.isArray(input.fingerprints)
       ? input.fingerprints.filter(value => typeof value === "string" && value.length <= 128).slice(0, 20)
@@ -475,6 +492,13 @@ export function migrateLegacyRecord(input) {
     return {
       recordSchemaVersion: RECORD_SCHEMA_VERSION,
       id: safeText(input.id, 300) || recordIdFrom(values, fingerprints[0] || ""),
+      payEventId: safeText(input.payEventId, 300) || safeText(input.id, 300) || recordIdFrom(values, fingerprints[0] || ""),
+      importRevisionId: safeText(input.importRevisionId, 300),
+      decisionInputId: safeText(input.decisionInputId, 300),
+      sourceHash: typeof input.sourceHash === "string" && /^[a-f0-9]{64}$/.test(input.sourceHash) ? input.sourceHash : null,
+      resolution: ["active", "superseded", "confirmed-distinct"].includes(input.resolution) ? input.resolution : "active",
+      supersedes: safeIds(input.supersedes),
+      distinctFrom: safeIds(input.distinctFrom),
       kind: input.kind === "forecast" ? "forecast" : "payslip",
       taxYear: taxYearFromDate(values.payDate),
       duplicateKey: duplicateKeyFromValues(values, fingerprints[0] || ""),
@@ -495,6 +519,11 @@ export function migrateLegacyRecord(input) {
   return {
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
     id: recordIdFrom(values, ""),
+    payEventId: recordIdFrom(values, ""),
+    sourceHash: null,
+    resolution: "active",
+    supersedes: [],
+    distinctFrom: [],
     kind: "payslip",
     taxYear: taxYearFromDate(values.payDate),
     duplicateKey: duplicateKeyFromValues(values, ""),
@@ -539,10 +568,10 @@ export function parseBackup(payload) {
   if (payload.app !== "Palkka PWA") {
     throw new Error("Varmuuskopio kuuluu eri sovellukselle.");
   }
-  if (payload.backupSchemaVersion !== BACKUP_SCHEMA_VERSION) {
+  if (![2, 3].includes(payload.backupSchemaVersion)) {
     throw new Error("Varmuuskopion versiota tai skeemaa ei tueta.");
   }
-  if (payload.recordSchemaVersion !== RECORD_SCHEMA_VERSION) {
+  if (![1, 2].includes(payload.recordSchemaVersion)) {
     throw new Error("Varmuuskopion tietueskeemaa ei tueta.");
   }
   if (!Array.isArray(payload.records)) throw new Error("Varmuuskopiosta ei löytynyt palkkatietoja.");
@@ -554,4 +583,30 @@ export function parseBackup(payload) {
 export function parseBackupLearnedProfiles(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
   return safeLearnedProfiles(payload.learnedProfiles);
+}
+
+function safeIds(ids) {
+  return Array.isArray(ids) ? [...new Set(ids.filter(id => typeof id === "string" && id.length <= 300))] : [];
+}
+
+// Revisions remain in storage and backups. A descendant permanently shadows its ancestors.
+export function visibleRevisions(records = []) {
+  const rows = records.filter(Boolean);
+  const ancestors = new Set(rows.flatMap(r => r.supersedes || []));
+  return rows.filter(r => r.resolution !== "superseded" && !ancestors.has(r.id));
+}
+
+// One conservative inclusion policy for every consumer. Explicit separation is pairwise.
+export function projectPayroll(records = []) {
+  const visible = visibleRevisions(records).filter(r => r.kind !== "forecast");
+  const blocked = new Set();
+  for (let i = 0; i < visible.length; i++) {
+    for (let j = i + 1; j < visible.length; j++) {
+      const a = visible[i], b = visible[j];
+      const relation = classifyRecordRelation(a, b);
+      if (relation.type !== "distinct") { blocked.add(a); blocked.add(b); }
+    }
+  }
+  for (const row of visible) if (!validIsoDate(row.values?.payDate)) blocked.add(row);
+  return { active: visible.filter(r => !blocked.has(r)), unresolved: visible.filter(r => blocked.has(r)), visible };
 }
