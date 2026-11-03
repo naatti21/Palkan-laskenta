@@ -1,6 +1,5 @@
 import {
   classifyRecordRelation,
-  mergeRecords,
   migrateLegacyRecord,
   recordContentKey,
   visibleRevisions,
@@ -34,6 +33,11 @@ export function openDb() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
+      let blocked = false;
+      request.onblocked = () => {
+        blocked = true;
+        reject(new Error("Sulje muut Palkka-välilehdet ja avaa sovellus uudelleen tietokannan päivittämiseksi. Historia säilyy."));
+      };
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(RECORD_STORE)) {
@@ -47,6 +51,7 @@ export function openDb() {
         }
       };
       request.onsuccess = () => {
+        if (blocked) { request.result.close(); dbPromise = null; return; }
         request.result.onversionchange = () => { request.result.close(); dbPromise = null; };
         resolve(request.result);
       };
@@ -198,7 +203,7 @@ export async function mergeManyRecords(records) {
         if (incomingRecords.some(r => r.supersedes.includes(incoming.id))) throw new Error("Varmuuskopion versiosuhde on epäselvä. Historiaa ei muutettu.");
         const duplicate = prepared.find(p => sameRecordContent(p.incoming, incoming));
         if (duplicate) { merged++; continue; }
-        const previous = rows.find(r => r.importRevisionId === incoming.id && sameRecordContent(r, incoming));
+        const previous = rows.find(r => (r.id === incoming.id || r.importRevisionId === incoming.id) && r.payEventId === incoming.payEventId && sameRecordContent(r, incoming));
         incoming = { ...incoming, id: previous?.id || crypto.randomUUID(), importRevisionId: incoming.id };
       }
       seen.add(incoming.id);
@@ -209,6 +214,20 @@ export async function mergeManyRecords(records) {
       mapping.set(incoming.id, id);
       prepared.push({ incoming, same, id, collision });
     }
+    const graph = new Map(prepared.map(p => [p.id, p.incoming.supersedes.map(ref => mapping.get(ref) || ref)]));
+    const visiting = new Set(), visited = new Set();
+    const visit = id => {
+      if (visiting.has(id)) throw new Error("Varmuuskopion versiosuhteet muodostavat kehän. Historiaa ei muutettu.");
+      if (visited.has(id)) return;
+      visiting.add(id);
+      for (const ref of graph.get(id) || []) {
+        if (!graph.has(ref) && !rows.some(r => r.id === ref && r.resolution === "superseded"))
+          throw new Error("Varmuuskopiosta puuttuu korvatun version tiedot. Tuo täydellinen varmuuskopio.");
+        if (graph.has(ref)) visit(ref);
+      }
+      visiting.delete(id); visited.add(id);
+    };
+    for (const id of graph.keys()) visit(id);
     for (const { incoming, same, id, collision } of prepared) {
       const supersedes = incoming.supersedes.map(ancestor => mapping.get(ancestor) || ancestor);
       if (same) {

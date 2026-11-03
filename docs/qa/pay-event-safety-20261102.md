@@ -9,7 +9,7 @@ Record schema 2 / backup schema 3, accepting record schema 1 and backup schema 2
 
 `id` identifies a revision; `payEventId` identifies a payment. New IDs are random opaque UUIDs. `supersedes` retains ancestor revision IDs, `resolution` marks archived versions, and `distinctFrom` records pairwise user decisions between payments. Explicit separation is not a blanket exemption from later correction review. `sourceHash` is SHA-256 of exact local PDF bytes, distinct from legacy semantic fingerprints. No original PDF, filename, extracted raw text or payer identity is added to backups.
 
-All mutating operations read and decide inside one IndexedDB read/write transaction. Replacement creates a new revision and retains the old row. Backup import unions revisions rather than clearing/replacing the store. Same-ID divergent payloads retain a separate revision with import provenance. Superseded ancestors cannot become active simply because an older backup is restored. Conflicting branch heads remain unresolved. Dialogs validate their expected candidate snapshots before resolving.
+All mutating operations read and decide inside one IndexedDB read/write transaction. Replacement creates a new revision and retains the old row. Backup import unions revisions rather than clearing/replacing the store. Same-ID divergent payloads retain a separate revision with import provenance. Restore remaps lineage as a batch; repeated legacy IDs remain stable even if backup order changes. Cyclic references or missing active ancestors reject the restore atomically. Superseded ancestors cannot become active simply because an older backup is restored. Conflicting branch heads remain unresolved. Dialogs validate their expected candidate snapshots before resolving.
 
 All consumers use `projectPayroll`: analysis, insights, dashboard, tax-card forecast, scenario defaults and annual-planner backup import. Superseded revisions never count. Unresolved pairs are excluded and annual certainty is withheld. Explicit separate payments count once each, even at identical dates and amounts. YTD is a snapshot; same-day snapshot ties are withheld, never summed or selected by backup order. Payment date determines tax year. Missing dates are unresolved.
 
@@ -31,13 +31,19 @@ All consumers use `projectPayroll`: analysis, insights, dashboard, tax-card fore
 
 Additional regression cases: stale dialogs, three candidates, divergent branches, unknown schemas, exact-source duplicate backup resolution, splitting stored revisions, reverting a manual correction, equal-content successors and same-day planner YTD ties.
 
-`tests/beta/pay-event-safety.spec.mjs`: real browser IndexedDB, synthetic PDF import, 360/412px decision controls, reload/backup durability, offline reload, retained archive/history resolution and concurrent two-tab imports. Existing parser and one-time-learning regression suites remain enabled; no parser or Import Engine switch.
+`tests/beta/pay-event-safety.spec.mjs`: real browser IndexedDB, synthetic PDF import, 360/412px decision controls, reload/backup durability, offline reload, retained archive/history resolution and concurrent two-tab imports. Existing parser and one-time-learning regression suites remain enabled; no parser or Import Engine switch. The existing validator received one narrow change: negative-gross recovery payments no longer trigger the positive-pay net-greater-than-gross block; extraction and learning are unchanged.
 
 ## Review and validation status
 
 Initial independent review found non-atomic storage, destructive replacement, false fingerprint identity and inconsistent projections. Follow-up review reproduced five defects in the first implementation (duplicate backup resolution, splitting same-event heads, correction reversion, equal-content successor merge, same-day planner YTD). Each has a dedicated regression test and was corrected before the initial PR commit.
 
-Local Node: PASS, 224 tests. Beta/staging local builds: PASS when using their required local origins. Local Playwright: NOT RUN — no browser installed, Chromium download failed with gateway/invalid archive responses. GitHub CI results and final tested SHA are recorded in the PR. Do not infer browser/mobile/offline PASS from the Node tests.
+Local Node: PASS, 230 tests (including an explicit IndexedDB v1→v2 history/settings migration).
+
+GitHub CI run [41569510514](https://github.com/naatti21/Palkan-laskenta/actions/runs/41569510514), head `d342207e78b2101ad01a14c901882687b82d2c64`, merge test commit `4c158e8e8524fd2b36b0b4b7ad7dbe675ab87486`: PASS 35 browser integration tests, PASS 50 Beta tests, PASS 4 staging tests; no retries/flaky tests reported. This includes PDF/learning regression, both mobile widths and offline. The first CI run exposed narrow-screen decision overflow and a legacy migration issue; both were fixed and regressed. Older tests were updated only where requirements deliberately changed behavior (immutable revisions, exact-source reimport after a manual edit, explicit confirmation for changed payday) or the service-worker cache version changed.
+
+After that run, independent review found reversed-order legacy backup replay could add a variant. The lookup was corrected and tested in both orders. Additional checks reject cyclic or incomplete backup lineage before writes and explain a blocked database upgrade. Final HEAD CI results and exact tested SHA are recorded in Draft PR #40; do not substitute the earlier green commit for the final gate.
+
+Local Playwright: NOT RUN because Chromium installation failed with gateway/invalid archive responses; actual browser execution above used GitHub CI. Beta/staging builds PASS with required local origins. No remote deployment was performed.
 
 ## Phone test after an approved test deployment
 

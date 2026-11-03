@@ -202,6 +202,12 @@ test('negative recovery is accepted by the existing parser validation gate',asyn
 test('legacy flat records with colliding generated IDs preserve differing values on repeated restore',async()=>{
   const flat={payDate:'2026-08-28',payPeriodStart:'2026-08-01',payPeriodEnd:'2026-08-15',grossPay:3000,netPay:1900,ytdTaxableIncome:24000};
   const records=[migrateLegacyRecord({...flat,withholdingPeriod:-800}),migrateLegacyRecord({...flat,withholdingPeriod:-750})];
-  await store.mergeManyRecords(records);await store.mergeManyRecords(records);
+  await store.mergeManyRecords(records);await store.mergeManyRecords(records);await store.mergeManyRecords([...records].reverse());
   assert.equal((await all()).length,2);assert.equal((await analysis()).totalNet,null);
+});
+test('incomplete or cyclic backup lineage cannot silently shadow active local history',async()=>{
+  const a=slip('a');await store.upsertRecord(a);
+  await assert.rejects(store.mergeManyRecords([{...slip('b'),supersedes:['a']}]),/puuttuu/);
+  await assert.rejects(store.mergeManyRecords([{...slip('c'),supersedes:['c']}]),/kehän/);
+  assert.equal((await all()).length,1);assert.equal((await analysis()).totalNet,1900);
 });
