@@ -63,7 +63,7 @@ function assertValueType(key, value, context) {
   }
 }
 
-function validateBackupRecordInput(input, index, allowLegacyFlat = false) {
+export function validateBackupRecordInput(input, index, allowLegacyFlat = false) {
   const context = `Varmuuskopion tietue ${index + 1}`;
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error(`${context} ei ole kelvollinen tietue.`);
@@ -279,8 +279,7 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   const a = existing.values, b = incoming.values;
   const eventKey = payEventKeyFromValues(a);
   if (existing.payEventId !== incoming.payEventId && (
-    existing.distinctFrom.includes(incoming.payEventId) || incoming.distinctFrom.includes(existing.payEventId) ||
-    (existing.resolution === "confirmed-distinct" && incoming.resolution === "confirmed-distinct")
+    existing.distinctFrom.includes(incoming.payEventId) || incoming.distinctFrom.includes(existing.payEventId)
   )) return { type: "distinct", differences: [] };
   const sameSource = existing.sourceHash && existing.sourceHash === incoming.sourceHash;
   const sameRevision = existing.id === incoming.id && sameRecordContent(existing, incoming);

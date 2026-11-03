@@ -3,7 +3,8 @@ import {
   migrateLegacyRecord,
   recordContentKey,
   visibleRevisions,
-  sameRecordContent
+  sameRecordContent,
+  validateBackupRecordInput
 } from "./model.js";
 
 const DB_NAME = "palkka-pwa";
@@ -107,7 +108,8 @@ function assertExpected(rows, expected, incoming) {
   for (const snapshot of expected) {
     const current = visibleRevisions(rows).find(r => r.id === snapshot.id);
     if (!current || recordContentKey(current) !== recordContentKey(snapshot) ||
-        JSON.stringify(current.distinctFrom) !== JSON.stringify(snapshot.distinctFrom)) throw conflictError(rows);
+        JSON.stringify([current.payEventId, current.resolution, current.supersedes, current.distinctFrom]) !==
+        JSON.stringify([snapshot.payEventId, snapshot.resolution, snapshot.supersedes, snapshot.distinctFrom])) throw conflictError(rows);
   }
 }
 function archiveReplacement(rows, put, existing, incoming) {
@@ -189,7 +191,7 @@ export async function saveRecordSeparately(record, expected = null) {
   });
 }
 export async function mergeManyRecords(records) {
-  const incomingRecords = records.map(migrateLegacyRecord);
+  const incomingRecords = records.map((record, index) => validateBackupRecordInput(record, index, true));
   if (incomingRecords.some(r => !r)) throw new Error("Virheellinen varmuuskopio.");
   return mutateRecords((rows, put) => {
     let added = 0, merged = 0, conflictsPreserved = 0;
@@ -242,6 +244,19 @@ export async function mergeManyRecords(records) {
       if (collision || candidates(rows, next).length) conflictsPreserved++;
       rows.push(next); put(next); added++;
     }
+    // Validate the resulting graph, not merely the incoming fragment. Metadata
+    // merges can close a cycle through an already stored ancestor. Abort rolls
+    // back every queued put, so no visible head disappears on a failed restore.
+    const combined = new Map(rows.map(row => [row.id, row.supersedes]));
+    const stack = new Set(), complete = new Set();
+    const check = id => {
+      if (stack.has(id)) throw new Error("Varmuuskopion ja paikallisen historian versiosuhteet muodostavat kehän. Historiaa ei muutettu.");
+      if (complete.has(id)) return;
+      stack.add(id);
+      for (const ref of combined.get(id) || []) if (combined.has(ref)) check(ref);
+      stack.delete(id); complete.add(id);
+    };
+    for (const id of combined.keys()) check(id);
     return { added, merged, conflictsPreserved };
   });
 }

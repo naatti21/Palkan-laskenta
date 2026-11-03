@@ -1,0 +1,76 @@
+✖ R41-01 imported edges cannot close a cycle through local archived ancestry (21.319861ms)
+✖ R41-02 generic confirmed-distinct status is not a pairwise payment decision (6.480314ms)
+✖ R41-03 stale dialog rejects changed lineage even when salary content is identical (11.074856ms)
+✖ R41-04 direct restore rejects invalid financial values atomically (2.802918ms)
+✔ R41-05 transaction abort rolls back an earlier queued write (14.993157ms)
+✔ R41-06 three replacements and original SHA reimport retain corrected YTD (8.880926ms)
+✔ R41-07 same visible figures with a different SHA remain unresolved, not auto-deduped (1.870131ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 3
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 279.293128
+
+✖ failing tests:
+
+test at ../../tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:11:1
+✖ R41-01 imported edges cannot close a cycle through local archived ancestry (21.319861ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:16:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at ../../tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:20:1
+✖ R41-02 generic confirmed-distinct status is not a pairwise payment decision (6.480314ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 2
+  
+      at TestContext.<anonymous> (file:///tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:22:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:25:1
+✖ R41-03 stale dialog rejects changed lineage even when salary content is identical (11.074856ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:31:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at ../../tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:34:1
+✖ R41-04 direct restore rejects invalid financial values atomically (2.802918ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///tmp/palkka-baseline41/tests/issue41-adversarial.test.mjs:38:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

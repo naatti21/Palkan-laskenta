@@ -1,0 +1,30 @@
+✖ R41-08 HTTP error cannot replace a valid cached shell before offline recovery (45.316373ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 160.849639
+
+✖ failing tests:
+
+test at tests/issue41-service-worker.test.mjs:5:1
+✖ R41-08 HTTP error cannot replace a valid cached shell before offline recovery (45.316373ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'temporary server error'
+  - 'valid application'
+  
+      at TestContext.<anonymous> (file:///workspace/Palkan-laskenta/tests/issue41-service-worker.test.mjs:15:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'temporary server error',
+    expected: 'valid application',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
