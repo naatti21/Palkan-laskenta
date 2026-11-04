@@ -1,4 +1,23 @@
 import {test,expect} from '@playwright/test';
+test('issue41: manual correction on a fresh PDF replay requires confirmation and survives reload',async({page})=>{
+ await page.goto('/');
+ const result=await page.evaluate(async()=>{
+  const s=await import('/storage.js'),m=await import('/model.js');
+  const a=m.migrateLegacyRecord({recordSchemaVersion:2,id:'original',sourceHash:'a'.repeat(64),values:{payDate:'2026-10-30',grossPay:2000,netPay:1400}});
+  await s.upsertRecord(a);
+  const incoming=m.applyUserCorrections({...a,id:'fresh-import'},{netPay:1500});
+  const review=m.findRecordConflict(await s.getAllRecords(),incoming);
+  let code=null;try{await s.upsertRecord(incoming);}catch(error){code=error.code;}
+  const unchanged=(await s.getAllRecords())[0].values.netPay;
+  await s.replaceRecord(a.id,incoming,review.candidates);
+  return {code,unchanged};
+ });
+ expect(result).toEqual({code:'PAY_EVENT_CONFLICT',unchanged:1400});await page.reload();
+ expect(await page.evaluate(async()=>{
+  const s=await import('/storage.js'),m=await import('/model.js'),rows=await s.getAllRecords();
+  return {retained:rows.length,active:m.projectPayroll(rows).active.map(r=>r.values.netPay)};
+ })).toEqual({retained:2,active:[1500]});
+});
 test('issue41: real IndexedDB locks serialize simultaneous tabs importing one source',async({page,context})=>{
  await page.goto('/');const other=await context.newPage();await other.goto('/');
  const inject=async p=>p.evaluate(async()=>{

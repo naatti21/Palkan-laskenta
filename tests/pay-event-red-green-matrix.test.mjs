@@ -131,8 +131,8 @@ test("RED E20: superseded revision is excluded while corrected revision counts e
   assert.equal(report.conflictingRecords, 0);
 });
 test("RED E21: two explicitly confirmed separate payments with the same period must count twice", () => {
-  const a = { ...make("a"), resolution: "confirmed-distinct", payEventId: "payout-A" };
-  const b = { ...make("b", { grossPay: 2000, netPay: 1200 }), resolution: "confirmed-distinct", payEventId: "payout-B" };
+  const a = { ...make("a"), resolution: "confirmed-distinct", payEventId: "payout-A", distinctFrom: ["payout-B"] };
+  const b = { ...make("b", { grossPay: 2000, netPay: 1200 }), resolution: "confirmed-distinct", payEventId: "payout-B", distinctFrom: ["payout-A"] };
   const report = buildYearAnalysis([a,b], 2026);
   assert.equal(report.totalNet, 3100, "Two verified actual payments must both contribute.");
   assert.equal(report.totalGross, 5000);

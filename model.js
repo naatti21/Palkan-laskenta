@@ -278,6 +278,8 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   const differences = recordDifferences(existing, incoming);
   const a = existing.values, b = incoming.values;
   const eventKey = payEventKeyFromValues(a);
+  // Legacy confirmed-distinct labels are retained for compatibility, but only
+  // an explicit edge between these payment IDs authorizes separate counting.
   if (existing.payEventId !== incoming.payEventId && (
     existing.distinctFrom.includes(incoming.payEventId) || incoming.distinctFrom.includes(existing.payEventId)
   )) return { type: "distinct", differences: [] };
@@ -301,6 +303,17 @@ export function findRecordConflict(records, incomingInput, options = {}) {
 
   const storedInput = records.some(r => r.id === incoming.id && sameRecordContent(r, incoming));
   const sourceMatches = visibleRevisions(records).filter(r => incoming.sourceHash && r.sourceHash === incoming.sourceHash);
+  // A replay may also contain an explicit user edit. Never silently discard it.
+  if (!storedInput && !ignoreRecordId && incoming.sourceHash) {
+    const sources = records.filter(r => r.sourceHash === incoming.sourceHash);
+    const heads = visibleRevisions(records).filter(r => sources.some(s => r.id === s.id || (r.supersedes || []).includes(s.id)));
+    if (heads.length === 1 && !hasIncomingUserEdits(heads[0], incoming)) return null;
+    if (heads.length) {
+      const related = visibleRevisions(records).filter(r => classifyRecordRelation(r, incoming).type === "same_event_conflict");
+      const candidates = [...new Map([...heads, ...related].map(r => [r.id, r])).values()];
+      return { existing: heads[0], candidates, type: "same_event_conflict", differences: recordDifferences(heads[0], incoming) };
+    }
+  }
   const candidates = visibleRevisions(records).filter(existing =>
     (!ignoreRecordId || existing.id !== ignoreRecordId) &&
     existing.id !== (storedInput ? incoming.id : null) &&
@@ -608,4 +621,9 @@ export function projectPayroll(records = []) {
   }
   for (const row of visible) if (!validIsoDate(row.values?.payDate)) blocked.add(row);
   return { active: visible.filter(r => !blocked.has(r)), unresolved: visible.filter(r => blocked.has(r)), visible };
+}
+
+export function hasIncomingUserEdits(existing, incoming) {
+  return VALUE_KEYS.some(key => incoming.corrections?.[key] &&
+    (existing.values?.[key] ?? null) !== (incoming.values?.[key] ?? null));
 }

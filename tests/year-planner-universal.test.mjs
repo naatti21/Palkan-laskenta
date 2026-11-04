@@ -75,8 +75,8 @@ test("UI explicitly marks user-confirmed TES and bonus optional, keeps full comp
  assert.ok(html.includes('id="wageModelNote"'));
 });
 test('confirmed separate same-day payments never select arbitrary YTD',()=>{
- const a={...hourly[0],payEventId:'pay-a',resolution:'confirmed-distinct'};
- const b={...a,payEventId:'pay-b',values:{...a.values,ytdTaxableIncome:9999}};
+ const a={...hourly[0],payEventId:'pay-a',resolution:'confirmed-distinct',distinctFrom:['pay-b']};
+ const b={...a,payEventId:'pay-b',distinctFrom:['pay-a'],values:{...a.values,ytdTaxableIncome:9999}};
  const first=suggest(backup([a,b])), second=suggest(backup([b,a]));
  assert.equal(first.latestYtd,null);assert.equal(second.latestYtd,null);
 });
