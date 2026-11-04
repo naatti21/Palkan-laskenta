@@ -303,6 +303,13 @@ export function findRecordConflict(records, incomingInput, options = {}) {
 
   const storedInput = records.some(r => r.id === incoming.id && sameRecordContent(r, incoming));
   const sourceMatches = visibleRevisions(records).filter(r => incoming.sourceHash && r.sourceHash === incoming.sourceHash);
+  // A known exact document is a replay, even if another payment overlaps it.
+  // Follow archived source revisions to the surviving head, matching storage.
+  if (!storedInput && !ignoreRecordId && incoming.sourceHash) {
+    const sources = records.filter(r => r.sourceHash === incoming.sourceHash);
+    const heads = visibleRevisions(records).filter(r => sources.some(s => r.id === s.id || (r.supersedes || []).includes(s.id)));
+    if (heads.length === 1) return null;
+  }
   const candidates = visibleRevisions(records).filter(existing =>
     (!ignoreRecordId || existing.id !== ignoreRecordId) &&
     existing.id !== (storedInput ? incoming.id : null) &&

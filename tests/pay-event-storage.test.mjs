@@ -211,3 +211,9 @@ test('incomplete or cyclic backup lineage cannot silently shadow active local hi
   await assert.rejects(store.mergeManyRecords([{...slip('c'),supersedes:['c']}]),/kehän/);
   assert.equal((await all()).length,1);assert.equal((await analysis()).totalNet,1900);
 });
+test('reimporting a known PDF after a separate payment never opens a new-payment conflict',async()=>{
+ const a=slip('a'),b=slip('b');await store.upsertRecord(a);await store.saveRecordSeparately(b,[a]);
+ const incoming=slip('repeat',{}, {sourceHash:a.sourceHash});
+ assert.equal(findRecordConflict(await all(),incoming),null);
+ await store.upsertRecord(incoming);assert.equal((await analysis()).totalNet,3800);assert.equal((await all()).length,2);
+});

@@ -26,6 +26,10 @@ for(const width of [360,412]) {
     await page.locator('#keepBothConflictButton').click();
     await expect(page.locator('#resultTitle')).toContainText('Molemmat');
     expect((await state(page)).analysis.totalNet).toBe(3800);
+    await page.locator('#pdfInput').setInputFiles(pdf());
+    await expect(page.locator('#status')).toContainText('ilman tuplaa');
+    await expect(page.locator('#conflictSection')).toBeHidden();
+    expect((await state(page)).rows).toHaveLength(2);
     await page.reload();
     expect((await state(page)).analysis.totalNet).toBe(3800);
     // Export and restore twice through the same storage API used by Data import.
