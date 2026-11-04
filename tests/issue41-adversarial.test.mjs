@@ -60,3 +60,21 @@ test('R41-07 same visible figures with a different SHA remain unresolved, not au
  await assert.rejects(storage.upsertRecord(make('second',{sourceHash:'b'.repeat(64)})),e=>e.code==='PAY_EVENT_CONFLICT');
  assert.equal((await storage.getAllRecords()).length,1);
 });
+test('pairwise separation is not transitive and never authorizes a third payment',()=>{
+ const a=make('a',{payEventId:'A',resolution:'confirmed-distinct',distinctFrom:['B','C']});
+ const b=make('b',{payEventId:'B',resolution:'confirmed-distinct',distinctFrom:['A']});
+ const c=make('c',{payEventId:'C',resolution:'confirmed-distinct',distinctFrom:['A']});
+ const p=projectPayroll([a,b,c]);assert.equal(p.active.length,1);assert.equal(p.unresolved.length,2);
+ assert.equal(buildYearAnalysis([a,b,c],2026).totalNet,null);
+});
+test('legacy blanket flags remain unresolved until a durable pair decision, including old backup replay',async()=>{
+ const a=make('a',{payEventId:'A',resolution:'confirmed-distinct'}),b=make('b',{payEventId:'B',resolution:'confirmed-distinct'});
+ const old=makeBackup([a,b]);await storage.mergeManyRecords(parseBackup(old));
+ assert.equal(projectPayroll(await storage.getAllRecords()).unresolved.length,2);
+ await storage.saveRecordSeparately(b,[a]);
+ assert.equal(buildYearAnalysis(await storage.getAllRecords(),2026).totalNet,2800);
+ await storage.mergeManyRecords(parseBackup(old));
+ assert.equal(buildYearAnalysis(await storage.getAllRecords(),2026).totalNet,2800);
+ const backup=makeBackup(await storage.getAllRecords());await storage.clearAllRecords();await storage.mergeManyRecords(parseBackup(backup));
+ assert.equal(buildYearAnalysis(await storage.getAllRecords(),2026).totalNet,2800);
+});

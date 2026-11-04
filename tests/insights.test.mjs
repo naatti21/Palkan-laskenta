@@ -40,7 +40,7 @@ test("explicitly confirmed same-period payments on different dates are independe
       {code:"40000",amount:4837,quantity:null},{code:"40070",amount:400,quantity:null}
     ]})
   ];
-  records.forEach((r,i) => { r.payEventId = `confirmed-${i}`; r.resolution = "confirmed-distinct"; });
+  records.forEach((r,i) => { r.payEventId = `confirmed-${i}`; r.resolution = "confirmed-distinct"; r.distinctFrom = [`confirmed-${1-i}`]; });
   const x=buildInsightReport(records,2026);
   assert.equal(x.excludedConflicts,0);
   assert.equal(x.months[3].net,5354.94);

@@ -278,6 +278,8 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   const differences = recordDifferences(existing, incoming);
   const a = existing.values, b = incoming.values;
   const eventKey = payEventKeyFromValues(a);
+  // Legacy confirmed-distinct labels are retained for compatibility, but only
+  // an explicit edge between these payment IDs authorizes separate counting.
   if (existing.payEventId !== incoming.payEventId && (
     existing.distinctFrom.includes(incoming.payEventId) || incoming.distinctFrom.includes(existing.payEventId)
   )) return { type: "distinct", differences: [] };
