@@ -1,5 +1,6 @@
 import {
   classifyRecordRelation,
+  hasIncomingUserEdits,
   migrateLegacyRecord,
   recordContentKey,
   visibleRevisions,
@@ -151,7 +152,7 @@ export async function upsertRecord(record) {
     const source = incoming.sourceHash && rows.filter(r => r.sourceHash === incoming.sourceHash);
     if (source?.length) {
       const active = visibleRevisions(rows).filter(r => source.some(s => r.id === s.id || r.supersedes.includes(s.id)));
-      if (active.length === 1) return { record: active[0], mergedDuplicate: true };
+      if (active.length === 1 && !hasIncomingUserEdits(active[0], incoming)) return { record: active[0], mergedDuplicate: true };
       throw conflictError(active, incoming);
     }
     const conflicts = candidates(rows, incoming);

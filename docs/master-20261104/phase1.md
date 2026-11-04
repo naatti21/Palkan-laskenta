@@ -9,3 +9,5 @@ Kolmen vanhan fixturen ansiosumma-/YTD-odotukset säilyvät. Niihin lisättiin o
 Portti vaiheeseen 2: koko Node-, E2E-, Beta- ja staging-sarjan on läpäistävä tällä haaralla. Fyysinen laite ja asennetun PWA:n kahden version päivitys eivät ole selainemulaation todistamia.
 
 Lisä-RED: saman PDF:n uusintatuonti jo vahvistetun erillismaksun jälkeen avasi väärän konfliktin. `findRecordConflict` tunnistaa nyt täsmälleen saman dokumentin yksiselitteisen aktiivisen jälkeläisen kuten tallennuskin. Haarautunut tai useaan maksuun liitetty lähde ei saa tätä poikkeusta. Node-vastatesti ja molempien mobiilileveyksien PDF-polku kattavat tapauksen.
+
+Riippumaton tarkastus löysi poikkeuksesta kaksi reunatapausta. Uusintatuonnissa käsin muutettua arvoa (myös arvon tyhjennystä) ei saa ohittaa duplikaattina: se vaatii korvauspäätöksen. Haarautuneen lähteen näkyvät jälkeläiset näytetään ristiriidan ehdokkaina myös silloin, kun niiden korjatut palkkakaudet eivät enää kohtaa. Node-regressiot kattavat molemmat; selaintesti varmistaa erikseen käsikorjauksen vahvistuksen ja säilymisen uudelleenlatauksessa.

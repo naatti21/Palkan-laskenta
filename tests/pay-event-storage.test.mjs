@@ -217,3 +217,26 @@ test('reimporting a known PDF after a separate payment never opens a new-payment
  assert.equal(findRecordConflict(await all(),incoming),null);
  await store.upsertRecord(incoming);assert.equal((await analysis()).totalNet,3800);assert.equal((await all()).length,2);
 });
+test('fresh PDF reimport manual correction cannot be silently discarded',async()=>{
+ const a=slip('a'),b=slip('b');await store.upsertRecord(a);await store.saveRecordSeparately(b,[a]);
+ const incoming=applyUserCorrections(slip('repeat',{}, {sourceHash:a.sourceHash}),{netPay:1950});
+ const review=findRecordConflict(await all(),incoming);assert.ok(review);assert.equal(review.existing.id,a.id);
+ await assert.rejects(store.upsertRecord(incoming),e=>e.code==='PAY_EVENT_CONFLICT');
+ await store.replaceRecord(a.id,incoming,review.candidates);assert.equal((await analysis()).totalNet,3850);
+});
+test('explicitly clearing a replayed PDF value also requires a correction decision',async()=>{
+ const a=slip('a');await store.upsertRecord(a);
+ const incoming=applyUserCorrections(slip('repeat',{}, {sourceHash:a.sourceHash}),{ytdTaxableIncome:null});
+ assert.ok(findRecordConflict(await all(),incoming));
+ await assert.rejects(store.upsertRecord(incoming),e=>e.code==='PAY_EVENT_CONFLICT');
+ assert.equal((await all())[0].values.ytdTaxableIncome,24000);
+});
+test('exact source replay exposes divergent descendants even with nonoverlapping corrected dates',async()=>{
+ const a={...slip('a'),resolution:'superseded'};
+ const b=slip('b',{payPeriodStart:'2026-09-01',payPeriodEnd:'2026-09-15'},{sourceHash:null,supersedes:['a']});
+ const c=slip('c',{payPeriodStart:'2026-10-01',payPeriodEnd:'2026-10-15'},{supersedes:['a']});
+ await store.mergeManyRecords([a,b,c]);
+ const incoming=slip('repeat',{}, {sourceHash:a.sourceHash});
+ assert.equal(findRecordConflict(await all(),incoming).candidates.length,2);
+ await assert.rejects(store.upsertRecord(incoming),e=>e.code==='PAY_EVENT_CONFLICT');
+});
