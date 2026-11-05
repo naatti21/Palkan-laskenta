@@ -533,10 +533,20 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   for(const chip of document.querySelectorAll('[data-weekends]'))chip.addEventListener('click',()=>{el('weekends').value=chip.dataset.weekends;render();});
   const historyInput=el('historyInput');
   let lastHistory=null, lastPayload=null;
+  const suggestedFields = new Set();
+  for (const key of ['baseGross','otherDeductions','hourlyRate','ktaRate'])
+    el(key).addEventListener('input', () => suggestedFields.delete(key));
+  function clearSourceSuggestions() {
+    if (!suggestedFields.size) return;
+    for (const key of suggestedFields) el(key).value='';
+    suggestedFields.clear();
+    render();
+  }
   const displayOrDash=v=>typeof v==='number'&&Number.isFinite(v)?money(v):'Ei luotettavaa tietoa';
   const setStatus=(txt,error=false)=>{el('historyStatus').textContent=txt;el('historyStatus').classList.toggle('error',error);};
   function showHistory(r){
     lastHistory=r;
+    if (!r.comparable) clearSourceSuggestions();
     const modelText=r.wageModel==='hourly'?'Tuntipalkkainen malli tunnistettu ('+r.rateSamples+' laskelmaa). Vuosiansio on arvio: tuntiansio × viikkotyöaika × 52.':r.wageModel==='monthly'?'Kuukausipalkkainen malli tunnistettu ('+r.monthlySamples+' laskelmaa). Vuosiansio perustuu kuukausipalkan mediaaniin × 12.':'Palkkamallia ei tunnistettu varmasti. Perusvuosiansiota ei arvata; täytä se itse.';
     el('wageModelNote').textContent=r.comparable ? modelText : 'Tulolähteitä on useita tai lähde puuttuu. Syötä oma koko vuoden arvio.';
     el('historyPreview').hidden=false;
@@ -580,12 +590,13 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     if(!lastHistory)return;
     const changed=[];
     for(const [key,v] of [['baseGross',lastHistory.baseEstimate],['holiday',lastHistory.holiday],['otherDeductions',lastHistory.deductionsRate]]){
-      if(typeof v==='number'&&Number.isFinite(v)){el(key).value=v;changed.push(key);}
+      if(typeof v==='number'&&Number.isFinite(v)){el(key).value=v;changed.push(key);if(key!=='holiday') suggestedFields.add(key);}
     }
     let weekendSuggested=false;
     if(typeof lastHistory.avgHourlyRate==='number'&&typeof lastHistory.ktaRate==='number'){
       el('hourlyRate').value=lastHistory.avgHourlyRate.toFixed(2);
       el('ktaRate').value=lastHistory.ktaRate.toFixed(2);
+      suggestedFields.add('hourlyRate');suggestedFields.add('ktaRate');
       weekendSuggested=true;
       el('weekendMethod').value='manual';
       el('rulesConfirmed').checked=false;
@@ -620,7 +631,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       if(event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='palkka:planner:prefill')return;
       try{
         if(event.data.backup?.app!=='Palkka PWA'||!Array.isArray(event.data.backup.records))throw new Error('Tuntematon palkkahistorian muoto');
-        if(!event.data.backup.records.length){setStatus('Beta ei sisällä vielä vahvistettua palkkahistoriaa. Voit käyttää muokattavia esimerkkilukuja.');return;}
+        if(!event.data.backup.records.length){clearSourceSuggestions();setStatus('Beta ei sisällä vielä vahvistettua palkkahistoriaa. Voit käyttää muokattavia esimerkkilukuja.');return;}
         lastPayload=event.data.backup;
         showHistory(PalkkaPlannerHistory.historySuggestions(lastPayload,Number(el('regularHours').value)));
         if(!acceptedOnce){
@@ -628,7 +639,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
           el('applyHistory').click();
           setStatus('Beta ehdotti luvut paikallisesta palkkahistoriasta. Tarkista palkkamalli ja viikonlopun korvaus. Bonuksia ei lisätä automaattisesti.');
         }else setStatus('Palkkahistoria päivitetty. Omia käsin muutettuja arvoja ei ylikirjoitettu; voit halutessasi valita ”Käytä varmistettavia ehdotuksia”.');
-      }catch(err){setStatus('Betan historiasta ei saatu luotettavia ehdotuksia: '+err.message,true);}
+      }catch(err){clearSourceSuggestions();setStatus('Betan historiasta ei saatu luotettavia ehdotuksia: '+err.message,true);}
     });
   }
   render();

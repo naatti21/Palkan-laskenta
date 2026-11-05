@@ -374,7 +374,17 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(planner.locator("#rateConfirmedA")).not.toBeChecked();
  await expect(planner.locator("#samples")).toContainText("3");
  await expect(planner.locator("#samples")).toContainText("5");
+ // A second payer invalidates an automatically filled single-job base.
+ const mixed=JSON.parse(backup);
+ mixed.incomeSources.push({id:"second-job",name:"Keikkatyö"});
+ mixed.records[2].incomeSourceId="second-job";
+ await page.evaluate(payload=>document.querySelector("#plannerFrame").contentWindow.postMessage(
+   {type:"palkka:planner:prefill",backup:payload},location.origin),mixed);
+ await expect(planner.locator("#baseGross")).toHaveValue("");
+ await expect(planner.locator("#wageModelNote")).toContainText("Tulolähteitä");
  await planner.locator("#baseGross").fill("61000");
+ await page.evaluate(payload=>document.querySelector("#plannerFrame").contentWindow.postMessage(
+   {type:"palkka:planner:prefill",backup:payload},location.origin),mixed);
  await page.getByRole("button",{name:"Historia"}).click();
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(planner.locator("#baseGross")).toHaveValue("61000");
