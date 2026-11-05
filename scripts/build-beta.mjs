@@ -368,6 +368,7 @@ const betaImportCss = `
 .ledger-days {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:center;text-align:center}
 .ledger-days span,.ledger-days small {padding:8px 0}
 .ledger-days button,.ledger-month button,.ledger-switch button {min-height:44px;min-width:0;padding:4px;border:1px solid #455650;background:#101719;color:#edf6f1}
+.ledger-month button {min-width:44px}
 .ledger-days button {color:#8af4c9}
 .ledger-days [aria-pressed=true],.ledger-switch [aria-pressed=true] {border-bottom:2px solid #8af4c9}
 #history>[hidden],#ledgerCalendar[hidden] {display:none}
