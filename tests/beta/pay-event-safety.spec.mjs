@@ -96,8 +96,8 @@ test('choosing another replacement target updates the comparison and replaces on
   expect(result.visible.map(r=>r.values.netPay).sort((a,b)=>a-b)).toEqual([1000,1200,1950]);
   expect(result.analysis.totalNet).toBeNull();
 });
-test('select a source per PDF, remember exact documents and retain both payers after reload',async({page})=>{
- await page.setViewportSize({width:360,height:915});await page.goto('/index.html');
+for(const width of [360,412]) test(`PDF source selection survives replay and reload at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:915});await page.goto('/index.html');
  for (const [name,marker] of [['Päätyö','A'],['Keikat','B']]) {
    const details=page.locator('details').filter({has:page.locator('#createIncomeSource')});
    if(!await details.evaluate(node=>node.open)) await details.locator('summary').click();

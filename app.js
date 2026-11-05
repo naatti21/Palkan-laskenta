@@ -612,7 +612,7 @@ function renderBetaYearProgress(records) {
   const goal = readYearProgressNumber("yearGrossGoal");
   const forecast = readYearProgressNumber("yearGrossForecast");
   // A duplicate/contradictory pay-period record disqualifies this YTD snapshot.
-  const actual = info.conflictingRecords === 0 && info.payslips > 0 &&
+  const actual = info.sourceScope.comparable && info.conflictingRecords === 0 && info.payslips > 0 &&
     typeof info.latestYtd === "number" && Number.isFinite(info.latestYtd) &&
     info.latestYtd >= 0 ? info.latestYtd : null;
   const status = el("yearProgressStatus"), comparison = el("yearProgressCompare");
@@ -633,6 +633,8 @@ function renderBetaYearProgress(records) {
       ? "Palkkalaskelman YTD " + fmtMoney(actual) + ". Tavoitteesta jäljellä " + fmtMoney(difference) + "."
       : "Palkkalaskelman YTD " + fmtMoney(actual) + ". Oma tavoite ylittynyt " + fmtMoney(-difference) + ".";
   }
+  if (!info.sourceScope.comparable && info.payslips && !info.conflictingRecords)
+    status.textContent = "Koko vuoden kertymä on vahvistamatta. Tuotu brutto yhteensä " + fmtMoney(info.totalGross) + ".";
   if (forecast === null) comparison.textContent = "Koko vuoden ennuste: ei asetettu. Emme arvaa puuttuvien kuukausien tuloja.";
   else if (goal === null) comparison.textContent = "Oma koko vuoden bruttoarvio " + fmtMoney(forecast) + ". Aseta myös tavoite vertailua varten.";
   else {
@@ -800,17 +802,17 @@ function renderDashboard(records) {
   }
 
   const lastDate = valueOf(latest, "payDate");
-  const samePeriod = row => valueOf(row, "payDate") === lastDate &&
-    valueOf(row, "payPeriodStart") === valueOf(latest, "payPeriodStart") &&
-    valueOf(row, "payPeriodEnd") === valueOf(latest, "payPeriodEnd");
+  const onLastDate = yearRecords.filter(row => valueOf(row, "payDate") === lastDate);
+  const paidOnLastDate = key => unresolved || onLastDate.some(row => !Number.isFinite(valueOf(row, key))) ? null :
+    onLastDate.reduce((sum, row) => sum + Math.round(valueOf(row, key) * 100), 0) / 100;
   const multipleSources = incomeScope(yearRecords).multiple;
-  const ambiguous = multipleSources || unresolved || yearRecords.filter(r => valueOf(r, "payDate") === lastDate).length > 1;
+  const ambiguous = multipleSources || unresolved || onLastDate.length > 1;
   const limit = valueOf(latest, "taxLimit");
   const accumulated = valueOf(latest, "taxCardAccumulatedIncome");
   const cardKnown = !ambiguous && typeof limit === "number" && Number.isFinite(limit) && limit > 0 &&
     typeof accumulated === "number" && Number.isFinite(accumulated) && accumulated >= 0;
   renderTaxCardProgress(records, latest, ambiguous);
-  const status = ambiguous ? {light:"neutral",text:"Saman palkkakauden ristiriita"}
+  const status = multipleSources && !unresolved ? {light:"neutral",text:"Tulolähteiden kertymät näkyvät Historiassa"} : ambiguous ? {light:"neutral",text:"Saman palkkakauden ristiriita"}
     : taxStatus(latest);
   overall.className = `light ${status.light}`;
   overall.textContent = status.light === "neutral" ? "–" : "●";
@@ -838,8 +840,8 @@ function renderDashboard(records) {
   }
   const metrics = [
     ["Viimeisin maksupäivä", fmtDate(valueOf(latest, "payDate"))],
-    ["Brutto", fmtMoney(ambiguous ? null : valueOf(latest, "grossPay"))],
-    ["Netto", fmtMoney(ambiguous ? null : valueOf(latest, "netPay"))],
+    ["Brutto", fmtMoney(paidOnLastDate("grossPay"))],
+    ["Netto", fmtMoney(paidOnLastDate("netPay"))],
     ["Veronalainen YTD", fmtMoney(ambiguous ? null : valueOf(latest, "ytdTaxableIncome"))],
     ["Verokortin kertymä", fmtMoney(!cardKnown ? null : valueOf(latest, "taxCardAccumulatedIncome"))],
     ["Tuloraja", fmtMoney(!cardKnown ? null : valueOf(latest, "taxLimit"))],
@@ -866,8 +868,8 @@ function renderDashboard(records) {
     box.className = "metric";
     const name = document.createElement("span");
     name.textContent = secondaryDash
-      ? ({Netto:"Viimeisin nettopalkka", "Veronalainen YTD":"Veronalainen kertymä",
-          Brutto:"Viimeisin bruttopalkka", "OT viime jaksolla":"Ylityöt viime jaksolla"})[label] || label
+      ? ({Netto:onLastDate.length > 1 ? "Maksupäivän netto yhteensä" : "Viimeisin nettopalkka", "Veronalainen YTD":"Veronalainen kertymä",
+          Brutto:onLastDate.length > 1 ? "Maksupäivän brutto yhteensä" : "Viimeisin bruttopalkka", "OT viime jaksolla":"Ylityöt viime jaksolla"})[label] || label
       : label;
     const amount = document.createElement("strong");
     amount.textContent = value;

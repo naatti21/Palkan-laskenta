@@ -74,3 +74,15 @@ test('old copy of the same revision preserves local source decision',async()=>{
  const saved=await db.getAllRecords();
  assert.equal(saved.length,1);assert.equal(saved[0].incomeSourceId,source.id);
 });
+test('portable backup recreates source registry, the card identity and scoped observations',async()=>{
+ const sources=[{id:'portable-a',name:'Työ A'},{id:'portable-b',name:'Työ B'}];
+ const records=sources.map((s,i)=>row('restored-'+i,s.id,500+i));
+ const backup=JSON.parse(JSON.stringify(makeBackup(records,{incomeSources:sources})));
+ await db.mergeManyRecords(parseBackup(backup),parseBackupIncomeSources(backup));
+ const registry=await db.getIncomeSources();
+ for(const source of sources) assert.deepEqual(registry.find(s=>s.id===source.id),source);
+ const yearly=buildYearAnalysis(await db.getAllRecords(),2026);
+ assert.equal(yearly.totalGross,1001);
+ assert.deepEqual(yearly.sourceSnapshots.map(s=>[s.incomeSourceId,s.taxCardId,s.cardAccumulated]),
+   [['portable-a','shared-card',4000],['portable-b','shared-card',4008]]);
+});

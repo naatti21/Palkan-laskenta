@@ -158,12 +158,12 @@ test("year-end goal is local, compares certified YTD separately from manual annu
  await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
  const backup=await page.evaluate(async()=>{
   const m=await import("/model.js");
-  const row=m.migrateLegacyRecord({recordSchemaVersion:1,id:"goal-synthetic-1",kind:"payslip",
+  const row=m.migrateLegacyRecord({recordSchemaVersion:3,incomeSourceId:"goal-job",id:"goal-synthetic-1",kind:"payslip",
    values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
      grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000},
    payLines:[],fingerprints:["goal-synthetic-1"],fieldMeta:{},corrections:{},notices:[],
    parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}});
-  return JSON.stringify(m.makeBackup([row]));
+  return JSON.stringify(m.makeBackup([row],{incomeSources:[{id:"goal-job",name:"Työ"}]}));
  });
  await page.getByRole("button",{name:"Data"}).click();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-progress.json",mimeType:"application/json",buffer:Buffer.from(backup)});
