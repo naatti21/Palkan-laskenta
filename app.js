@@ -12,6 +12,8 @@ import {
 } from "./learning.js";
 import {
   VALUE_KEYS,
+  incomeScope,
+  parseBackupIncomeSources,
   projectPayroll,
   recordDifferences,
   visibleRevisions,
@@ -25,6 +27,8 @@ import {
 } from "./model.js";
 import {
   clearAllRecords,
+  getIncomeSources,
+  createIncomeSource,
   getAllRecords,
   mergeManyRecords,
   migrateLegacyLocalStorage,
@@ -38,6 +42,20 @@ import {
 let currentParsed = null;
 let currentRawText = "";
 let currentFingerprint = "";
+let currentIncomeSourceId = null;
+let incomeSources = [];
+function sourceName(id) {
+  if (!id) return "Lähde määrittämättä";
+  const source = incomeSources.find(source => source.id === id);
+  return source?.name || "Tulolähde " + id.slice(0, 8);
+}
+async function populateIncomeSources() {
+  incomeSources = await getIncomeSources();
+  const select = el("incomeSourceSelect"), selected = select.value;
+  select.replaceChildren(new Option("Lähde määrittämättä", ""));
+  for (const source of incomeSources) select.add(new Option(sourceName(source.id), source.id));
+  select.value = selected;
+}
 let currentRecord = null;
 let deferredInstallPrompt = null;
 let selectedYear = null;
@@ -533,7 +551,7 @@ let plannerObserver = null;
 function syncPlannerHistory() {
   const frame = el('plannerFrame');
   if (!frame || !plannerReady || !frame.contentWindow) return;
-  frame.contentWindow.postMessage({ type: 'palkka:planner:prefill', backup: makeBackup(plannerRecords) }, location.origin);
+  frame.contentWindow.postMessage({ type: 'palkka:planner:prefill', backup: makeBackup(plannerRecords, {incomeSources}) }, location.origin);
   const note = el('plannerSyncStatus');
   if (note) note.textContent = plannerRecords.length
     ? `Historiasta saatavilla ${plannerRecords.filter(r => r.kind !== 'forecast').length} tietuetta. Ehdotukset näkyvät alla ja ovat muokattavissa.`
@@ -645,6 +663,7 @@ function initBetaYearProgress() {
 
 async function renderAll() {
   const records = await getAllRecords();
+  await populateIncomeSources();
   plannerRecords = records;
   syncPlannerHistory();
   syncYearSelectors(records);
@@ -732,7 +751,7 @@ function renderTaxCardProgress(records, latest, ambiguous) {
   if (!valid) {
     pct.textContent = "–";
     amount.textContent = "Ei luotettavaa kertymää";
-    eta.textContent = ambiguous ? "Ristiriitainen palkkalaskelma – tarkista historia." : "Ei vielä ennustetta.";
+    eta.textContent = !summary.valid && summary.estimate ? summary.estimate : ambiguous ? "Ristiriitainen palkkalaskelma – tarkista historia." : "Ei vielä ennustetta.";
     detail.textContent = "Tarvitaan viimeisimmältä palkkalaskelmalta sekä verokortin tuloraja että kortin oma kertymä.";
     track.removeAttribute("aria-valuenow");
     fill.style.width = "0%";
@@ -784,7 +803,8 @@ function renderDashboard(records) {
   const samePeriod = row => valueOf(row, "payDate") === lastDate &&
     valueOf(row, "payPeriodStart") === valueOf(latest, "payPeriodStart") &&
     valueOf(row, "payPeriodEnd") === valueOf(latest, "payPeriodEnd");
-  const ambiguous = unresolved || yearRecords.filter(r => valueOf(r, "payDate") === lastDate).length > 1;
+  const multipleSources = incomeScope(yearRecords).multiple;
+  const ambiguous = multipleSources || unresolved || yearRecords.filter(r => valueOf(r, "payDate") === lastDate).length > 1;
   const limit = valueOf(latest, "taxLimit");
   const accumulated = valueOf(latest, "taxCardAccumulatedIncome");
   const cardKnown = !ambiguous && typeof limit === "number" && Number.isFinite(limit) && limit > 0 &&
@@ -797,7 +817,7 @@ function renderDashboard(records) {
 
   const remaining = secondaryDash
     ? (cardKnown ? limit - accumulated : null)
-    : limit != null && accumulated != null ? limit - accumulated : null;
+    : !ambiguous && limit != null && accumulated != null ? limit - accumulated : null;
   const cardContext = document.getElementById("taxCardContext");
   if (cardContext) {
     const prior = yearRecords.filter(r => r !== latest && valueOf(r, "payDate") < lastDate);
@@ -808,7 +828,7 @@ function renderDashboard(records) {
       return typeof before==="number" && Number.isFinite(before) &&
         typeof after==="number" && Number.isFinite(after) && Math.abs(before-after)>.005;
     }));
-    cardContext.textContent = ambiguous
+    cardContext.textContent = multipleSources ? "Tulolähteillä on omat kertymät. Koko vuoden verokorttitilanne vaatii vahvistuksen." : ambiguous
       ? "Saman palkkakauden tietueissa on ristiriita. Kortin tulorajamarginaalia ei näytetä ennen Historian tarkistusta."
       : !cardKnown
       ? "Viimeisimmästä palkkalaskelmasta puuttuu luotettava verokortin tuloraja tai kertymä. Tarkista voimassa oleva kortti OmaVerosta."
@@ -821,8 +841,8 @@ function renderDashboard(records) {
     ["Brutto", fmtMoney(ambiguous ? null : valueOf(latest, "grossPay"))],
     ["Netto", fmtMoney(ambiguous ? null : valueOf(latest, "netPay"))],
     ["Veronalainen YTD", fmtMoney(ambiguous ? null : valueOf(latest, "ytdTaxableIncome"))],
-    ["Verokortin kertymä", fmtMoney(secondaryDash && !cardKnown ? null : valueOf(latest, "taxCardAccumulatedIncome"))],
-    ["Tuloraja", fmtMoney(secondaryDash && !cardKnown ? null : valueOf(latest, "taxLimit"))],
+    ["Verokortin kertymä", fmtMoney(!cardKnown ? null : valueOf(latest, "taxCardAccumulatedIncome"))],
+    ["Tuloraja", fmtMoney(!cardKnown ? null : valueOf(latest, "taxLimit"))],
     ["Tulorajaa jäljellä", fmtMoney(remaining)],
     ["OT viime jaksolla", `${fmtNumber(valueOf(latest, "overtimeHours"))} h`]
   ];
@@ -988,7 +1008,9 @@ function renderHistory(records) {
     date.textContent = fmtDate(valueOf(record, "payDate"));
     const period = document.createElement("span");
     period.textContent = `Palkkakausi ${fmtDate(valueOf(record, "payPeriodStart"))}–${fmtDate(valueOf(record, "payPeriodEnd"))}`;
-    heading.append(date, period);
+    const source = document.createElement("span");
+    source.textContent = sourceName(record.incomeSourceId);
+    heading.append(date, period, source);
     const versionState = document.createElement("span");
     const unresolved = projection.unresolved.includes(record);
     versionState.textContent = !projection.visible.includes(record) ? "Korvattu versio – ei laskennassa" : unresolved ? "Ratkaisematon – ei laskennassa" : "Huomioidaan laskennassa";
@@ -1114,7 +1136,7 @@ function renderConflict(record, conflict) {
   select.id = "replacementTarget";
   for (const candidate of choices) {
     const option = document.createElement("option"); option.value = candidate.id;
-    option.textContent = `${fmtDate(candidate.values.payDate)} · ${fmtDate(candidate.values.payPeriodStart)}–${fmtDate(candidate.values.payPeriodEnd)} · netto ${fmtMoney(candidate.values.netPay)}`;
+    option.textContent = `${sourceName(candidate.incomeSourceId)} · ${fmtDate(candidate.values.payDate)} · ${fmtDate(candidate.values.payPeriodStart)}–${fmtDate(candidate.values.payPeriodEnd)} · netto ${fmtMoney(candidate.values.netPay)}`;
     select.append(option);
   }
   select.value = conflict.existing.id;
@@ -1163,12 +1185,22 @@ async function processPdf(file) {
   currentPendingWasAutoParsed = false;
   el("conflictSection")?.classList.add("hidden");
 
+  currentIncomeSourceId = el("incomeSourceSelect").value || null;
+  el("incomeSourceSelect").value = "";
   currentRawText = await extractPdfText(file);
   currentParsed = parsePayslip(currentRawText);
   currentLearnedProfile = await findLearnedProfile(currentParsed.structureSignals);
   const learnedResult = await applyProfileMappings(currentParsed, currentRawText, currentLearnedProfile);
   currentParsed = learnedResult.parsed;
   currentFingerprint = await sha256(await file.arrayBuffer());
+  const saved = await getAllRecords();
+  const matching = saved.filter(r => r.sourceHash === currentFingerprint);
+  const heads = visibleRevisions(saved).filter(r => matching.some(m => r.id === m.id || r.supersedes?.includes(m.id)));
+  if (heads.length === 1 && heads[0].incomeSourceId) {
+    if (currentIncomeSourceId && heads[0].incomeSourceId !== currentIncomeSourceId)
+      throw new Error("Tämä PDF on jo vahvistettu tulolähteeseen " + sourceName(heads[0].incomeSourceId) + ".");
+    currentIncomeSourceId = heads[0].incomeSourceId;
+  }
   el("rawText").textContent = currentRawText;
 
   if (currentParsed.documentType !== "payslip") {
@@ -1186,7 +1218,7 @@ async function processPdf(file) {
   }
 
   if (canAutoAccept(currentParsed)) {
-    const record = makeRecordFromParsed(currentParsed, currentFingerprint);
+    const record = { ...makeRecordFromParsed(currentParsed, currentFingerprint), incomeSourceId: currentIncomeSourceId };
     const conflict = await conflictForRecord(record);
     if (conflict) {
       currentPendingWasAutoParsed = true;
@@ -1227,6 +1259,12 @@ function payrollAction(action) {
   };
 }
 
+el("createIncomeSource").addEventListener("click", payrollAction(async () => {
+  const source = await createIncomeSource(el("incomeSourceName").value);
+  el("incomeSourceName").value = "";
+  await populateIncomeSources();
+  el("incomeSourceSelect").value = source.id;
+}));
 el("pdfInput").addEventListener("change", payrollAction(async event => {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -1246,7 +1284,7 @@ el("pdfInput").addEventListener("change", payrollAction(async event => {
 el("saveButton").addEventListener("click", payrollAction(async () => {
   if (!currentParsed) return;
   const editedValues = collectEditedValues();
-  const base = currentRecord || makeRecordFromParsed(currentParsed, currentFingerprint);
+  const base = currentRecord || { ...makeRecordFromParsed(currentParsed, currentFingerprint), incomeSourceId: currentIncomeSourceId };
   const record = refreshRecordNotices(applyUserCorrections(base, editedValues));
 
   const missing = requiredFields.filter(key => record.values[key] == null || record.values[key] === "");
@@ -1357,7 +1395,7 @@ for (const id of ["dashboardYear", "historyYear", "analysisYear"]) {
 el("exportButton").addEventListener("click", async () => {
   const records = await getAllRecords();
   const learnedProfiles = await getLearnedProfiles();
-  const backup = makeBackup(records, { learnedProfiles });
+  const backup = makeBackup(records, { learnedProfiles, incomeSources: await getIncomeSources() });
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -1375,7 +1413,7 @@ el("backupInput").addEventListener("change", async event => {
     const payload = JSON.parse(await file.text());
     const records = parseBackup(payload);
     const learnedProfiles = parseBackupLearnedProfiles(payload);
-    const result = await mergeManyRecords(records);
+    const result = await mergeManyRecords(records, parseBackupIncomeSources(payload));
     if (learnedProfiles.length) await mergeLearnedProfiles(learnedProfiles);
     await renderAll();
     const preserved = result.conflictsPreserved

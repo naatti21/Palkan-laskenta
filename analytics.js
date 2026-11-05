@@ -1,4 +1,4 @@
-import { projectPayroll } from "./model.js";
+import { projectPayroll, incomeScope } from "./model.js";
 // Payment-date analytics for already stored payslips.
 // This module never changes source records or reconstructs work dates from pay dates.
 const MONTHS = ["tammi", "helmi", "maalis", "huhti", "touko", "kesä", "heinä", "elo", "syys", "loka", "marras", "joulu"];
@@ -80,7 +80,11 @@ export function buildYearAnalysis(records, year) {
     totalGross,
     totalNet,
     // Snapshot from the newest payslip, NOT the sum of monthly/yearly YTD values.
-    latestYtd: rejected || yearly.filter(r => r.values.payDate === last?.values.payDate).length > 1 ? null : finiteNumber(last?.values?.ytdTaxableIncome),
+    sourceSnapshots: clean.map(r => ({incomeSourceId: r.incomeSourceId || null, taxCardId: r.taxCardId || null,
+      recordId: r.id, payDate: r.values.payDate, ytd: finiteNumber(r.values.ytdTaxableIncome),
+      cardAccumulated: finiteNumber(r.values.taxCardAccumulatedIncome), limit: finiteNumber(r.values.taxLimit)})),
+    sourceScope: incomeScope(yearly),
+    latestYtd: rejected || incomeScope(yearly).multiple || yearly.filter(r => r.values.payDate === last?.values.payDate).length > 1 ? null : finiteNumber(last?.values?.ytdTaxableIncome),
     lastPaymentDate: last?.values?.payDate ?? null,
     overtime: {
       ...hours,

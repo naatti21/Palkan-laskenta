@@ -46,11 +46,11 @@ manifest.short_name = 'Palkka TESTI';
 manifest.description = 'Erillinen testiversio. Käytä vain keinotekoisia testitietoja.';
 await writeFile(`${output}/manifest.webmanifest`, JSON.stringify(manifest, null, 2) + '\n');
 let sw = await readFile('sw.js', 'utf8');
-if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const CACHE = `${CACHE_PREFIX}18`;')) {
+if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const CACHE = `${CACHE_PREFIX}19`;')) {
   throw new Error('Service worker changed; inspect staging cache transformation.');
 }
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-staging-v";')
-  .replace('const CACHE = `${CACHE_PREFIX}18`;', `const CACHE = '${'palkka-staging-v' + revision}';`)
+  .replace('const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-staging-v' + revision}';`)
   .replace('"./", "./index.html",', '"./", "./index.html", "./staging-entry.mjs",')
   .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",')
   .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",');

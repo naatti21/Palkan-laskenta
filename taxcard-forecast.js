@@ -1,4 +1,4 @@
-import { projectPayroll } from "./model.js";
+import { projectPayroll, incomeScope } from "./model.js";
 // Beta: tax-card progress and cautious estimate from observed payroll snapshots.
 // No full-year YTD substitution: accumulation and limit must belong to one card.
 const dayMs = 86400000;
@@ -24,6 +24,7 @@ const median = numbers => {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
 function unchangedCard(a, b) {
+  if ((a.taxCardId || null) !== (b.taxCardId || null)) return false;
   if (Math.abs(val(a, 'taxLimit') - val(b, 'taxLimit')) > .01) return false;
   for (const key of ['taxRate', 'additionalRate']) {
     const oldRate = money(val(a, key)), newRate = money(val(b, key));
@@ -36,6 +37,7 @@ export function forecastTaxCardLimit(records, year, now = new Date()) {
   if (projection.unresolved.some(r => !r.values?.payDate || Number(r.values.payDate.slice(0,4)) === year)) return { valid: false, estimate: "Ratkaise Historian ristiriidat ennen tulorajan seurantaa." };
   const slips = projection.active.filter(row => row && row.taxYear === year && row.kind !== 'forecast')
     .sort((a, b) => String(val(a, 'payDate') || '').localeCompare(String(val(b, 'payDate') || '')));
+  if (incomeScope(slips).multiple) return {valid:false, estimate:"Useita tulolähteitä. Maksajakohtaiset kertymät eivät osoita koko verokortin käyttöä."};
   const latest = slips.at(-1);
   if (latest && slips.filter(r => val(r, "payDate") === val(latest, "payDate")).length > 1) return { valid: false, estimate: "Samana päivänä on useita kertymäkuvia. Vahvista ajantasainen verokortti." };
   const limit = money(val(latest, 'taxLimit'));
@@ -65,6 +67,7 @@ export function forecastTaxCardLimit(records, year, now = new Date()) {
     result.estimate = 'Useita laskelmia samalla maksupäivällä — ennustetta ei arvata.';
     return result;
   }
+  if (!incomeScope(slips).comparable) return {...result, estimate:"Ennusteeseen tarvitaan lisää saman verokortin palkkalaskelmia ja vahvistettu tulolähde."};
   const gains = [], dayGaps = [];
   let newer = latest;
   for (let i = slips.length - 2; i >= 0 && gains.length < 4; i--) {

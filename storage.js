@@ -1,5 +1,6 @@
 import {
   classifyRecordRelation,
+  normalizeIncomeSources,
   hasIncomingUserEdits,
   migrateLegacyRecord,
   recordContentKey,
@@ -9,7 +10,8 @@ import {
 } from "./model.js";
 
 const DB_NAME = "palkka-pwa";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
+const SOURCE_STORE = "incomeSources";
 const RECORD_STORE = "payslips";
 const SETTINGS_STORE = "settings";
 const LEGACY_KEY = "palkka-pwa-proto:v1";
@@ -48,6 +50,7 @@ export function openDb() {
           store.createIndex("taxYear", "taxYear", { unique: false });
           store.createIndex("duplicateKey", "duplicateKey", { unique: false });
         }
+        if (!db.objectStoreNames.contains(SOURCE_STORE)) db.createObjectStore(SOURCE_STORE, { keyPath: "id" });
         if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
           db.createObjectStore(SETTINGS_STORE, { keyPath: "key" });
         }
@@ -72,19 +75,63 @@ export async function getAllRecords() {
   return records.map(migrateLegacyRecord).filter(Boolean);
 }
 
+// Every connected revision family must describe at most one confirmed payer.
+// Unknown intermediate revisions cannot bridge two known sources.
+function validateLineageSources(rows) {
+  const adjacent = new Map();
+  const sourceById = new Map();
+  for (const row of rows) {
+    sourceById.set(row.id, row.incomeSourceId);
+    if (!adjacent.has(row.id)) adjacent.set(row.id, []);
+    for (const id of row.supersedes) {
+      if (!adjacent.has(id)) adjacent.set(id, []);
+      adjacent.get(id).push(row.id);
+      adjacent.get(row.id).push(id);
+    }
+  }
+  const visited = new Set();
+  for (const id of adjacent.keys()) {
+    if (visited.has(id)) continue;
+    const pending = [id];
+    let source = null;
+    while (pending.length) {
+      const current = pending.pop();
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const candidate = sourceById.get(current);
+      if (candidate && source && candidate !== source)
+        throw new Error("Versioketju yhdistää eri tulolähteitä. Historiaa ei muutettu.");
+      source = candidate || source;
+      for (const neighbor of adjacent.get(current)) pending.push(neighbor);
+    }
+  }
+}
+
 // Read, decide and write under the same IndexedDB lock (also serializes other tabs).
-async function mutateRecords(decide) {
+async function mutateRecords(decide, sourceInputs = []) {
+  const importedSources = normalizeIncomeSources(sourceInputs);
   const db = await openDb();
-  const tx = db.transaction(RECORD_STORE, "readwrite");
+  const tx = db.transaction([RECORD_STORE, SOURCE_STORE], "readwrite");
   const done = transactionDone(tx);
   const store = tx.objectStore(RECORD_STORE);
   let result;
   let failure;
+  const sources = tx.objectStore(SOURCE_STORE);
+  const sourceRequest = sources.getAll();
   const request = store.getAll();
   request.onsuccess = () => {
     try {
       const rows = request.result.map(migrateLegacyRecord);
-      result = decide(rows, row => store.put(migrateLegacyRecord(row)));
+      const known = new Map(sourceRequest.result.map(source => [source.id, source]));
+      for (const source of importedSources) if (!known.has(source.id)) { known.set(source.id, source); sources.put(source); }
+      const next = new Map(rows.map(row => [row.id, row]));
+      result = decide(rows, row => {
+        const normalized = migrateLegacyRecord(row);
+        if (normalized.incomeSourceId && !known.has(normalized.incomeSourceId)) throw new Error("Tulolähde puuttuu. Historiaa ei muutettu.");
+        next.set(normalized.id, normalized);
+        store.put(normalized);
+      });
+      validateLineageSources(next.values());
     } catch (error) { failure = error; tx.abort(); }
   };
   try { await done; } catch (error) { throw failure || error; }
@@ -115,7 +162,9 @@ function assertExpected(rows, expected, incoming) {
 }
 function archiveReplacement(rows, put, existing, incoming) {
   if (!visibleRevisions(rows).some(r => r.id === existing.id)) throw conflictError(rows);
-  const replacement = migrateLegacyRecord({ ...incoming, id: crypto.randomUUID(),
+  if (existing.incomeSourceId && incoming.incomeSourceId && existing.incomeSourceId !== incoming.incomeSourceId) throw new Error("Eri tulolähteiden laskelmia ei voi korvata keskenään.");
+  const replacement = migrateLegacyRecord({ ...incoming,
+    incomeSourceId: existing.incomeSourceId || incoming.incomeSourceId, id: crypto.randomUUID(),
     payEventId: existing.payEventId, resolution: "active",
     distinctFrom: [...new Set([...existing.distinctFrom, ...incoming.distinctFrom])],
     supersedes: [...new Set([...existing.supersedes, existing.id, ...incoming.supersedes])],
@@ -191,7 +240,7 @@ export async function saveRecordSeparately(record, expected = null) {
     return migrateLegacyRecord(separate);
   });
 }
-export async function mergeManyRecords(records) {
+export async function mergeManyRecords(records, incomeSources = []) {
   const incomingRecords = records.map((record, index) => validateBackupRecordInput(record, index, true));
   if (incomingRecords.some(r => !r)) throw new Error("Virheellinen varmuuskopio.");
   return mutateRecords((rows, put) => {
@@ -211,7 +260,8 @@ export async function mergeManyRecords(records) {
       }
       seen.add(incoming.id);
       const same = rows.find(r => r.payEventId === incoming.payEventId &&
-        (r.id === incoming.id || r.importRevisionId === incoming.id) && sameRecordContent(r, incoming));
+        (r.id === incoming.id || r.importRevisionId === incoming.id) && (sameRecordContent(r, incoming) ||
+          (!incoming.incomeSourceId && !incoming.taxCardId && sameRecordContent({...r, incomeSourceId:null, taxCardId:null}, incoming))));
       const collision = rows.some(r => r.id === incoming.id);
       const id = same?.id || (collision ? crypto.randomUUID() : incoming.id);
       mapping.set(incoming.id, id);
@@ -259,7 +309,7 @@ export async function mergeManyRecords(records) {
     };
     for (const id of combined.keys()) check(id);
     return { added, merged, conflictsPreserved };
-  });
+  }, incomeSources);
 }
 
 export async function clearAllRecords() {
@@ -306,4 +356,16 @@ export async function migrateLegacyLocalStorage() {
   await setSetting("legacyLocalStorageMigrated", true);
   if (migratedRecords.length > 0) localStorage.removeItem(LEGACY_KEY);
   return { migrated: migratedRecords.length };
+}
+
+export async function getIncomeSources() {
+  const db = await openDb(), tx = db.transaction(SOURCE_STORE, "readonly");
+  const done = transactionDone(tx);
+  const rows = await requestToPromise(tx.objectStore(SOURCE_STORE).getAll());
+  await done; return rows;
+}
+export async function createIncomeSource(name = "") {
+  const source = normalizeIncomeSources([{ id: crypto.randomUUID(), name }])[0];
+  await mutateRecords(() => source, [source]);
+  return source;
 }

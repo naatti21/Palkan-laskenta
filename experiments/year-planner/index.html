@@ -194,7 +194,7 @@ const isDate=s=>typeof s==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 function median(xs){const a=[...xs].sort((x,y)=>x-y);return a.length?(a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2):null;}
 function historySuggestions(backup,weeklyHours=40){
   if(!backup || backup.app!=='Palkka PWA' || !Array.isArray(backup.records) ||
-     ![2,3].includes(backup.backupSchemaVersion) || ![1,2].includes(backup.recordSchemaVersion))
+     ![2,3,4].includes(backup.backupSchemaVersion) || ![1,2,3].includes(backup.recordSchemaVersion))
       throw new Error('Tiedosto ei ole tunnistettu Palkka-varmuuskopio.');
   if(!validNumber(weeklyHours)||weeklyHours<1||weeklyHours>60)throw new Error('Viikkotyöaika ei ole kelvollinen.');
   if(backup.records.length>10000)throw new Error('Varmuuskopiossa on liikaa tietueita.');
@@ -207,6 +207,7 @@ function historySuggestions(backup,weeklyHours=40){
   const rows=yearly.filter(r=>projection.active.includes(r)).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
   if(conflicted || projection.unresolved.some(r=>!r.values?.payDate)) throw new Error('Ratkaise historian ristiriidat ennen vuosilaskurin ehdotuksia.');
   if(!rows.length)throw new Error('Viimeisimmän vuoden tiedot ovat ristiriitaisia.');
+  if (new Set(rows.map(r=>r.incomeSourceId || null)).size>1) throw new Error('Useita tulolähteitä. Tarkista lähdekohtaiset tiedot ja syötä oma vuosiarvio.');
   let holiday=0,bonus=0,other=0;
   let linesObserved=0,holidayItems=0,bonusItems=0;
   const rates=[];

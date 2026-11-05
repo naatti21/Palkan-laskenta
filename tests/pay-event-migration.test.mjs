@@ -15,8 +15,8 @@ test('IndexedDB v1 upgrade retains old history and settings without resetting ei
     tx.objectStore('settings').put({key:'synthetic-setting',value:'preserved'});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
   });legacy.close();
   const storage=await import('../storage.js');const db=await storage.openDb();
-  assert.equal(db.version,2);const records=await storage.getAllRecords();assert.equal(records.length,1);
-  assert.equal(records[0].id,'legacy-preserved');assert.equal(records[0].recordSchemaVersion,2);
+  assert.equal(db.version,3);const records=await storage.getAllRecords();assert.equal(records.length,1);
+  assert.equal(records[0].id,'legacy-preserved');assert.equal(records[0].recordSchemaVersion,3);assert.equal(records[0].incomeSourceId,null);
   assert.equal(records[0].values.ytdTaxableIncome,24000);assert.equal(records[0].corrections.ytdTaxableIncome.parserValue,23000);
   assert.equal(await storage.getSetting('synthetic-setting'),'preserved');
 });

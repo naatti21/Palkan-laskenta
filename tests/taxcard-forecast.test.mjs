@@ -4,7 +4,7 @@ import { forecastTaxCardLimit } from '../taxcard-forecast.js';
 
 const now = new Date('2026-10-15T12:00:00Z');
 const row = (date, used, limit = 14000, rate = 21, extra = 41) => ({
-  taxYear: 2026, kind: 'payslip',
+  taxYear: 2026, kind: 'payslip', incomeSourceId:'synthetic-job',
   values: { payDate: date, taxCardAccumulatedIncome: used, taxLimit: limit, taxRate: rate, additionalRate: extra }
 });
 const sample = [
