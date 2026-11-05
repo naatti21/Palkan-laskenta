@@ -413,8 +413,6 @@ opening.className = 'card ledger-opening';
 const note = document.getElementById('dashboardNote');
 opening.append(note);
 dashboard.prepend(Object.assign(document.createElement('h2'), { textContent: 'Vuoden seuranta' }));
-const tabs = document.querySelector('.tabs');
-tabs.insertBefore(tabs.querySelector('[data-view-target="history"]'), tabs.querySelector('[data-view-target="analysis"]'));
 const { renderCalendar } = await import('./beta-ledger.mjs');
 document.getElementById('ledgerCalendar').addEventListener('ledger-render', event => renderCalendar(event.detail));
 await import('./app.js');
