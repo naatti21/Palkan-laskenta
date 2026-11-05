@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 // All values here are presentation-only and synthetic; no employee data.
-test("Beta v5 keeps near-black neutral surfaces and semantic accents", async ({ page }) => {
+test("Dark Neon keeps near-black neutral surfaces and semantic accents", async ({ page }) => {
   for (const width of [360, 412]) {
     await page.setViewportSize({width, height:860});
     await page.goto("/index.html");
@@ -20,21 +20,21 @@ test("Beta v5 keeps near-black neutral surfaces and semantic accents", async ({ 
         horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1
       };
     });
-    expect(colors.body).toBe("rgb(8, 10, 13)");
-    expect(colors.trackingCard).toBe("rgb(18, 22, 27)");
-    expect(colors.taxCard).toBe("rgb(33, 26, 32)");
-    expect(colors.taxPercent).toBe("rgb(255, 157, 176)");
-    expect(colors.selectedTab).toBe("rgb(37, 46, 48)");
+    expect(colors.body).toBe("rgb(5, 7, 11)");
+    expect(colors.trackingCard).toBe("rgb(12, 17, 24)");
+    expect(colors.taxCard).toBe("rgb(9, 14, 21)");
+    expect(colors.taxPercent).toBe("rgb(67, 236, 255)");
+    expect(colors.selectedTab).toBe("rgb(17, 25, 35)");
     expect(colors.horizontalOverflow).toBe(false);
-    const css = await page.evaluate(async () => (await fetch("./styles.css")).text());
-    expect(css).toContain("--beta-mint: #6de3ae;");
-    expect(css).toContain("--beta-blue: #79baff;");
-    expect(css).toContain("--beta-coral: #ff8da0;");
-    expect(css).toContain("--beta-amber: #ffc376;");
+    const tokens = await page.locator(':root').evaluate(el => {
+      const style = getComputedStyle(el);
+      return ['--mint','--cyan','--warn','--amber'].map(key => style.getPropertyValue(key).trim());
+    });
+    expect(tokens).toEqual(['#61ffcf','#43ecff','#ff8093','#ffd08c']);
   }
 });
 
-test("Annual planner shares near-black Beta v5 palette only inside its isolated iframe", async ({ page }) => {
+test("Annual planner shares near-black Dark Neon palette only inside its isolated iframe", async ({ page }) => {
   await page.goto("/index.html");
   await page.getByRole("button", {name:"Laskuri"}).click();
   await expect(page.locator("#plannerFrame")).toBeVisible();
@@ -49,8 +49,8 @@ test("Annual planner shares near-black Beta v5 palette only inside its isolated 
       panel: getComputedStyle(firstCard).backgroundColor
     };
   });
-  expect(palette.ink).toBe("#f5f8fd");
-  expect(palette.mint).toBe("#70e2ad");
-  expect(palette.panel).toBe("rgb(21, 27, 36)");
+  expect(palette.ink).toBe("#edf5fa");
+  expect(palette.mint).toBe("#61ffcf");
+  expect(palette.panel).toBe("rgb(12, 17, 24)");
   await expect(page.locator("#pdfInput")).toBeEnabled();
 });

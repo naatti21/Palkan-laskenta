@@ -1,0 +1,11 @@
+:root, html.beta-integrated {
+  color-scheme:dark;
+  --canvas:#05070b; --surface:#0c1118; --raised:#111923; --well:#090e15;
+  --edge:#354451; --control-edge:#647888; --ink:#edf5fa; --sub:#a8b8c8;
+  --mint:#61ffcf; --cyan:#43ecff; --violet:#b98dff; --warn:#ff8093; --amber:#ffd08c;
+  --corner:7px; --tight:5px;
+}
+:focus-visible {outline:2px solid var(--cyan);outline-offset:2px;}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after {scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important;animation-iteration-count:1!important;}
+}
