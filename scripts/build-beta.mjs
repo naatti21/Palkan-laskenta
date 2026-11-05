@@ -18,7 +18,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
   throw new Error('Use only the approved palkka-beta.pages.dev origin or a dedicated local beta test port.');
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = ['index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
+const files = ['beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
@@ -359,6 +359,20 @@ const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
 const precisionTokens = await readFile('beta-precision-tokens.css', 'utf8');
 const betaBlackV5 = await readFile('beta-black-v5.css', 'utf8');
 const betaImportCss = `
+.ledger-opening #dashboard {display:block}
+.ledger-opening #dashboard .metric {min-height:76px;border:0;border-radius:0;border-bottom:1px solid #36454b;background:transparent;box-shadow:none}
+.ledger-opening #dashboard .metric:first-child strong {font:700 2.15rem/1.15 monospace;color:#e4fff4}
+.ledger-switch,.ledger-month {display:flex;gap:8px;align-items:center}
+.ledger-month {justify-content:space-between}
+.ledger-month h3 {text-transform:capitalize}
+.ledger-days {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:center;text-align:center}
+.ledger-days span,.ledger-days small {padding:8px 0}
+.ledger-days button,.ledger-month button,.ledger-switch button {min-height:44px;min-width:0;padding:4px;border:1px solid #455650;background:#101719;color:#edf6f1}
+.ledger-month button {min-width:44px}
+.ledger-days button {color:#8af4c9}
+.ledger-days [aria-pressed=true],.ledger-switch [aria-pressed=true] {border-bottom:2px solid #8af4c9}
+#history>[hidden],#ledgerCalendar[hidden] {display:none}
+
 /* QA candidate: restore existing PDF import visibly without changing parser or storage. */
 .beta-pdf-slot { flex-wrap:wrap; }
 .beta-pdf-slot .file-button { cursor:pointer; opacity:1; }
@@ -380,6 +394,10 @@ if (plannerHtml.split('</body>').length !== 2) throw new Error('Beta planner clo
 const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + '\n</style>');
 await writeFile(plannerPath, plannerWithTheme.replace('</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>'));
+html = html.replace('<div id="history"></div>', `<div class="ledger-switch" role="group" aria-label="Historian näkymä">
+  <button data-ledger-mode="list">Lista</button><button data-ledger-mode="calendar">Kalenteri</button>
+</div><section id="ledgerCalendar" hidden></section><div id="history"></div>`);
+html = html.replace('<section data-view="tracking">', '<section data-view="tracking"><div id="ledgerOpening"></div>');
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
@@ -387,6 +405,17 @@ if (location.origin !== expectedOrigin) {
   document.body.textContent = 'BETA ESTETTY: väärä origin';
   throw new Error('Beta origin mismatch; app and service worker not started.');
 }
+const opening = document.getElementById('ledgerOpening');
+const dashboard = document.querySelector('.beta-compact-dashboard');
+const heading = dashboard.querySelector('.section-heading');
+heading.querySelector('h2').textContent = 'Palkkakirja';
+opening.append(heading, document.getElementById('dashboard'));
+opening.className = 'card ledger-opening';
+const note = document.getElementById('dashboardNote');
+opening.append(note);
+dashboard.prepend(Object.assign(document.createElement('h2'), { textContent: 'Vuoden seuranta' }));
+const { renderCalendar } = await import('./beta-ledger.mjs');
+document.getElementById('ledgerCalendar').addEventListener('ledger-render', event => renderCalendar(event.detail));
 await import('./app.js');
 `);
 const manifest = JSON.parse(await readFile('manifest.webmanifest', 'utf8'));
@@ -401,7 +430,7 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 }
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";')
   .replace('const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
-  .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs",')
+  .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs",')
   .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",')
   .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs"')
   .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",');

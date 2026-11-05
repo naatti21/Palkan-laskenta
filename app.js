@@ -878,6 +878,11 @@ function renderDashboard(records) {
       const caption = document.createElement("small");
       caption.className = "metric-caption";
       caption.textContent = "Maksupäivä " + fmtDate(lastDate);
+      if (document.getElementById("ledgerOpening")) {
+        const sources = [...new Set(onLastDate.map(r => sourceName(r.incomeSourceId)))];
+        caption.textContent += " · " + sources.join(", ");
+        if (paymentState(latest) === "confirmed_future") caption.textContent += " · Vahvistettu tuleva";
+      }
       box.append(caption);
     }
     (betaPrimary && !betaPrimary.has(label) ? secondaryDash : dash).append(box);
@@ -979,11 +984,15 @@ function renderHistory(records) {
   const projection = projectPayroll(records);
   const yearRecords = records.filter(r => r.taxYear === selectedYear || !r.taxYear);
   host.replaceChildren();
+  const calendar = document.getElementById("ledgerCalendar");
+  const paid = calendar ? projection.active.filter(r => paymentState(r) === "realized") : [];
+  const updateCalendar = () => calendar.dispatchEvent(new CustomEvent("ledger-render", { detail: { active: paid, unresolved: projection.unresolved, selectedYear, history: host } }));
   if (!yearRecords.length) {
     const empty = document.createElement("p");
     empty.className = "muted";
     empty.textContent = `Ei tallennettuja laskelmia vuodelta ${selectedYear}.`;
     host.append(empty);
+    if (calendar) updateCalendar();
     return;
   }
 
@@ -1002,6 +1011,7 @@ function renderHistory(records) {
   for (const record of sortByPayDate(yearRecords, -1)) {
     const row = document.createElement("details");
     row.className = "history-row payslip-item";
+    if (calendar && paid.includes(record)) row.dataset.ledgerDate = record.values.payDate;
     const header = document.createElement("summary");
     header.className = "payslip-summary";
     const heading = document.createElement("span");
@@ -1100,6 +1110,7 @@ function renderHistory(records) {
     row.append(detail);
     host.append(row);
   }
+  if (calendar) updateCalendar();
 }
 
 function renderDataSummary(records) {
