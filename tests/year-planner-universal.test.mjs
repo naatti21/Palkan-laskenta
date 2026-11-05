@@ -12,7 +12,7 @@ const context={payrollProjection:projectPayroll};vm.runInNewContext(historyJs,co
 const suggest=context.PalkkaPlannerHistory.historySuggestions;
 const compute=context.PalkkaPlannerCore.computePlan;
 const pay=(month,lines,day="09",kta=24)=>({
-  kind:"payslip",values:{payDate:"2026-"+String(month).padStart(2,"0")+"-"+day,
+  incomeSourceId:"job",kind:"payslip",values:{payDate:"2026-"+String(month).padStart(2,"0")+"-"+day,
   payPeriodStart:"2026-"+String(month).padStart(2,"0")+"-01",
   payPeriodEnd:"2026-"+String(month).padStart(2,"0")+"-08",grossPay:3400,netPay:2300,
   ytdTaxableIncome:3400*month,kta},
@@ -21,7 +21,7 @@ const pay=(month,lines,day="09",kta=24)=>({
 const monthly=[1,2,3].map(m=>pay(m,[{label:"Kuukausipalkka",amount:3500}],m===2?"09":"10"));
 const hourly=[1,2,3].map(m=>pay(m,[{code:"13001",label:"Palkkiotyö",quantity:80,amount:1600},
   {code:"13101",label:"Tuotantopalkkio",quantity:80,amount:400}]));
-const backup=records=>({app:"Palkka PWA",backupSchemaVersion:2,recordSchemaVersion:1,records});
+const backup=records=>({app:"Palkka PWA",backupSchemaVersion:4,recordSchemaVersion:3,incomeSources:[{id:"job",name:"A"},{id:"job-b",name:"B"}],records});
 test("monthly salary uses twelve months, not 26 biweekly wage events",()=>{
   const r=suggest(backup(monthly));assert.equal(r.wageModel,"monthly");
   assert.equal(r.baseEstimate,42000);assert.equal(r.avgHourlyRate,null);
@@ -79,4 +79,14 @@ test('confirmed separate same-day payments never select arbitrary YTD',()=>{
  const b={...a,payEventId:'pay-b',distinctFrom:['pay-a'],values:{...a.values,ytdTaxableIncome:9999}};
  const first=suggest(backup([a,b])), second=suggest(backup([b,a]));
  assert.equal(first.latestYtd,null);assert.equal(second.latestYtd,null);
+});
+
+test("unknown or multiple payers retain imported gross without a fabricated annual estimate",()=>{
+  for(const rows of [monthly.map(row=>({...row,incomeSourceId:null})),
+    monthly.map((row,i)=>({...row,incomeSourceId:i===1?"job-b":"job"}))]) {
+    const result=suggest(backup(rows));
+    assert.equal(result.importedGross,10200);
+    assert.equal(result.baseEstimate,null);assert.equal(result.latestYtd,null);
+    assert.equal(result.ktaRate,null);assert.equal(result.deductionsRate,null);
+  }
 });

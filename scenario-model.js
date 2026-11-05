@@ -1,4 +1,4 @@
-import { projectPayroll } from "./model.js";
+import { projectPayroll, incomeScope } from "./model.js";
 // Tax-card withholding simulation for additional cash wages.
 // NO prediction of final tax, contractual weekend pay, pension rates, or performed hours.
 // No source records are changed; inputs are annual tax-card assumptions as of a pay date.
@@ -74,7 +74,7 @@ export function deriveTaxDefaults(records,year) {
   /^\d{4}-\d{2}-\d{2}$/.test(r.values.payDate)&&
   r.values.payDate.startsWith(String(year)+"-"))
   .sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
- const latest=xs.at(-1);
+ const latest=incomeScope(xs).multiple ? null : xs.at(-1);
  const last=xs.filter(r => r.values.payDate === latest?.values.payDate).length > 1 ? null : latest;
  const v=last?.values||{};
  const r={sourceDate:v.payDate||null,baseRate:v.taxRate,extraRate:v.additionalRate,

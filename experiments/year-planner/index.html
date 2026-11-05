@@ -194,11 +194,13 @@ const isDate=s=>typeof s==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 function median(xs){const a=[...xs].sort((x,y)=>x-y);return a.length?(a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2):null;}
 function historySuggestions(backup,weeklyHours=40){
   if(!backup || backup.app!=='Palkka PWA' || !Array.isArray(backup.records) ||
-     ![2,3].includes(backup.backupSchemaVersion) || ![1,2].includes(backup.recordSchemaVersion))
+     ![2,3,4].includes(backup.backupSchemaVersion) || ![1,2,3].includes(backup.recordSchemaVersion))
       throw new Error('Tiedosto ei ole tunnistettu Palkka-varmuuskopio.');
   if(!validNumber(weeklyHours)||weeklyHours<1||weeklyHours>60)throw new Error('Viikkotyöaika ei ole kelvollinen.');
   if(backup.records.length>10000)throw new Error('Varmuuskopiossa on liikaa tietueita.');
-  const projection=globalThis.payrollProjection(backup.records);
+  const sourceIds = new Set((backup.backupSchemaVersion === 4 ? backup.incomeSources || [] : []).map(source => source.id));
+  const scopedRecords = backup.records.map(row => ({...row, incomeSourceId: sourceIds.has(row.incomeSourceId) ? row.incomeSourceId : null}));
+  const projection=globalThis.payrollProjection(scopedRecords);
   const original=projection.visible.filter(r=>r&&r.kind!=='forecast'&&isDate(r.values?.payDate)&&r.values?.payDate.slice(0,4)>='2000');
   if(!original.length)throw new Error('Varmuuskopiossa ei ole päivämäärällisiä palkkalaskelmia.');
   const year=Math.max(...original.map(r=>Number(r.values.payDate.slice(0,4))));
@@ -207,6 +209,9 @@ function historySuggestions(backup,weeklyHours=40){
   const rows=yearly.filter(r=>projection.active.includes(r)).sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
   if(conflicted || projection.unresolved.some(r=>!r.values?.payDate)) throw new Error('Ratkaise historian ristiriidat ennen vuosilaskurin ehdotuksia.');
   if(!rows.length)throw new Error('Viimeisimmän vuoden tiedot ovat ristiriitaisia.');
+  const comparable = Boolean(rows[0].incomeSourceId) && rows.every(row => row.incomeSourceId === rows[0].incomeSourceId);
+  const importedGross = rows.every(row => validNumber(row.values.grossPay)) ?
+    rows.reduce((sum,row) => sum + Math.round(row.values.grossPay * 100), 0) / 100 : null;
   let holiday=0,bonus=0,other=0;
   let linesObserved=0,holidayItems=0,bonusItems=0;
   const rates=[];
@@ -256,16 +261,16 @@ function historySuggestions(backup,weeklyHours=40){
   const hourlyReady=recentHourly.length>=3;
   const monthlyReady=recentMonthly.length>=3&&monthlyCadence;
   // Never extrapolate a mixed or undocumented wage model as if it were certain.
-  const wageModel=hourlyReady&&!recentMonthly.length?'hourly':monthlyReady&&!recentHourly.length?'monthly':'unknown';
+  const wageModel=!comparable?'unknown':hourlyReady&&!recentMonthly.length?'hourly':monthlyReady&&!recentHourly.length?'monthly':'unknown';
   const avgRate=wageModel==='hourly'?median(recentHourly.map(r=>r.rate)):null;
   const monthlyRate=wageModel==='monthly'?median(recentMonthly.map(r=>r.amount)):null;
-  const ktaRate=median(ktaRates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(r=>r.rate));
+  const ktaRate=!comparable?null:median(ktaRates.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(r=>r.rate));
   const baseEstimate=avgRate!==null?Math.round((avgRate*weeklyHours*52)/100)*100
     :monthlyRate!==null?Math.round(monthlyRate*12/100)*100:null;
   const newest=rows.at(-1);
-  const latestYtd=rows.filter(r=>r.values.payDate===newest?.values.payDate).length===1 && validNumber(newest?.values.ytdTaxableIncome) ? newest : null;
-  const latestDeductions=deductions.sort((a,b)=>b.date.localeCompare(a.date))[0];
-  return {year,records:rows.length,excludedConflicts:conflicted,lineCoverage:linesObserved,total:yearly.length,
+  const latestYtd=comparable && rows.filter(r=>r.values.payDate===newest?.values.payDate).length===1 && validNumber(newest?.values.ytdTaxableIncome) ? newest : null;
+  const latestDeductions=comparable && deductions.sort((a,b)=>b.date.localeCompare(a.date))[0];
+  return {year,comparable,importedGross,records:rows.length,excludedConflicts:conflicted,lineCoverage:linesObserved,total:yearly.length,
     holiday:holidayItems?Math.round(holiday*100)/100:null,
     bonus:bonusItems?Math.round(bonus*100)/100:null,
     other:other?Math.round(other*100)/100:null,
@@ -528,12 +533,22 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   for(const chip of document.querySelectorAll('[data-weekends]'))chip.addEventListener('click',()=>{el('weekends').value=chip.dataset.weekends;render();});
   const historyInput=el('historyInput');
   let lastHistory=null, lastPayload=null;
+  const suggestedFields = new Set();
+  for (const key of ['baseGross','otherDeductions','hourlyRate','ktaRate'])
+    el(key).addEventListener('input', () => suggestedFields.delete(key));
+  function clearSourceSuggestions() {
+    if (!suggestedFields.size) return;
+    for (const key of suggestedFields) el(key).value='';
+    suggestedFields.clear();
+    render();
+  }
   const displayOrDash=v=>typeof v==='number'&&Number.isFinite(v)?money(v):'Ei luotettavaa tietoa';
   const setStatus=(txt,error=false)=>{el('historyStatus').textContent=txt;el('historyStatus').classList.toggle('error',error);};
   function showHistory(r){
     lastHistory=r;
+    if (!r.comparable) clearSourceSuggestions();
     const modelText=r.wageModel==='hourly'?'Tuntipalkkainen malli tunnistettu ('+r.rateSamples+' laskelmaa). Vuosiansio on arvio: tuntiansio × viikkotyöaika × 52.':r.wageModel==='monthly'?'Kuukausipalkkainen malli tunnistettu ('+r.monthlySamples+' laskelmaa). Vuosiansio perustuu kuukausipalkan mediaaniin × 12.':'Palkkamallia ei tunnistettu varmasti. Perusvuosiansiota ei arvata; täytä se itse.';
-    el('wageModelNote').textContent=modelText;
+    el('wageModelNote').textContent=r.comparable ? modelText : 'Tulolähteitä on useita tai lähde puuttuu. Syötä oma koko vuoden arvio.';
     el('historyPreview').hidden=false;
     el('filePickerTitle').textContent='Vaihda Palkka-varmuuskopio (.json)';
     el('histBase').textContent=displayOrDash(r.baseEstimate);
@@ -548,6 +563,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       (r.excludedConflicts?` Ristiriitaisia tietueita suljettu pois ${r.excludedConflicts}.`:'')+
       (r.deductionsRate!==null?` Neljän tietyn palkkavähennyskoodin havaittu osuus ${r.deductionsRate.toFixed(2).replace('.',',')} %: tarkista oma vähennysrakenne.`:'')+
       (r.other!==null?` Erillistä muuta kertakorvausta havaittu ${money(r.other)} (ei oletettu toistuvaksi).`:'');
+    if(r.importedGross!==null) el('historyCoverage').textContent+=' Tuotu brutto yhteensä '+money(r.importedGross)+'.';
     el('applyHistory').disabled=r.baseEstimate===null && r.holiday===null && r.deductionsRate===null;
     if(r.avgHourlyRate!==null && r.ktaRate!==null)el('historyCoverage').textContent+=` Viikonlopun laskentaan havaittu perusansio ${r.avgHourlyRate.toFixed(2)} €/h ja KTA ${r.ktaRate.toFixed(2)} €/h (tarkistettava).`;
     el('applyHistoryBonus').disabled=r.bonus===null;
@@ -574,12 +590,13 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
     if(!lastHistory)return;
     const changed=[];
     for(const [key,v] of [['baseGross',lastHistory.baseEstimate],['holiday',lastHistory.holiday],['otherDeductions',lastHistory.deductionsRate]]){
-      if(typeof v==='number'&&Number.isFinite(v)){el(key).value=v;changed.push(key);}
+      if(typeof v==='number'&&Number.isFinite(v)){el(key).value=v;changed.push(key);if(key!=='holiday') suggestedFields.add(key);}
     }
     let weekendSuggested=false;
     if(typeof lastHistory.avgHourlyRate==='number'&&typeof lastHistory.ktaRate==='number'){
       el('hourlyRate').value=lastHistory.avgHourlyRate.toFixed(2);
       el('ktaRate').value=lastHistory.ktaRate.toFixed(2);
+      suggestedFields.add('hourlyRate');suggestedFields.add('ktaRate');
       weekendSuggested=true;
       el('weekendMethod').value='manual';
       el('rulesConfirmed').checked=false;
@@ -614,7 +631,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       if(event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='palkka:planner:prefill')return;
       try{
         if(event.data.backup?.app!=='Palkka PWA'||!Array.isArray(event.data.backup.records))throw new Error('Tuntematon palkkahistorian muoto');
-        if(!event.data.backup.records.length){setStatus('Beta ei sisällä vielä vahvistettua palkkahistoriaa. Voit käyttää muokattavia esimerkkilukuja.');return;}
+        if(!event.data.backup.records.length){clearSourceSuggestions();setStatus('Beta ei sisällä vielä vahvistettua palkkahistoriaa. Voit käyttää muokattavia esimerkkilukuja.');return;}
         lastPayload=event.data.backup;
         showHistory(PalkkaPlannerHistory.historySuggestions(lastPayload,Number(el('regularHours').value)));
         if(!acceptedOnce){
@@ -622,7 +639,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
           el('applyHistory').click();
           setStatus('Beta ehdotti luvut paikallisesta palkkahistoriasta. Tarkista palkkamalli ja viikonlopun korvaus. Bonuksia ei lisätä automaattisesti.');
         }else setStatus('Palkkahistoria päivitetty. Omia käsin muutettuja arvoja ei ylikirjoitettu; voit halutessasi valita ”Käytä varmistettavia ehdotuksia”.');
-      }catch(err){setStatus('Betan historiasta ei saatu luotettavia ehdotuksia: '+err.message,true);}
+      }catch(err){clearSourceSuggestions();setStatus('Betan historiasta ei saatu luotettavia ehdotuksia: '+err.message,true);}
     });
   }
   render();

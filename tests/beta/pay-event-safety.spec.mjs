@@ -96,3 +96,23 @@ test('choosing another replacement target updates the comparison and replaces on
   expect(result.visible.map(r=>r.values.netPay).sort((a,b)=>a-b)).toEqual([1000,1200,1950]);
   expect(result.analysis.totalNet).toBeNull();
 });
+for(const width of [360,412]) test(`PDF source selection survives replay and reload at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:915});await page.goto('/index.html');
+ for (const [name,marker] of [['Päätyö','A'],['Keikat','B']]) {
+   const details=page.locator('details').filter({has:page.locator('#createIncomeSource')});
+   if(!await details.evaluate(node=>node.open)) await details.locator('summary').click();
+   await page.locator('#incomeSourceName').fill(name);
+   await page.locator('#createIncomeSource').click();
+   await expect(page.locator('#incomeSourceSelect option:checked')).toHaveText(name);
+   await page.locator('#pdfInput').setInputFiles(pdf('1 900,00',marker));
+   await expect.poll(async()=>(await state(page)).rows.length).toBe(marker==='A'?1:2);
+ }
+ await page.locator('#pdfInput').setInputFiles(pdf());
+ await expect(page.locator('#status')).toContainText('ilman tuplaa');
+ await page.reload();
+ const saved=await state(page);expect(saved.analysis.totalGross).toBe(6000);
+ expect(saved.analysis.latestYtd).toBeNull();
+ await page.getByRole('button',{name:'Historia',exact:true}).click();
+ await expect(page.locator('#history')).toContainText('Päätyö');
+ await expect(page.locator('#history')).toContainText('Keikat');
+});

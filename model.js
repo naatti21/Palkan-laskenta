@@ -1,5 +1,5 @@
-export const RECORD_SCHEMA_VERSION = 2;
-export const BACKUP_SCHEMA_VERSION = 3;
+export const RECORD_SCHEMA_VERSION = 3;
+export const BACKUP_SCHEMA_VERSION = 4;
 
 const LEARNED_SIGNAL_ALLOWLIST = new Set([
   "title:palkkalaskelma", "title:palkkaerittely",
@@ -69,14 +69,14 @@ export function validateBackupRecordInput(input, index, allowLegacyFlat = false)
     throw new Error(`${context} ei ole kelvollinen tietue.`);
   }
 
-  const values = [1, 2].includes(input.recordSchemaVersion) && input.values
+  const values = [1, 2, 3].includes(input.recordSchemaVersion) && input.values
     ? input.values
     : allowLegacyFlat ? input : null;
 
   if (!values || typeof values !== "object" || Array.isArray(values)) {
     throw new Error(`${context}: values puuttuu tai ei ole kelvollinen.`);
   }
-  if (!allowLegacyFlat && ![1, 2].includes(input.recordSchemaVersion)) {
+  if (!allowLegacyFlat && ![1, 2, 3].includes(input.recordSchemaVersion)) {
     throw new Error(`${context}: tietueskeemaa ei tueta.`);
   }
 
@@ -286,6 +286,9 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   const sameSource = existing.sourceHash && existing.sourceHash === incoming.sourceHash;
   const sameRevision = existing.id === incoming.id && sameRecordContent(existing, incoming);
   if (sameSource || sameRevision) return { type: "exact_duplicate", eventKey, differences };
+  if (existing.payEventId === incoming.payEventId) return { type: "same_event_conflict", eventKey, differences };
+  if (existing.incomeSourceId && incoming.incomeSourceId && existing.incomeSourceId !== incoming.incomeSourceId)
+    return { type: "distinct", eventKey: null, differences: [] };
   const overlap = a.payPeriodStart && a.payPeriodEnd && b.payPeriodStart && b.payPeriodEnd &&
     a.payPeriodStart <= b.payPeriodEnd && b.payPeriodStart <= a.payPeriodEnd;
   const incomplete = !a.payPeriodStart || !a.payPeriodEnd || !b.payPeriodStart || !b.payPeriodEnd;
@@ -424,6 +427,8 @@ export function recordContentKey(input) {
   return JSON.stringify({
     kind: record.kind,
     sourceHash: record.sourceHash,
+    incomeSourceId: record.incomeSourceId,
+    taxCardId: record.taxCardId,
     values: record.values,
     fingerprints: [...(record.fingerprints || [])].sort(),
     fieldMeta: record.fieldMeta,
@@ -494,7 +499,7 @@ export function mergeRecords(existingInput, incomingInput) {
 export function migrateLegacyRecord(input) {
   if (!input || typeof input !== "object") return null;
 
-  if (input.recordSchemaVersion != null && ![1, 2].includes(input.recordSchemaVersion)) throw new Error("Tuntematon tietueskeema.");
+  if (input.recordSchemaVersion != null && ![1, 2, 3].includes(input.recordSchemaVersion)) throw new Error("Tuntematon tietueskeema.");
   if (input.values) {
     const values = safeValues(input.values);
     const fingerprints = Array.isArray(input.fingerprints)
@@ -505,6 +510,8 @@ export function migrateLegacyRecord(input) {
       recordSchemaVersion: RECORD_SCHEMA_VERSION,
       id: safeText(input.id, 300) || recordIdFrom(values, fingerprints[0] || ""),
       payEventId: safeText(input.payEventId, 300) || safeText(input.id, 300) || recordIdFrom(values, fingerprints[0] || ""),
+      incomeSourceId: [1, 2].includes(input.recordSchemaVersion) ? null : optionalId(input.incomeSourceId),
+      taxCardId: [1, 2].includes(input.recordSchemaVersion) ? null : optionalId(input.taxCardId),
       importRevisionId: safeText(input.importRevisionId, 300),
       decisionInputId: safeText(input.decisionInputId, 300),
       sourceHash: typeof input.sourceHash === "string" && /^[a-f0-9]{64}$/.test(input.sourceHash) ? input.sourceHash : null,
@@ -532,6 +539,8 @@ export function migrateLegacyRecord(input) {
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
     id: recordIdFrom(values, ""),
     payEventId: recordIdFrom(values, ""),
+    incomeSourceId: null,
+    taxCardId: null,
     sourceHash: null,
     resolution: "active",
     supersedes: [],
@@ -565,6 +574,7 @@ export function makeBackup(records, options = {}) {
     recordSchemaVersion: RECORD_SCHEMA_VERSION,
     exportedAt: nowIso(),
     privacy: "Backup contains structured salary data and non-identifying learned layout signals only. Original PDFs, filenames and raw extracted text are not included.",
+    incomeSources: normalizeIncomeSources(options.incomeSources || []),
     learnedProfiles: safeLearnedProfiles(options.learnedProfiles),
     records: records.map(record => migrateLegacyRecord(record)).filter(Boolean)
   };
@@ -580,10 +590,10 @@ export function parseBackup(payload) {
   if (payload.app !== "Palkka PWA") {
     throw new Error("Varmuuskopio kuuluu eri sovellukselle.");
   }
-  if (![2, 3].includes(payload.backupSchemaVersion)) {
+  if (![2, 3, 4].includes(payload.backupSchemaVersion)) {
     throw new Error("Varmuuskopion versiota tai skeemaa ei tueta.");
   }
-  if (![1, 2].includes(payload.recordSchemaVersion)) {
+  if (![1, 2, 3].includes(payload.recordSchemaVersion)) {
     throw new Error("Varmuuskopion tietueskeemaa ei tueta.");
   }
   if (!Array.isArray(payload.records)) throw new Error("Varmuuskopiosta ei löytynyt palkkatietoja.");
@@ -624,6 +634,35 @@ export function projectPayroll(records = []) {
 }
 
 export function hasIncomingUserEdits(existing, incoming) {
+  if (incoming.incomeSourceId && incoming.incomeSourceId !== existing.incomeSourceId) return true;
+  if (incoming.taxCardId && incoming.taxCardId !== existing.taxCardId) return true;
   return VALUE_KEYS.some(key => incoming.corrections?.[key] &&
     (existing.values?.[key] ?? null) !== (incoming.values?.[key] ?? null));
+}
+
+// IDs are opaque local references. Never derive them from a PDF layout or employer.
+function optionalId(value) {
+  if (value == null) return null;
+  if (typeof value !== "string" || !value.trim() || value.length > 300) throw new Error("Virheellinen lähde- tai verokorttitunniste.");
+  return value;
+}
+export function normalizeIncomeSources(sources) {
+  if (!Array.isArray(sources)) throw new Error("Tulolähdeluettelo ei ole kelvollinen.");
+  const seen = new Set();
+  return sources.map(source => {
+    const id = optionalId(source?.id);
+    if (!id || seen.has(id) || typeof source.name !== "string" || source.name.length > 80) throw new Error("Virheellinen tai toistuva tulolähde.");
+    seen.add(id);
+    return { id, name: source.name.trim() };
+  });
+}
+export function parseBackupIncomeSources(payload) {
+  return normalizeIncomeSources(payload?.incomeSources || []);
+}
+// A single snapshot is displayable as an observation, never proof of a complete tax year.
+export function incomeScope(records = []) {
+  const ids = new Set(records.map(r => r.incomeSourceId || null));
+  const unknown = ids.has(null);
+  return { sourceCount: [...ids].filter(Boolean).length, unknown,
+    multiple: ids.size > 1, comparable: records.length > 0 && ids.size === 1 && !unknown };
 }

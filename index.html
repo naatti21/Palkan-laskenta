@@ -31,6 +31,13 @@
 
     <section data-view="tracking">
       <section class="card upload-card">
+        <label>Tämän PDF:n tulolähde
+          <select id="incomeSourceSelect"><option value="">Lähde määrittämättä</option></select>
+        </label>
+        <details><summary>Luo tulolähde</summary>
+          <label>Oma nimi (vapaaehtoinen) <input id="incomeSourceName" maxlength="80" placeholder="Esim. Keikkatyö"></label>
+          <button type="button" id="createIncomeSource">Luo ja valitse</button>
+        </details>
         <label class="file-button">
           <input id="pdfInput" type="file" accept="application/pdf" />
           <span>Valitse palkkalaskelma PDF</span>

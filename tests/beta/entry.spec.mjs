@@ -158,12 +158,12 @@ test("year-end goal is local, compares certified YTD separately from manual annu
  await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
  const backup=await page.evaluate(async()=>{
   const m=await import("/model.js");
-  const row=m.migrateLegacyRecord({recordSchemaVersion:1,id:"goal-synthetic-1",kind:"payslip",
+  const row=m.migrateLegacyRecord({recordSchemaVersion:3,incomeSourceId:"goal-job",id:"goal-synthetic-1",kind:"payslip",
    values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
      grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000},
    payLines:[],fingerprints:["goal-synthetic-1"],fieldMeta:{},corrections:{},notices:[],
    parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}});
-  return JSON.stringify(m.makeBackup([row]));
+  return JSON.stringify(m.makeBackup([row],{incomeSources:[{id:"goal-job",name:"Työ"}]}));
  });
  await page.getByRole("button",{name:"Data"}).click();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-progress.json",mimeType:"application/json",buffer:Buffer.from(backup)});
@@ -345,11 +345,11 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(page.locator("#dashboardNote")).toContainText("Vuodelta 2026 ei ole vielä palkkalaskelmia");
  const backup=await page.evaluate(async()=>{
   const m=await import("/model.js");
-  const rows=[1,2,3].map(n=>m.migrateLegacyRecord({recordSchemaVersion:1,id:"planner-fake-"+n,kind:"payslip",
+  const rows=[1,2,3].map(n=>m.migrateLegacyRecord({recordSchemaVersion:3,incomeSourceId:"planner-work",id:"planner-fake-"+n,kind:"payslip",
     values:{payDate:"2026-0"+n+"-09",payPeriodStart:"2026-0"+n+"-01",payPeriodEnd:"2026-0"+n+"-07",grossPay:3000,netPay:1850,ytdTaxableIncome:3000*n,kta:25,taxRate:31,additionalRate:47},
     payLines:[{code:"13001",label:"Palkkiotyö",quantity:80,amount:1600,unitPrice:20},{code:"13101",label:"Tuotantopalkkio",quantity:80,amount:400,unitPrice:5},{code:"90100",amount:-210},{code:"90200",amount:-26},{code:"90400",amount:-30},{code:"90920",amount:-39},...(n===2?[{code:"55301",amount:1200}]:[])],
     fingerprints:["synthetic-planner-"+n],fieldMeta:{},corrections:{},notices:[],parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}}));
-  return JSON.stringify(m.makeBackup(rows));
+  return JSON.stringify(m.makeBackup(rows,{incomeSources:[{id:"planner-work",name:"Päätyö"}]}));
  });
  await page.getByRole("button",{name:"Data"}).click();
  await expect(page.locator('[data-view="data"]')).toBeVisible();
@@ -374,7 +374,17 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(planner.locator("#rateConfirmedA")).not.toBeChecked();
  await expect(planner.locator("#samples")).toContainText("3");
  await expect(planner.locator("#samples")).toContainText("5");
+ // A second payer invalidates an automatically filled single-job base.
+ const mixed=JSON.parse(backup);
+ mixed.incomeSources.push({id:"second-job",name:"Keikkatyö"});
+ mixed.records[2].incomeSourceId="second-job";
+ await page.evaluate(payload=>document.querySelector("#plannerFrame").contentWindow.postMessage(
+   {type:"palkka:planner:prefill",backup:payload},location.origin),mixed);
+ await expect(planner.locator("#baseGross")).toHaveValue("");
+ await expect(planner.locator("#wageModelNote")).toContainText("Tulolähteitä");
  await planner.locator("#baseGross").fill("61000");
+ await page.evaluate(payload=>document.querySelector("#plannerFrame").contentWindow.postMessage(
+   {type:"palkka:planner:prefill",backup:payload},location.origin),mixed);
  await page.getByRole("button",{name:"Historia"}).click();
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(planner.locator("#baseGross")).toHaveValue("61000");

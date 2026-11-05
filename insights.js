@@ -1,4 +1,4 @@
-import { projectPayroll } from "./model.js";
+import { projectPayroll, incomeScope } from "./model.js";
 // Deterministic, read-only salary insights. Source records are never modified.
 // Payment-year observations and earned-period dates are intentionally separate.
 const OVERTIME = new Set(["20040","20050","20060","20070","20080","1220","1230","1240"]);
@@ -121,6 +121,7 @@ export function buildInsightReport(records,year) {
   const o=categories(safe), m=monthMetrics(safe,year);
   const gross=paymentBreakdown(safe);
   const last=safe.at(-1);
+  const snapshot = !conflicts.length && !incomeScope(all).multiple && safe.filter(r=>r.values.payDate===last?.values.payDate).length===1 ? last : null;
   return {
     year,totalRecords:all.length,excludedConflicts:conflicts.length,
     money:conflicts.length?{gross:null,net:null,withholding:null,grossNetDifference:null,unexplainedDifference:null}:gross,
@@ -132,9 +133,9 @@ export function buildInsightReport(records,year) {
       ? {...mo,gross:null,net:null,withholding:null,grossNetDifference:null,unexplainedDifference:null,overtimeHours:null,overtimeMoney:null,hasConflict:true}
       : {...mo,hasConflict:false}),
     lastPayment:last?.values.payDate||null,
-    ytd:last&&number(last.values?.ytdTaxableIncome)!=null?last.values.ytdTaxableIncome:null,
-    lastTaxLimit:last&&number(last.values?.taxLimit)!=null?last.values.taxLimit:null,
-    lastTaxCardAccumulated:last&&number(last.values?.taxCardAccumulatedIncome)!=null?last.values.taxCardAccumulatedIncome:null,
+    ytd:snapshot&&number(snapshot.values?.ytdTaxableIncome)!=null?snapshot.values.ytdTaxableIncome:null,
+    lastTaxLimit:snapshot&&number(snapshot.values?.taxLimit)!=null?snapshot.values.taxLimit:null,
+    lastTaxCardAccumulated:snapshot&&number(snapshot.values?.taxCardAccumulatedIncome)!=null?snapshot.values.taxCardAccumulatedIncome:null,
     // Bonuses may be listed alongside ordinary salary; indicative pay-line totals only.
     recognizedBonuses:sumCents(safe.flatMap(r=>(r.payLines||[])
       .filter(l=>["40000","40070"].includes(String(l.code))).map(l=>l.amount))) ,
