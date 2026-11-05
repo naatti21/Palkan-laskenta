@@ -345,11 +345,11 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(page.locator("#dashboardNote")).toContainText("Vuodelta 2026 ei ole vielä palkkalaskelmia");
  const backup=await page.evaluate(async()=>{
   const m=await import("/model.js");
-  const rows=[1,2,3].map(n=>m.migrateLegacyRecord({recordSchemaVersion:1,id:"planner-fake-"+n,kind:"payslip",
+  const rows=[1,2,3].map(n=>m.migrateLegacyRecord({recordSchemaVersion:3,incomeSourceId:"planner-work",id:"planner-fake-"+n,kind:"payslip",
     values:{payDate:"2026-0"+n+"-09",payPeriodStart:"2026-0"+n+"-01",payPeriodEnd:"2026-0"+n+"-07",grossPay:3000,netPay:1850,ytdTaxableIncome:3000*n,kta:25,taxRate:31,additionalRate:47},
     payLines:[{code:"13001",label:"Palkkiotyö",quantity:80,amount:1600,unitPrice:20},{code:"13101",label:"Tuotantopalkkio",quantity:80,amount:400,unitPrice:5},{code:"90100",amount:-210},{code:"90200",amount:-26},{code:"90400",amount:-30},{code:"90920",amount:-39},...(n===2?[{code:"55301",amount:1200}]:[])],
     fingerprints:["synthetic-planner-"+n],fieldMeta:{},corrections:{},notices:[],parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}}));
-  return JSON.stringify(m.makeBackup(rows));
+  return JSON.stringify(m.makeBackup(rows,{incomeSources:[{id:"planner-work",name:"Päätyö"}]}));
  });
  await page.getByRole("button",{name:"Data"}).click();
  await expect(page.locator('[data-view="data"]')).toBeVisible();
