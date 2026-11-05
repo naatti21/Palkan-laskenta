@@ -13,14 +13,16 @@ test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
       const navBounds=nav.getBoundingClientRect();
       return {
         bg:getComputedStyle(document.body).backgroundColor,
+        smallestTabHeight:Math.min(...tabs.map(b=>b.getBoundingClientRect().height)),
         columns:getComputedStyle(nav).gridTemplateColumns.split(' ').length,
         allInside:tabs.every(b=>b.getBoundingClientRect().right<=navBounds.right+1
           && b.getBoundingClientRect().left>=navBounds.left-1),
         documentOverflow:document.documentElement.scrollWidth>innerWidth+1
       };
     });
-    expect(layout.bg).toBe('rgb(8, 10, 13)');
+    expect(layout.bg).toBe('rgb(5, 7, 11)');
     expect(layout.columns).toBe(5);
+    expect(layout.smallestTabHeight).toBeGreaterThanOrEqual(44);
     expect(layout.allInside).toBe(true);
     expect(layout.documentOverflow).toBe(false);
     await page.getByRole('button',{name:'Laskuri'}).click();

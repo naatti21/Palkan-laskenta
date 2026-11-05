@@ -1,25 +1,14 @@
-/* Planner's own iframe palette: near-black matching the parent Beta. */
-html.beta-integrated {
-  --bg:#080a0d; --panel:#141a21; --soft:#1c2430;
-  --line:#374756; --ink:#f5f8fd; --sub:#bdc9d8;
-}
-html.beta-integrated body {background:#0c1015;color:#f5f8fd;}
-html.beta-integrated .card {background:#151b24;border:1px solid #394858;}
-html.beta-integrated .fact {background:#1b2530;border:1px solid #3b4e62;}
-html.beta-integrated .fact.mint {background:#193026;border-color:#407b5d;}
-html.beta-integrated .field input,
-html.beta-integrated .field select {background:#0e151e;border:1px solid #4c5e70;color:#fff;}
-html.beta-integrated .chip {background:#1e2936;border-color:#485a70;color:#eef5fb;}
-html.beta-integrated .chip.active {background:#65ddaa;border-color:#65ddaa;color:#061810;}
-html.beta-integrated .status {background:#1b2938;border-color:#375c80;color:#e0edff;}
-html.beta-integrated .file-picker {background:#1a2734;border-color:#55758e;}
-html.beta-integrated .netref26 {background:#141c25!important;border-color:#3e5267!important;}
-html.beta-integrated .netref26-cards>div {background:#1a2532;border-color:#3b5d7e;}
-html.beta-integrated .netref26-cards>div:first-child {background:#182b23;border-color:#407c5b;}
-html.beta-integrated .netref26-overtime {background:#192735;}
-
-/* Prevent the old backup-file picker from forcing a 2px horizontal overhang in
-   the embedded calculator at 320px parent width (about 284px iframe width). */
-html.beta-integrated .file-picker {flex-wrap:wrap;gap:7px;min-width:0;}
+html.beta-integrated {--bg:var(--canvas);--panel:var(--surface);--soft:var(--raised);--line:var(--edge);--blue:var(--cyan);--red:var(--warn);}
+html.beta-integrated body {background:var(--canvas);color:var(--ink);}
+html.beta-integrated .card,html.beta-integrated .netref26 {background:var(--surface)!important;border:1px solid var(--edge)!important;border-radius:var(--corner);padding:10px;box-shadow:none;}
+html.beta-integrated :is(.fact,.fact.mint,.netref26-cards>div,.netref26-overtime,.status,.file-picker) {background:var(--raised);color:var(--ink);border:1px solid var(--edge);border-radius:var(--tight);box-shadow:none;}
+html.beta-integrated .fact.mint,html.beta-integrated .netref26-cards>div:first-child {background:var(--raised);border-top:1px solid var(--mint);}
+html.beta-integrated .fact strong {font-variant-numeric:tabular-nums;}
+html.beta-integrated :is(.hint,.muted,.fact small) {color:var(--sub);}
+html.beta-integrated :is(button,summary,select,.field input,.file-picker) {min-height:44px;box-sizing:border-box;align-content:center;}
+html.beta-integrated :is(button,.chip,.field input,.field select,.file-picker-action) {background:var(--well);color:var(--ink);border:1px solid var(--control-edge);border-radius:var(--tight);}
+html.beta-integrated .chip.active {background:var(--raised);color:var(--mint);border-color:var(--edge);box-shadow:inset 0 -2px var(--mint);}
+html.beta-integrated .file-picker {flex-wrap:wrap;gap:6px;min-width:0;}
 html.beta-integrated .file-picker>span:first-child {flex:1 1 125px;min-width:0;overflow-wrap:anywhere;}
 html.beta-integrated .file-picker-action {flex:0 1 auto;max-width:100%;white-space:normal;}
+html.beta-integrated .fact strong {overflow-wrap:anywhere;hyphens:auto;}

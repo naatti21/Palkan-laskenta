@@ -356,6 +356,7 @@ summary:focus-visible{outline:2px solid #9de9c2;outline-offset:2px;}
 const betaV2Theme = await readFile('beta-theme-v2.css', 'utf8');
 const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
 const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
+const precisionTokens = await readFile('beta-precision-tokens.css', 'utf8');
 const betaBlackV5 = await readFile('beta-black-v5.css', 'utf8');
 const betaImportCss = `
 /* QA candidate: restore existing PDF import visibly without changing parser or storage. */
@@ -365,7 +366,7 @@ const betaImportCss = `
 .beta-pdf-slot .privacy { display:none; }
 `;
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + betaBlackV5 + '\n' + betaImportCss);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');
@@ -376,7 +377,7 @@ if (!plannerHtml.includes('html.beta-integrated body') ||
 const plannerV2Theme = await readFile('beta-planner-theme-v2.css', 'utf8');
 const plannerBlackV5 = await readFile('beta-planner-black-v5.css', 'utf8');
 if (plannerHtml.split('</body>').length !== 2) throw new Error('Beta planner closing body changed; review net preview mounting.');
-const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n' + plannerBlackV5 + '\n</style>');
+const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + '\n</style>');
 await writeFile(plannerPath, plannerWithTheme.replace('</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>'));
 await writeFile(`${output}/index.html`, html);
