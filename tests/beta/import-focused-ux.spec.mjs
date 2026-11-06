@@ -75,7 +75,7 @@ test("history conflict decision opens import workspace but does not auto-confirm
     ].map(m.migrateLegacyRecord));
   });
   await page.reload();
-  await page.getByRole("button",{name:"Historia",exact:true}).click();
+  await page.getByRole("button",{name:"Kalenteri",exact:true}).click();
   await page.getByRole("button",{name:"Ratkaise palkkatapahtuma"}).first().click();
   await expect(page.locator("#betaImportWorkspace")).toBeVisible();
   await expect(page.locator("#conflictSection")).toBeVisible();
