@@ -1436,8 +1436,8 @@ function renderConflict(record, conflict) {
   }
   host.append(detail);
 
-  el("status").textContent = "Tarkista, onko kyse kahdesta maksetusta palkasta vai korjauslaskelmasta. " +
-    "Mitään ei ratkaista automaattisesti.";
+  el("status").textContent = "Mitään ei yhdistetty automaattisesti. " +
+    "Tarkista, onko kyse kahdesta maksetusta palkasta vai korjauslaskelmasta.";
 }
 
 async function conflictForRecord(record, ignoreRecordId = null) {
