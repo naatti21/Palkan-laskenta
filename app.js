@@ -1,5 +1,5 @@
 import { extractPdfText } from "./pdf-reader.js";
-import { buildYearAnalysis } from "./analytics.js";
+import { buildYearAnalysis, buildIncomeSourceDiagnostics } from "./analytics.js";
 import { forecastTaxCardLimit } from "./taxcard-forecast.js";
 import { initInsightsUi, renderInsightsUi } from "./insights-ui.js";
 import {initScenarioUi,renderScenarioUi} from "./scenario-ui.js";
@@ -665,6 +665,68 @@ function initBetaYearProgress() {
   }
 }
 
+
+function renderIncomeSourceDiagnostics(records) {
+  // This is evidence, not a cross-payer YTD calculation.
+  const card = document.getElementById("taxCardProgress");
+  if (!card) return;
+  let details = document.getElementById("incomeSourceDiagnostics");
+  if (!details) {
+    details = document.createElement("details");
+    details.id = "incomeSourceDiagnostics";
+    details.className = "beta-source-diagnostics";
+    const summary = document.createElement("summary");
+    summary.textContent = "Kertymän tietolähteet ja tarkistettavat kohdat";
+    details.append(summary, document.createElement("div"));
+    card.append(details);
+  }
+  const host = details.querySelector("div");
+  host.replaceChildren();
+  const evidence = buildIncomeSourceDiagnostics(records, selectedYear);
+  const status = document.createElement("p");
+  status.textContent = evidence.recordCount
+    ? evidence.conflictCount + " ristiriitaista · " + evidence.unspecifiedCount +
+      " ilman tulolähdettä. Näytetyt kertymät ovat yksittäisten laskelmien havaintoja."
+    : "Valitulta vuodelta ei ole vielä palkkalaskelmia.";
+  host.append(status);
+  if (evidence.multipleSources) {
+    const warning = document.createElement("p");
+    warning.className = "source-diagnostics-warning";
+    warning.textContent = "Usean työnantajan YTD- tai korttikertymiä ei voi laskea yhteen koko verokortin käytöksi.";
+    host.append(warning);
+  }
+  for (const source of evidence.sources) {
+    const section = document.createElement("section");
+    section.className = "source-diagnostics-row";
+    const label = document.createElement("strong");
+    label.textContent = sourceName(source.incomeSourceId) +
+      " · " + source.confirmedCount + " vahvistettua / " + source.recordCount + " laskelmaa";
+    section.append(label);
+    if (source.lastPayDate) {
+      const observation = document.createElement("p");
+      const values = [
+        "Viimeisin vahvistettu " + fmtDate(source.lastPayDate),
+        "Palkkalaskelman YTD-havainto " + fmtMoney(source.ytdObservation),
+        "Kortin kertymähavainto " + fmtMoney(source.cardObservation),
+        "Tulorajahavainto " + fmtMoney(source.taxLimitObservation)
+      ];
+      observation.textContent = values.join(" · ");
+      section.append(observation);
+    }
+    if (source.issues.length) {
+      const warning = document.createElement("p");
+      warning.className = "source-diagnostics-warning";
+      warning.textContent = "Tarkistettava: " + source.issues.join("; ") + ".";
+      section.append(warning);
+    } else {
+      const note = document.createElement("p");
+      note.textContent = "Yksittäisen maksajan havainto, ei vahvistus koko vuoden verokorttitilanteesta.";
+      section.append(note);
+    }
+    host.append(section);
+  }
+}
+
 async function renderAll() {
   const records = await getAllRecords();
   await populateIncomeSources();
@@ -674,6 +736,7 @@ async function renderAll() {
   await loadYearProgressValues();
   yearProgressRecords = records;
   renderDashboard(records);
+  renderIncomeSourceDiagnostics(records);
   if (document.getElementById("ledgerOpening")) document.dispatchEvent(new CustomEvent("compact-payments", { detail: { records, year: selectedYear, sourceName } }));
   renderBetaYearProgress(records);
   renderAnalysis(records);
