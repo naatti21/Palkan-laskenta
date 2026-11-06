@@ -128,8 +128,8 @@ test("legacy PDF input still routes multi-file selection to the queue without dr
   const id=await createSource(page,"Synteettinen päätyö");
   await expect(page.locator("#pdfInput")).toHaveAttribute("multiple", "");
   await expect(page.locator(".beta-pdf-slot .file-button")).toContainText("yksi tai monta");
-  await page.locator("#incomeSourceSelect").selectOption(id);
   await page.locator("#pdfInput").setInputFiles([first(),second()]);
+  await page.locator("#betaBatchSource").selectOption(id);
   await expect(page.locator("#betaBatchQueue")).toHaveAttribute("open", "");
   await expect(page.locator("#betaBatchStatus")).toContainText("2 tiedostoa");
   await expect(page.locator("#betaBatchSource")).toHaveValue(id);
