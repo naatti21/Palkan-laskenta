@@ -115,7 +115,7 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await page.getByRole("button",{name:"Asetukset"}).click();
   await page.locator("#backupInput").setInputFiles({name:"synthetic-dashboard.json",mimeType:"application/json",buffer:Buffer.from(backup)});
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
-  await page.getByRole("button",{name:"Seuranta"}).click();
+  await page.getByRole("button",{name:"Etusivu"}).click();
   await expect(page.locator("#dashboard .metric")).toHaveCount(2);
   await expect(page.locator("#dashboardDetails .metric")).toHaveCount(2);
   await expect(page.locator("#dashboardMore")).toBeVisible();
@@ -130,7 +130,7 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#taxCardRemaining")).toContainText("8 000");
   await expect(page.locator("#taxCardEstimate")).toContainText("lisää saman verokortin");
   await expect(page.locator("#taxCardContext")).toContainText("viimeisimmästä palkkalaskelmasta");
-  await expect(page.locator(".beta-compact-dashboard #yearProgressPanel")).toHaveCount(1);
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
   await expect(page.locator("#dashboard")).toContainText("Veronalainen kertymä");
@@ -146,41 +146,30 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#betaImportOpen")).toBeVisible();
   await expect(page.locator(".beta-pdf-slot")).toBeHidden();
 });
-test("year-end goal is local, compares certified YTD separately from manual annual forecast", async({page})=>{
- await page.setViewportSize({width:360,height:780});
- await page.goto("/index.html");
- await expect(page.locator("#yearProgressPanel")).toBeVisible();
- await expect(page.locator("#yearProgressHeadline")).toContainText("Aseta oma");
- await page.locator("#yearProgressPanel > summary").click();
- await expect(page.locator("#yearProgressStatus")).toContainText("Ei luotettavaa");
- await page.locator("#yearGrossGoal").fill("80000");
- await page.locator("#yearGrossGoal").press("Tab");
- await page.locator("#yearGrossForecast").fill("79000");
- await page.locator("#yearGrossForecast").press("Tab");
- await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
- const backup=await page.evaluate(async()=>{
-  const m=await import("/model.js");
-  const row=m.migrateLegacyRecord({recordSchemaVersion:3,incomeSourceId:"goal-job",id:"goal-synthetic-1",kind:"payslip",
-   values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
-     grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000},
-   payLines:[],fingerprints:["goal-synthetic-1"],fieldMeta:{},corrections:{},notices:[],
-   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}});
-  return JSON.stringify(m.makeBackup([row],{incomeSources:[{id:"goal-job",name:"Työ"}]}));
- });
- await page.getByRole("button",{name:"Asetukset"}).click();
- await page.locator("#backupInput").setInputFiles({name:"synthetic-progress.json",mimeType:"application/json",buffer:Buffer.from(backup)});
- await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
- await page.getByRole("button",{name:"Seuranta"}).click();
- await expect(page.locator("#yearProgressHeadline")).toContainText("71 500");
- await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
- await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
- await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
- await page.reload();
- await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
- await expect(page.locator("#yearGrossForecast")).toHaveValue("79000");
- await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
- expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+test("home shows latest payment and actual annual net/gross without obsolete personal plan", async ({ page }) => {
+  await page.setViewportSize({width:360,height:780});
+  await page.goto("/index.html");
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
+  await page.evaluate(async () => {
+    const { upsertRecord } = await import("/storage.js");
+    for (const [id, date, gross, net] of [
+      ["annual-one", "2026-08-21", 3000, 2100],
+      ["annual-two", "2026-09-23", 3500, 2400]
+    ]) await upsertRecord({id,recordSchemaVersion:3,kind:"payslip",
+      values:{payDate:date,payPeriodStart:date,payPeriodEnd:date,grossPay:gross,netPay:net}});
+  });
+  await page.reload();
+  await expect(page.locator(".beta-home-amount")).toContainText("2 400");
+  await expect(page.locator(".beta-home-caption")).toContainText("23.9.2026");
+  await expect(page.locator(".beta-year-cell").first()).toContainText("4 500");
+  await expect(page.locator(".beta-year-cell").last()).toContainText("6 500");
+  await expect(page.locator("#yearGrossGoal")).toHaveCount(0);
+  await expect(page.locator("#yearGrossForecast")).toHaveCount(0);
+  await expect(page.locator("#taxCardProgress")).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".beta-home-amount")).toContainText("2 400");
 });
+
 test("updated tax card data never gets mistaken for a full calendar-year threshold", async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
@@ -203,7 +192,7 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
  await page.getByRole("button",{name:"Asetukset"}).click();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-cardchange.json",mimeType:"application/json",buffer:Buffer.from(payload)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
- await page.getByRole("button",{name:"Seuranta"}).click();
+ await page.getByRole("button",{name:"Etusivu"}).click();
  await expect(page.locator("#dashboard")).not.toContainText("Kortin marginaali");
  await expect(page.locator("#dashboard")).not.toContainText("6 000");
  await expect(page.locator("#taxCardPercent")).toHaveText("63 %");
@@ -216,7 +205,7 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
  await expect(page.locator("#dashboardDetails")).not.toContainText("100 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin tuloraja tai prosentti");
  await expect(page.locator("#taxCardContext")).toContainText("vanhoja rajoja ei lasketa yhteen");
- await expect(page.locator("#yearProgressPanel")).toBeVisible();
+ await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
  await page.reload();
  await expect(page.locator("#taxCardRemaining")).toContainText("6 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin");
@@ -239,7 +228,7 @@ test("compact monthly net graph uses real payment months, without forecast or fi
  await page.getByRole("button",{name:"Asetukset"}).click();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-chart.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
- await page.getByRole("button",{name:"Seuranta"}).click();
+ await page.getByRole("button",{name:"Etusivu"}).click();
  await expect(page.locator("#dashboardMiniChartWrap")).toBeVisible();
  const chart=page.locator("#dashboardMiniChart svg");
  await expect(chart).toBeVisible();
@@ -387,7 +376,7 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await planner.locator("#baseGross").fill("61000");
  await page.evaluate(payload=>document.querySelector("#plannerFrame").contentWindow.postMessage(
    {type:"palkka:planner:prefill",backup:payload},location.origin),mixed);
- await page.getByRole("button",{name:"Historia"}).click();
+ await page.getByRole("button",{name:"Kalenteri"}).click();
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(planner.locator("#baseGross")).toHaveValue("61000");
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
