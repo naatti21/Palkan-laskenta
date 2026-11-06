@@ -13,7 +13,7 @@ function element(tag, text) {
 
 export function renderCalendar({ active, unresolved, selectedYear, history }) {
   const host = document.getElementById("ledgerCalendar");
-  const rows = [...history.children];
+  const rows = [...history.querySelectorAll(".history-row.payslip-item")];
   const payments = active.filter(r => r.values.payDate.startsWith(selectedYear + "-"));
   if (year !== selectedYear) {
     year = selectedYear;
