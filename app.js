@@ -1550,6 +1550,9 @@ function installPdfBatchQueue() {
         (awaiting >= 0 ? " · Käsittele avoin tarkistus ennen jatkamista." : "")
       : "Valitse PDF:t aloittaaksesi. Mitään ei lähetetä palvelimelle.";
     next.disabled = running || awaiting >= 0 || cursor >= entries.length || !payer.value;
+    picker.disabled = running;
+    payer.disabled = running;
+    auto.disabled = running;
     skip.disabled = running || awaiting < 0;
     clear.disabled = running || !entries.length;
     list.replaceChildren();
@@ -1618,6 +1621,7 @@ function installPdfBatchQueue() {
   next.addEventListener("click",payrollAction(async()=>{
     if (running || awaiting>=0 || !payer.value || cursor>=entries.length) return;
     if (auto.checked && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
+    const processingSource = payer.value; // Locked for this run, even if the UI changes elsewhere.
     running=true;
     try {
       while(cursor<entries.length) {
@@ -1627,7 +1631,7 @@ function installPdfBatchQueue() {
         entry.state="processing";
         refresh();
         try {
-          el("incomeSourceSelect").value=payer.value;
+          el("incomeSourceSelect").value=processingSource;
           const result=await processPdf(entry.file);
           if (result?.state === "saved" || result?.state === "duplicate") {
             releaseEntry(entry,result.state);
