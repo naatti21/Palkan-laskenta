@@ -4,6 +4,7 @@ const money = new Intl.NumberFormat("fi-FI", { style:"currency", currency:"EUR" 
 const monthName = new Intl.DateTimeFormat("fi-FI", { month:"long", year:"numeric", timeZone:"UTC" });
 const preference = "palkka-beta-history-view";
 let mode = "calendar";
+let manuallyChosenMode = false;
 try { if (localStorage.getItem(preference) === "list") mode = "list"; } catch {}
 let year, month, selected, focusDate;
 const el = (tag, text="", className="") => {
@@ -23,6 +24,8 @@ export function renderCalendar({ active, unresolved, selectedYear, history }) {
   const rows = [...history.querySelectorAll(".history-row.payslip-item")];
   const payments = active.filter(r => validPayDate(r) && r.values.payDate.startsWith(selectedYear+"-") &&
     ["realized","confirmed_future"].includes(paymentState(r)));
+  const needsReview = unresolved.some(r => !r.values?.payDate || r.values.payDate.startsWith(selectedYear+"-"));
+  if (!manuallyChosenMode) mode = needsReview ? "list" : (() => { try { return localStorage.getItem(preference) === "list" ? "list" : "calendar"; } catch { return "calendar"; } })();
   if (year !== selectedYear) {
     year = selectedYear;
     const mostRecent = payments.map(r => r.values.payDate).sort().at(-1);
@@ -42,6 +45,7 @@ export function renderCalendar({ active, unresolved, selectedYear, history }) {
     for (const button of document.querySelectorAll("[data-ledger-mode]")) {
       button.setAttribute("aria-pressed", String(mode === button.dataset.ledgerMode));
       button.onclick = () => {
+        manuallyChosenMode = true;
         mode = button.dataset.ledgerMode;
         try { localStorage.setItem(preference,mode); } catch {}
         draw();
