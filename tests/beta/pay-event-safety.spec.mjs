@@ -54,7 +54,7 @@ test('replacement keeps an archive; backup conflict can be resolved from History
   let result=await state(page);expect(result.rows).toHaveLength(2);expect(result.analysis.totalNet).toBe(1950);
   await page.evaluate(async()=>{const s=await import('/storage.js');const rows=await s.getAllRecords();
     const latest=rows.find(r=>r.resolution!=='superseded');await s.mergeManyRecords([{...latest,id:'synthetic-conflict',sourceHash:null,values:{...latest.values,netPay:2000}}]);});
-  await page.reload();await page.getByRole('button',{name:'Historia',exact:true}).click();
+  await page.reload();await page.getByRole('button',{name:'Kalenteri',exact:true}).click();
   await expect(page.getByText('Korvattu versio – ei laskennassa')).toBeVisible();
   await page.getByRole('button',{name:'Ratkaise palkkatapahtuma'}).first().click();
   await expect(page.locator('#conflictSection')).toBeVisible();await page.locator('#keepBothConflictButton').click();
@@ -71,7 +71,7 @@ test('missing payment date can be repaired from History',async({page})=>{
   await page.goto('/index.html');
   await page.evaluate(async()=>{const s=await import('/storage.js'),m=await import('/model.js');
     await s.mergeManyRecords([m.migrateLegacyRecord({recordSchemaVersion:1,id:'missing-date',values:{grossPay:3000,netPay:1900,ytdTaxableIncome:24000}})]);});
-  await page.reload();await page.getByRole('button',{name:'Historia',exact:true}).click();
+  await page.reload();await page.getByRole('button',{name:'Kalenteri',exact:true}).click();
   await page.getByRole('button',{name:'Ratkaise palkkatapahtuma'}).click();
   await expect(page.locator('#reviewSection')).toBeVisible();
   await page.locator('#reviewGrid input[data-key="payDate"]').fill('2026-08-28');
@@ -113,7 +113,7 @@ for(const width of [360,412]) test(`PDF source selection survives replay and rel
  await page.reload();
  const saved=await state(page);expect(saved.analysis.totalGross).toBe(6000);
  expect(saved.analysis.latestYtd).toBeNull();
- await page.getByRole('button',{name:'Historia',exact:true}).click();
+ await page.getByRole('button',{name:'Kalenteri',exact:true}).click();
  await expect(page.locator('#history')).toContainText('Päätyö');
  await expect(page.locator('#history')).toContainText('Keikat');
 });
