@@ -102,3 +102,20 @@ test("diagnostic panel exposes unknown source and overlapping periods without cl
   await expect(page.locator("#taxCardRemaining")).toContainText("Ei luotettavaa kertymää");
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
+
+
+test("explicitly approved automatic queue keeps the selected payer for all clear files",async({page})=>{
+  await page.goto("/index.html");
+  const id=await createSource(page,"Vahvistettu tulolähde");
+  await page.locator("#betaBatchQueue > summary").click();
+  await page.locator("#betaBatchInput").setInputFiles([first(),second()]);
+  await page.locator("#betaBatchSource").selectOption(id);
+  await page.locator("#betaBatchAuto").check();
+  page.once("dialog",dialog=>dialog.accept());
+  await page.locator("#betaBatchNext").click();
+  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
+  const data=await records(page);
+  expect(data).toHaveLength(2);
+  expect(data.every(row=>row.incomeSourceId===id)).toBe(true);
+  await expect(page.locator("#betaBatchNext")).toBeDisabled();
+});
