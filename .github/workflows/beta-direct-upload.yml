@@ -2,7 +2,7 @@ name: Publish isolated Palkka Beta
 
 on:
   push:
-    branches: ["release/beta-preview-v1"]
+    branches: ["deploy/beta-compact-precision-20261106"]
 
 permissions:
   contents: read
@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   beta:
-    if: github.ref == 'refs/heads/release/beta-preview-v1'
+    if: github.ref == 'refs/heads/deploy/beta-compact-precision-20261106'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -56,13 +56,16 @@ jobs:
           assert.match(html, /beta-entry\.mjs/);
           assert.match(html, /id="beta-tag"[^>]*>BETA<\/span>/);
           assert.doesNotMatch(html, /id="beta-banner"/);
-          assert.match(html, /id="pdfInput"[^>]*disabled/);
+          assert.match(html, /id="pdfInput"[^>]*type="file"[^>]*accept="application\/pdf"/);
+          assert.doesNotMatch(html, /id="pdfInput"[^>]*disabled/);
           assert.match(html, /id="dashboardDetails"/);
           const entry = await readFile(root + 'beta-entry.mjs', 'utf8');
           assert.ok(entry.includes(process.env.BETA_ORIGIN));
           const sw = await readFile(root + 'sw.js', 'utf8');
           assert.match(sw, /palkka-beta-v/);
           assert.match(sw, /beta-entry\.mjs/);
+          assert.match(sw, /beta-compact\.mjs/);
+          assert.match(sw, /beta-ledger\.mjs/);
           assert.match(sw, /analytics\.js/);
           assert.match(sw, /insights\.js/);
           assert.match(sw, /insights-ui\.js/);
@@ -72,12 +75,15 @@ jobs:
           const manifest = JSON.parse(await readFile(root + 'manifest.webmanifest', 'utf8'));
           assert.equal(manifest.short_name, 'Palkka BETA');
           for (const p of [
-            'index.html', 'beta-entry.mjs', 'app.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'parser.js',
+            'index.html', 'beta-entry.mjs', 'beta-compact.mjs', 'beta-ledger.mjs', 'taxcard-forecast.js', 'app.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'parser.js',
             'model.js', 'storage.js', 'learning.js', 'styles.css', 'sw.js',
             'manifest.webmanifest', 'build-info.json', '_headers', 'pdf-reader.js',
             'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs',
             'icon-192.png', 'icon-512.png'
           ]) assert.ok((await stat(root + p)).isFile(), 'Missing beta asset ' + p);
+          const ab = await readFile(root + 'experiments/year-planner/ab-summary-v6.mjs', 'utf8');
+          assert.match(ab, /betaWeekendsA/);
+          assert.match(ab, /betaWeekendsB/);
           console.log('Beta artifact verified, source SHA:', info.commit);
           NODE
 
