@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: palkka-beta-direct-upload
@@ -30,11 +31,56 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Run complete canonical test suite including beta backup/browser
-        run: npm test
+      - name: Require successful complete Quality gate for this exact commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const ownerRepo = process.env.GITHUB_REPOSITORY;
+          const sha = process.env.GITHUB_SHA;
+          const branch = 'deploy/beta-compact-precision-20261106';
+          const endpoint = 'https://api.github.com/repos/' + ownerRepo +
+            '/actions/workflows/quality.yml/runs?branch=' +
+            encodeURIComponent(branch) + '&head_sha=' + encodeURIComponent(sha) + '&per_page=30';
+          const headers = {
+            Authorization: 'Bearer ' + process.env.GH_TOKEN,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+          };
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          for (let attempt = 0; attempt < 80; attempt++) {
+            const response = await fetch(endpoint, { headers });
+            if (!response.ok) throw new Error('Quality gate API HTTP ' + response.status);
+            const body = await response.json();
+            const runs = (body.workflow_runs || []).filter(run =>
+              run.name === 'Quality gate' &&
+              run.head_sha === sha &&
+              run.head_branch === branch &&
+              run.event === 'push');
+            const successful = runs.find(run => run.status === 'completed' && run.conclusion === 'success');
+            if (successful) {
+              const jobsUrl = 'https://api.github.com/repos/' + ownerRepo +
+                '/actions/runs/' + successful.id + '/jobs?per_page=100';
+              const jobsResponse = await fetch(jobsUrl, { headers });
+              if (!jobsResponse.ok) throw new Error('Quality gate jobs HTTP ' + jobsResponse.status);
+              const jobData = await jobsResponse.json();
+              const jobs = jobData.jobs || [];
+              const required = ['logic-tests','browser-tests'];
+              if (!required.every(name => jobs.some(j => j.name === name && j.conclusion === 'success')))
+                throw new Error('Quality gate success missing mandatory unit/browser job result');
+              console.log('Exact-SHA canonical Quality gate verified:', sha, successful.html_url);
+              process.exit(0);
+            }
+            if (runs.some(run => run.status === 'completed' &&
+              ['failure','cancelled','timed_out','action_required'].includes(run.conclusion)))
+              throw new Error('Canonical Quality gate not successful for commit ' + sha);
+            if (attempt % 6 === 0) console.log('Awaiting canonical Quality gate for', sha);
+            await sleep(15000);
+          }
+          throw new Error('Canonical Quality gate did not complete within 20 minutes');
+          NODE
 
       - name: Build exclusively for the beta origin
         run: npm run build:beta
