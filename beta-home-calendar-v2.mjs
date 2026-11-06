@@ -110,6 +110,13 @@ export function installHomeCalendarV2() {
   let latestDate = null;
   detailsButton.addEventListener("click", () => {
     if (!latestDate) return;
+    const historyYear = document.getElementById("historyYear");
+    const targetYear = latestDate.slice(0, 4);
+    if (historyYear?.value !== targetYear &&
+        [...historyYear.options].some(option => option.value === targetYear)) {
+      historyYear.value = targetYear;
+      historyYear.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     calendarButton.click();
     document.getElementById("ledgerCalendar")?.dispatchEvent(
       new CustomEvent("ledger-select-date", { detail: { date: latestDate } })
