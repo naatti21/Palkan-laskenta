@@ -408,6 +408,7 @@ if (location.origin !== expectedOrigin) {
   document.body.textContent = 'BETA ESTETTY: väärä origin';
   throw new Error('Beta origin mismatch; app and service worker not started.');
 }
+document.querySelectorAll('.tabs .tab').forEach(button => { button.disabled = true; });
 const opening = document.getElementById('ledgerOpening');
 const dashboard = document.querySelector('.beta-compact-dashboard');
 const heading = dashboard.querySelector('.section-heading');
@@ -424,6 +425,8 @@ installCompact();
 const { installHomeCalendarV2 } = await import('./beta-home-calendar-v2.mjs');
 installHomeCalendarV2();
 await import('./app.js');
+document.querySelectorAll('.tabs .tab').forEach(button => { button.disabled = false; });
+document.documentElement.dataset.betaReady = 'true';
 `);
 const manifest = JSON.parse(await readFile('manifest.webmanifest', 'utf8'));
 manifest.name = qaPreview ? 'Palkka TUONTITESTI' : 'Palkka BETA';
