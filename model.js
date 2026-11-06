@@ -299,6 +299,44 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   return { type: "distinct", eventKey: null, differences: [] };
 }
 
+/**
+ * A diagnostic hint ONLY. Overlapping payroll periods can occur during a
+ * payroll-cycle change. A YTD increment equal to the later payslip's taxable
+ * gross is evidence for two separate pays, not proof of bank settlement.
+ * Never use this to bypass the pairwise approval safeguard.
+ */
+export function paycycleOverlapEvidence(firstInput, secondInput) {
+  const first = migrateLegacyRecord(firstInput);
+  const second = migrateLegacyRecord(secondInput);
+  const empty = { samePeriod: false, differentPayDates: false,
+    sameKnownPayer: false, additiveYtdMatchesLaterGross: false,
+    ytdIncrease: null, laterTaxableGross: null };
+  if (!first || !second) return empty;
+  const a = first.values, b = second.values;
+  const samePeriod = Boolean(a.payPeriodStart && a.payPeriodEnd &&
+    a.payPeriodStart === b.payPeriodStart && a.payPeriodEnd === b.payPeriodEnd);
+  const differentPayDates = Boolean(a.payDate && b.payDate && a.payDate !== b.payDate);
+  const sameKnownPayer = Boolean(first.incomeSourceId &&
+    first.incomeSourceId === second.incomeSourceId);
+  if (!differentPayDates) return { ...empty, samePeriod, sameKnownPayer };
+  const earlier = a.payDate < b.payDate ? first : second;
+  const later = a.payDate < b.payDate ? second : first;
+  const beforeYtd = earlier.values.ytdTaxableIncome;
+  const afterYtd = later.values.ytdTaxableIncome;
+  const gross = later.values.grossPay;
+  const valid = [beforeYtd, afterYtd, gross].every(value =>
+    typeof value === "number" && Number.isFinite(value) && value >= 0);
+  if (!valid) return { ...empty, samePeriod, differentPayDates, sameKnownPayer };
+  const changeCents = Math.round(afterYtd * 100) - Math.round(beforeYtd * 100);
+  const grossCents = Math.round(gross * 100);
+  return {
+    samePeriod, differentPayDates, sameKnownPayer,
+    additiveYtdMatchesLaterGross: samePeriod && sameKnownPayer &&
+      changeCents > 0 && grossCents > 0 && changeCents === grossCents,
+    ytdIncrease: changeCents / 100, laterTaxableGross: grossCents / 100
+  };
+}
+
 export function findRecordConflict(records, incomingInput, options = {}) {
   const incoming = migrateLegacyRecord(incomingInput);
   if (!incoming) return null;
