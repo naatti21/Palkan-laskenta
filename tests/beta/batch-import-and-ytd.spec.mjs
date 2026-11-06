@@ -119,3 +119,32 @@ test("explicitly approved automatic queue keeps the selected payer for all clear
   expect(data.every(row=>row.incomeSourceId===id)).toBe(true);
   await expect(page.locator("#betaBatchNext")).toBeDisabled();
 });
+
+
+test("primary visible PDF button accepts multiple documents and opens the batch queue instead of dropping files", async ({page}) => {
+  await page.setViewportSize({width:390,height:840});
+  await page.goto("/index.html");
+  const id=await createSource(page,"Synteettinen päätyö");
+  await expect(page.locator("#pdfInput")).toHaveAttribute("multiple", "");
+  await expect(page.locator(".beta-pdf-slot .file-button")).toContainText("yksi tai monta");
+  await page.locator("#incomeSourceSelect").selectOption(id);
+  await page.locator("#pdfInput").setInputFiles([first(),second()]);
+  await expect(page.locator("#betaBatchQueue")).toHaveAttribute("open", "");
+  await expect(page.locator("#betaBatchStatus")).toContainText("2 tiedostoa");
+  await expect(page.locator("#betaBatchSource")).toHaveValue(id);
+  expect(await records(page)).toHaveLength(0);
+  await page.locator("#betaBatchNext").click();
+  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 1");
+  await page.locator("#betaBatchNext").click();
+  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
+  expect(await records(page)).toHaveLength(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+});
+
+test("single PDF on primary picker retains original immediate import flow",async({page})=>{
+  await page.goto("/index.html");
+  await page.locator("#pdfInput").setInputFiles(first());
+  await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
+  expect(await records(page)).toHaveLength(1);
+  await expect(page.locator("#betaBatchQueue")).not.toHaveAttribute("open", "");
+});
