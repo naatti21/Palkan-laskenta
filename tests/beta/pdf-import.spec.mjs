@@ -37,6 +37,7 @@ test("QA-import-01: Beta imports a real local text PDF and feeds its own analysi
   expect(records[0].values.grossPay).toBe(4698.11);
   expect(records[0].values.netPay).toBe(2678.39);
   expect(records[0].values.ytdTaxableIncome).toBe(63832.82);
+  await page.locator("#betaImportBack").click();
   await page.getByRole("button", {name:"Analyysi"}).click();
   await expect(page.locator("#monthlyChart .chart-bar-gross")).toHaveCount(1);
   await page.getByRole("button", {name:"Laskuri"}).click();
