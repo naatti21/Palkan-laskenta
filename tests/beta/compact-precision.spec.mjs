@@ -31,7 +31,7 @@ test("settings stay usable with empty history, reordered sections and enlarged t
   });
   await page.setViewportSize({width:320,height:840});
   await page.goto("/index.html");
-  await expect(page.locator(".compact-lead")).toContainText("Ei toteutuneita");
+  await expect(page.locator(".compact-lead")).toContainText("Ei vielä toteutuneita");
   await page.getByRole("button",{name:"Asetukset"}).click();
   await expect(page.locator("#exportButton")).toBeVisible();
   await expect(page.locator("#importButton")).toBeVisible();
