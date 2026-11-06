@@ -23,6 +23,7 @@ import {
   parseBackup,
   parseBackupLearnedProfiles,
   paymentState,
+  paycycleOverlapEvidence,
   findRecordConflict
 } from "./model.js";
 import {
@@ -1321,53 +1322,122 @@ function renderConflict(record, conflict) {
   el("conflictSection").classList.remove("hidden");
 
   const host = el("conflictSummary");
-  host.innerHTML = "";
-
+  host.replaceChildren();
   const choices = conflict.candidates || [conflict.existing];
   const label = document.createElement("label");
-  label.textContent = "Korvattava aiempi laskelma";
+  label.className = "paycycle-target-label";
+  label.textContent = "Vertailtava aiempi laskelma";
   const select = document.createElement("select");
   select.id = "replacementTarget";
   for (const candidate of choices) {
-    const option = document.createElement("option"); option.value = candidate.id;
-    option.textContent = `${sourceName(candidate.incomeSourceId)} · ${fmtDate(candidate.values.payDate)} · ${fmtDate(candidate.values.payPeriodStart)}–${fmtDate(candidate.values.payPeriodEnd)} · netto ${fmtMoney(candidate.values.netPay)}`;
+    const option = document.createElement("option");
+    option.value = candidate.id;
+    option.textContent = sourceName(candidate.incomeSourceId) + " · " +
+      fmtDate(candidate.values.payDate) + " · netto " + fmtMoney(candidate.values.netPay);
     select.append(option);
   }
   select.value = conflict.existing.id;
   select.addEventListener("change", () => {
-    const existing = choices.find(r => r.id === select.value);
+    const existing = choices.find(row => row.id === select.value);
     renderConflict(record, { ...conflict, existing, differences: recordDifferences(existing, record) });
   });
-  label.append(select); host.append(label);
-  if (document.getElementById("ledgerOpening")) {
-    const oldNet = conflict.existing.values?.netPay, newNet = record.values?.netPay;
-    const preview = document.createElement("p");
-    preview.className = "compact-decision";
-    preview.textContent = Number.isFinite(oldNet) && Number.isFinite(newNet)
-      ? `Tämän parin netto: korvaa aiempi → ${fmtMoney(newNet)}; säilytä molemmat → ${fmtMoney((Math.round(oldNet*100)+Math.round(newNet*100))/100)}. Peruuta jättää historian ennalleen.`
-      : "Netto puuttuu. Valintojen euromääräistä vaikutusta ei voi vahvistaa.";
-    host.append(preview);
+  label.append(select);
+  host.append(label);
+
+  // Put the two real pay dates front and center, not a long field-by-field
+  // correction diff that silently frames the earlier payment as erroneous.
+  const payments = document.createElement("div");
+  payments.className = "paycycle-compare";
+  const paymentCard = (row, heading) => {
+    const card = document.createElement("div");
+    card.className = "paycycle-payment";
+    const tag = document.createElement("span");
+    tag.className = "paycycle-payment-label";
+    tag.textContent = heading;
+    const date = document.createElement("strong");
+    date.textContent = fmtDate(row.values?.payDate);
+    const net = document.createElement("strong");
+    net.className = "paycycle-payment-net";
+    net.textContent = fmtMoney(row.values?.netPay);
+    const period = document.createElement("small");
+    period.textContent = "Palkkakausi " + fmtDate(row.values?.payPeriodStart) +
+      "–" + fmtDate(row.values?.payPeriodEnd);
+    card.append(tag, date, net, period);
+    return card;
+  };
+  payments.append(paymentCard(conflict.existing, "AIEMPI LASKELMA"),
+    paymentCard(record, "TARKISTETTAVA LASKELMA"));
+  host.append(payments);
+
+  const evidence = paycycleOverlapEvidence(conflict.existing, record);
+  const hint = document.createElement("p");
+  hint.className = evidence.additiveYtdMatchesLaterGross
+    ? "paycycle-evidence paycycle-evidence-positive" : "paycycle-evidence";
+  if (evidence.additiveYtdMatchesLaterGross) {
+    hint.textContent = "Kertymät viittaavat kahteen erilliseen palkkaan: YTD kasvaa " +
+      fmtMoney(evidence.ytdIncrease) + ", täsmälleen myöhemmän laskelman veronalaisen bruton verran. " +
+      "Tämä ei yksin todista, että molemmat on maksettu.";
+  } else if (evidence.samePeriod && evidence.differentPayDates) {
+    hint.textContent = "Maksupäivät eroavat, vaikka palkkakausi on sama. " +
+      "Esimerkiksi palkanmaksurytmin muutos voi selittää tilanteen. " +
+      "Palkkakauden yhtäläisyys ei yksin tee laskelmasta virheellistä.";
+  } else {
+    hint.textContent = "Tiedot voivat tarkoittaa korjausta tai erillistä maksua. " +
+      "Sovellus ei yhdistä eikä laske niitä yhteen ennen päätöstä.";
   }
-  const identityRows = [
+  host.append(hint);
+
+  const actionGuide = document.createElement("p");
+  actionGuide.className = "paycycle-action-guide";
+  actionGuide.textContent = "Näkyvätkö molemmat nettopalkat oikeina, erillisinä tilitapahtumina? " +
+    "Valitse silloin Säilytä molemmat. Jos uusi laskelma korjaa ja korvaa aiemman, " +
+    "valitse Korvaa aiempi. Muussa tapauksessa Peruuta ja tarkista laskelmat.";
+  host.append(actionGuide);
+
+  const oldNet = conflict.existing.values?.netPay, newNet = record.values?.netPay;
+  const preview = document.createElement("p");
+  preview.className = "compact-decision paycycle-effect";
+  preview.textContent = Number.isFinite(oldNet) && Number.isFinite(newNet)
+    ? "Tämän parin vaikutus: korvaa aiempi → " + fmtMoney(newNet) +
+      "; säilytä molemmat → " + fmtMoney((Math.round(oldNet*100) + Math.round(newNet*100))/100) +
+      ". Peruuta ei muuta historiaa."
+    : "Netto puuttuu. Euromääräistä vaikutusta ei voi vahvistaa.";
+  host.append(preview);
+
+  const detail = document.createElement("details");
+  detail.className = "paycycle-technical-details";
+  const detailTitle = document.createElement("summary");
+  detailTitle.textContent = "Näytä kenttien tarkka vertailu";
+  detail.append(detailTitle);
+  for (const [fieldLabel, value] of [
     ["Maksupäivä", fmtFieldValue("payDate", record.values?.payDate)],
-    ["Palkkakausi", `${fmtFieldValue("payPeriodStart", record.values?.payPeriodStart)} – ${fmtFieldValue("payPeriodEnd", record.values?.payPeriodEnd)}`]
-  ];
-  for (const [label, value] of identityRows) {
+    ["Palkkakausi", fmtFieldValue("payPeriodStart", record.values?.payPeriodStart) +
+      " – " + fmtFieldValue("payPeriodEnd", record.values?.payPeriodEnd)]
+  ]) {
     const row = document.createElement("div");
     row.className = "summary-row";
-    row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
-    host.append(row);
+    const name = document.createElement("span");
+    name.textContent = fieldLabel;
+    const amount = document.createElement("strong");
+    amount.textContent = value;
+    row.append(name, amount);
+    detail.append(row);
   }
-
-  for (const difference of (conflict.differences || []).slice(0, 8)) {
+  for (const difference of (conflict.differences || []).slice(0, 12)) {
     const row = document.createElement("div");
     row.className = "summary-row";
-    const label = fieldLabels[difference.key] || difference.key;
-    row.innerHTML = `<span>${label}</span><strong>${fmtFieldValue(difference.key, difference.before)} → ${fmtFieldValue(difference.key, difference.after)}</strong>`;
-    host.append(row);
+    const name = document.createElement("span");
+    name.textContent = fieldLabels[difference.key] || difference.key;
+    const amount = document.createElement("strong");
+    amount.textContent = fmtFieldValue(difference.key, difference.before) + " → " +
+      fmtFieldValue(difference.key, difference.after);
+    row.append(name, amount);
+    detail.append(row);
   }
+  host.append(detail);
 
-  el("status").textContent = "Laskelma saattaa liittyä aiempaan maksuun. Mitään ei yhdistetty automaattisesti. Valitse korvattava laskelma tai vahvista erillinen maksu.";
+  el("status").textContent = "Tarkista, onko kyse kahdesta maksetusta palkasta vai korjauslaskelmasta. " +
+    "Mitään ei ratkaista automaattisesti.";
 }
 
 async function conflictForRecord(record, ignoreRecordId = null) {
