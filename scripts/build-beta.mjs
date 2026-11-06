@@ -18,7 +18,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
   throw new Error('Use only the approved palkka-beta.pages.dev origin or a dedicated local beta test port.');
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = ['beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
+const files = ['beta-compact.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
@@ -26,7 +26,7 @@ for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
 hash.update(await readFile('beta-net-reference-2026.mjs')); // Beta-only tax benchmark invalidates cache
 hash.update(await readFile('beta-ab-summary-v6.mjs')); // Final A/B presentation is also offline versioned
-for (const themeFile of ['beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css', 'beta-black-v5.css', 'beta-planner-black-v5.css']) {
+for (const themeFile of ['beta-precision-tokens.css', 'beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css', 'beta-black-v5.css', 'beta-planner-black-v5.css']) {
   hash.update(await readFile(themeFile)); // changing the visual theme invalidates the Beta offline cache
 }
 const revision = hash.digest('hex').slice(0, 16);
@@ -416,6 +416,8 @@ opening.append(note);
 dashboard.prepend(Object.assign(document.createElement('h2'), { textContent: 'Vuoden seuranta' }));
 const { renderCalendar } = await import('./beta-ledger.mjs');
 document.getElementById('ledgerCalendar').addEventListener('ledger-render', event => renderCalendar(event.detail));
+const { installCompact } = await import('./beta-compact.mjs');
+installCompact();
 await import('./app.js');
 `);
 const manifest = JSON.parse(await readFile('manifest.webmanifest', 'utf8'));
@@ -430,7 +432,7 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 }
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";')
   .replace('const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
-  .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs",')
+  .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs",')
   .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",')
   .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs"')
   .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",');

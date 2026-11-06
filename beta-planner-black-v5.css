@@ -1,7 +1,7 @@
 html.beta-integrated {--bg:var(--canvas);--panel:var(--surface);--soft:var(--raised);--line:var(--edge);--blue:var(--cyan);--red:var(--warn);}
 html.beta-integrated body {background:var(--canvas);color:var(--ink);}
-html.beta-integrated .card,html.beta-integrated .netref26 {background:var(--surface)!important;border:1px solid var(--edge)!important;border-radius:var(--corner);padding:10px;box-shadow:none;}
-html.beta-integrated :is(.fact,.fact.mint,.netref26-cards>div,.netref26-overtime,.status,.file-picker) {background:var(--raised);color:var(--ink);border:1px solid var(--edge);border-radius:var(--tight);box-shadow:none;}
+html.beta-integrated .card,html.beta-integrated .netref26 {background:var(--surface)!important;border:1px solid var(--edge)!important;border-radius:var(--corner);padding:9px;box-shadow:none;}
+html.beta-integrated :is(.fact,.fact.mint,.netref26-cards>div,.netref26-overtime,.status,.file-picker) {background:var(--raised);color:var(--ink);border:0;border-bottom:1px solid var(--edge);border-radius:0;box-shadow:none;}
 html.beta-integrated .fact.mint,html.beta-integrated .netref26-cards>div:first-child {background:var(--raised);border-top:1px solid var(--mint);}
 html.beta-integrated .fact strong {font-variant-numeric:tabular-nums;}
 html.beta-integrated :is(.hint,.muted,.fact small) {color:var(--sub);}

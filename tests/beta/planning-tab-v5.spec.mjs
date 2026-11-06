@@ -20,7 +20,7 @@ test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
         documentOverflow:document.documentElement.scrollWidth>innerWidth+1
       };
     });
-    expect(layout.bg).toBe('rgb(5, 7, 11)');
+    expect(layout.bg).toBe('rgb(5, 8, 12)');
     expect(layout.columns).toBe(5);
     expect(layout.smallestTabHeight).toBeGreaterThanOrEqual(44);
     expect(layout.allInside).toBe(true);

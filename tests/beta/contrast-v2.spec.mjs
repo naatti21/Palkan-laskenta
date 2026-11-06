@@ -20,17 +20,17 @@ test("Dark Neon keeps near-black neutral surfaces and semantic accents", async (
         horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1
       };
     });
-    expect(colors.body).toBe("rgb(5, 7, 11)");
-    expect(colors.trackingCard).toBe("rgb(12, 17, 24)");
+    expect(colors.body).toBe("rgb(5, 8, 12)");
+    expect(colors.trackingCard).toBe("rgb(12, 18, 24)");
     expect(colors.taxCard).toBe("rgb(9, 14, 21)");
-    expect(colors.taxPercent).toBe("rgb(67, 236, 255)");
-    expect(colors.selectedTab).toBe("rgb(17, 25, 35)");
+    expect(colors.taxPercent).toBe("rgb(120, 217, 236)");
+    expect(colors.selectedTab).toBe("rgb(17, 26, 33)");
     expect(colors.horizontalOverflow).toBe(false);
     const tokens = await page.locator(':root').evaluate(el => {
       const style = getComputedStyle(el);
       return ['--mint','--cyan','--warn','--amber'].map(key => style.getPropertyValue(key).trim());
     });
-    expect(tokens).toEqual(['#61ffcf','#43ecff','#ff8093','#ffd08c']);
+    expect(tokens).toEqual(['#72efca','#78d9ec','#f29ca9','#f1c27a']);
   }
 });
 
@@ -49,8 +49,8 @@ test("Annual planner shares near-black Dark Neon palette only inside its isolate
       panel: getComputedStyle(firstCard).backgroundColor
     };
   });
-  expect(palette.ink).toBe("#edf5fa");
-  expect(palette.mint).toBe("#61ffcf");
-  expect(palette.panel).toBe("rgb(12, 17, 24)");
+  expect(palette.ink).toBe("#f0f6f7");
+  expect(palette.mint).toBe("#72efca");
+  expect(palette.panel).toBe("rgb(12, 18, 24)");
   await expect(page.locator("#pdfInput")).toBeEnabled();
 });
