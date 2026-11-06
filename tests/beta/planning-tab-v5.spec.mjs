@@ -46,7 +46,7 @@ test('Planner inputs and locally computed net survive tab switches without remou
   await page.getByRole('button',{name:'Analyysi'}).click();
   await expect(page.locator('#plannerFrame')).toBeHidden();
   await expect(page.getByRole('heading',{name:'Ansiot ja työaika'})).toBeVisible();
-  await page.getByRole('button',{name:'Historia'}).click();
+  await page.getByRole('button',{name:'Kalenteri'}).click();
   await page.getByRole('button',{name:'Laskuri'}).click();
   await expect(frame.locator('#baseGross')).toHaveValue('52000');
   await expect(frame.locator('#netref26Monthly')).toHaveText('3 030 €');
