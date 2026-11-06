@@ -5,7 +5,8 @@ test("beta branding, exact origin and offline analytics shell", async ({ page })
   await expect(page.locator("#beta-tag")).toHaveText("BETA");
   await expect(page.locator("#beta-banner")).toHaveCount(0);
   await expect(page.locator("#beta-tag")).toBeVisible();
-  await expect(page.locator(".beta-pdf-slot")).toBeVisible();
+  await expect(page.locator("#betaImportOpen")).toBeVisible();
+  await expect(page.locator("#betaImportWorkspace")).toBeHidden();
   await expect(page.locator(".beta-pdf-note")).toContainText("PDF luetaan paikallisesti");
   await expect(page.locator("#pdfInput")).toBeEnabled();
   await expect(page.locator(".beta-pdf-note")).toContainText("epäselvät tiedot tarkistetaan");
