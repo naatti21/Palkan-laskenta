@@ -398,7 +398,7 @@ const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme +
 await writeFile(plannerPath, plannerWithTheme.replace('</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>'));
 html = html.replace('<div id="history"></div>', `<div class="ledger-switch" role="group" aria-label="Historian näkymä">
-  <button data-ledger-mode="list">Lista</button><button data-ledger-mode="calendar">Kalenteri</button>
+  <button data-ledger-mode="calendar">Kuukausi</button><button data-ledger-mode="list">Lista</button>
 </div><section id="ledgerCalendar" hidden></section><div id="history"></div>`);
 html = html.replace('<section data-view="tracking">', '<section data-view="tracking"><div id="ledgerOpening"></div>');
 await writeFile(`${output}/index.html`, html);
