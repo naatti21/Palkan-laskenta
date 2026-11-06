@@ -24,7 +24,7 @@ for(const width of [320,390,412]){
     await expect(page.locator("#betaImportWorkspace")).toBeHidden();
     await expect(page.locator(".beta-pdf-slot")).toBeHidden();
     await expect(page.locator("#betaBatchInput")).toBeHidden();
-    await expect(page.locator("#betaImportEntry")).toContainText("Yksi tai useita PDF:iä");
+    await expect(page.locator("#betaImportEntry")).toContainText("Tuo palkkalaskelmat");
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
     await page.locator("#betaImportOpen").click();
     await expect(page.locator("#betaImportWorkspace")).toBeVisible();
