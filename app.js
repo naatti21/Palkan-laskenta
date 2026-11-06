@@ -806,7 +806,8 @@ function renderDashboard(records) {
 
   const lastDate = valueOf(latest, "payDate");
   const onLastDate = yearRecords.filter(row => valueOf(row, "payDate") === lastDate);
-  const paidOnLastDate = key => unresolved || onLastDate.some(row => !Number.isFinite(valueOf(row, key))) ? null :
+  // An unrelated earlier conflict must not hide the most recent unambiguous payment.
+  const paidOnLastDate = key => onLastDate.some(row => !Number.isFinite(valueOf(row, key))) ? null :
     onLastDate.reduce((sum, row) => sum + Math.round(valueOf(row, key) * 100), 0) / 100;
   const multipleSources = incomeScope(yearRecords).multiple;
   const ambiguous = multipleSources || unresolved || onLastDate.length > 1;
@@ -815,7 +816,9 @@ function renderDashboard(records) {
   const cardKnown = !ambiguous && typeof limit === "number" && Number.isFinite(limit) && limit > 0 &&
     typeof accumulated === "number" && Number.isFinite(accumulated) && accumulated >= 0;
   renderTaxCardProgress(records, latest, ambiguous);
-  const status = multipleSources && !unresolved ? {light:"neutral",text:"Tulolähteiden kertymät näkyvät Historiassa"} : ambiguous ? {light:"neutral",text:"Saman palkkakauden ristiriita"}
+  const status = unresolved ? {light:"neutral",text:"Historiassa on ratkaisemattomia palkkatapahtumia"}
+    : multipleSources ? {light:"neutral",text:"Tulolähteiden kertymät näkyvät Historiassa"}
+    : onLastDate.length > 1 ? {light:"neutral",text:"Samana päivänä useita vahvistettuja maksuja"}
     : taxStatus(latest);
   overall.className = `light ${status.light}`;
   overall.textContent = status.light === "neutral" ? "–" : "●";
@@ -871,7 +874,7 @@ function renderDashboard(records) {
     box.className = "metric";
     const name = document.createElement("span");
     name.textContent = secondaryDash
-      ? ({Netto:onLastDate.length > 1 ? "Maksupäivän netto yhteensä" : "Viimeisin nettopalkka", "Veronalainen YTD":"Veronalainen kertymä",
+      ? ({Netto:onLastDate.length > 1 ? "Vahvistetut maksut yhteensä" : unresolved ? "Viimeisin vahvistettu nettopalkka" : "Viimeisin nettopalkka", "Veronalainen YTD":"Veronalainen kertymä",
           Brutto:onLastDate.length > 1 ? "Maksupäivän brutto yhteensä" : "Viimeisin bruttopalkka", "OT viime jaksolla":"Ylityöt viime jaksolla"})[label] || label
       : label;
     const amount = document.createElement("strong");
@@ -894,7 +897,7 @@ function renderDashboard(records) {
   const state = paymentState(latest);
   const stateText = state === "confirmed_future" ? " Viimeisin laskelma on vahvistettu tuleva palkka." : "";
   el("dashboardNote").textContent = secondaryDash
-    ? `${status.text} (viimeisin palkkalaskelma).${stateText}`
+    ? (unresolved ? `${status.text}. Viimeisin vahvistettu maksu näkyy, mutta verokortin kertymää ei arvioida.${stateText}` : `${status.text} (viimeisin palkkalaskelma).${stateText}`)
     : `${status.text}. Tulorajaa verrataan vain verokortin omaan kertymään.${stateText}`;
   // The green tax-card status is already communicated by the percentage and
   // remaining amount. Keep non-green warnings and future-payment provenance.
