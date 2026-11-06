@@ -85,3 +85,29 @@ test("source recovery rejects stale and mixed-source batches atomically", async 
   });
   expect(result).toEqual({failed:true,staleRejected:true,total:3,unassigned:1,assigned:1});
 });
+
+test("older unresolved period does not hide the latest confirmed net, but YTD remains blocked", async ({page}) => {
+  await page.setViewportSize({width:360,height:840});
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const db=await import("/storage.js");
+    const m=await import("/model.js");
+    const first=m.migrateLegacyRecord({id:"overlap-one",recordSchemaVersion:3,values:{
+      payDate:"2026-04-02",payPeriodStart:"2026-03-16",payPeriodEnd:"2026-03-29",
+      grossPay:2900,netPay:2000,ytdTaxableIncome:10000,taxCardAccumulatedIncome:10000,taxLimit:45000}});
+    const second=m.migrateLegacyRecord({id:"overlap-two",recordSchemaVersion:3,values:{
+      payDate:"2026-04-17",payPeriodStart:"2026-03-16",payPeriodEnd:"2026-03-29",
+      grossPay:3250,netPay:2300,ytdTaxableIncome:13250,taxCardAccumulatedIncome:13250,taxLimit:45000}});
+    await db.mergeManyRecords([first,second]);
+    await db.upsertRecord({id:"latest-certain",recordSchemaVersion:3,values:{
+      payDate:"2026-11-06",payPeriodStart:"2026-10-20",payPeriodEnd:"2026-11-02",
+      grossPay:3200,netPay:1800,ytdTaxableIncome:45000,taxCardAccumulatedIncome:45000,taxLimit:45000}});
+  });
+  await page.reload();
+  await expect(page.locator("#dashboard .metric").first()).toContainText("Viimeisin vahvistettu nettopalkka");
+  await expect(page.locator("#dashboard .metric").first()).toContainText(/1\s800/);
+  await expect(page.locator("#taxCardRemaining")).toHaveText("Ei luotettavaa kertymää");
+  await expect(page.locator("#taxCardEstimate")).toContainText("Ratkaise Historian ristiriidat");
+  await page.getByRole("button",{name:"Historia",exact:true}).click();
+  await expect(page.locator(".history-recovery")).toContainText("2 ratkaisemattomaksi");
+});
