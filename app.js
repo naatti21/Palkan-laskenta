@@ -1530,7 +1530,7 @@ function installPdfBatchQueue() {
     pending:"Odottaa", processing:"Luetaan", saved:"Tallennettu",
     duplicate:"Jo tallennettu", review:"Tarkistettava",
     conflict:"Ristiriita — päätös tarvitaan", unknown:"Ei tunnistettu",
-    skipped:"Ohitettu", error:"Virhe — ohitettu tallentamatta"
+    skipped:"Ohitettu", error:"Virhe — tarkista Historiasta"
   };
   function refreshSources() {
     const previous = payer.value;
@@ -1611,8 +1611,8 @@ function installPdfBatchQueue() {
   skip.addEventListener("click",skipCurrent);
   clear.addEventListener("click",()=>{
     if (running) return;
-    if (awaiting>=0) skipCurrent();
     if (!confirm("Tyhjennetäänkö vain käsittelemättömien PDF-tiedostojen jono? Jo tallennetut palkat säilyvät.")) return;
+    if (awaiting>=0) skipCurrent();
     entries=[]; cursor=0; awaiting=-1; refresh();
   });
   next.addEventListener("click",payrollAction(async()=>{
@@ -1641,7 +1641,7 @@ function installPdfBatchQueue() {
           break;
         } catch(error) {
           releaseEntry(entry,"error");
-          el("status").textContent="PDF jäi tallentamatta: "+error.message;
+          el("status").textContent="PDF:n käsittely keskeytyi: "+error.message+" Tarkista Historiasta, tallentuiko laskelma.";
           refresh();
           break;
         }
