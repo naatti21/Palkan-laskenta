@@ -1,0 +1,2624 @@
+{
+  "base46": [
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1215,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 129,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 969,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1100,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 9738,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 2020,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 317,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1215,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 320,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 616,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": true
+      },
+      "header": 54,
+      "pageHeight": 1976,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1175,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 53,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 893,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1022,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 9058,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1815,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 317,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1175,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 360,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 585,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": true
+      },
+      "header": 54,
+      "pageHeight": 1870,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1139,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 59,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 899,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1034,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 8744,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1775,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 299,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1139,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 390,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 543,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": true
+      },
+      "header": 54,
+      "pageHeight": 1819,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1141,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 45,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 885,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1013,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 8553,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1716,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 301,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 54,
+      "pageHeight": 1141,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "buildCommit": "78f6bdd361b058fb09cbad4c22c4541eb006a4f3",
+      "width": 412,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 545,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": true
+      },
+      "header": 54,
+      "pageHeight": 1821,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    }
+  ],
+  "before": [
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1209,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 36,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 876,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1013,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 9803,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1188,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 369,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1209,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 320,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 796,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 2120,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1176,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 935,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 9005,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1090,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 336,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1176,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 360,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 749,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 2005,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1114,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 915,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 8652,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1071,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 274,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1114,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 390,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 702,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1896,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1118,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 915,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 8387,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1051,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 278,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1118,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "145fd40e53fca08d92d98000868c7ddeae1173d7",
+      "width": 412,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 707,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1901,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    }
+  ],
+  "after": [
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1187,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 67,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 907,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1013,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 9803,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1220,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 347,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1187,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 320,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 796,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 2113,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1154,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 935,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 9005,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1122,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 314,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1154,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 360,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 749,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1998,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1092,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 915,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 8652,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1087,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 252,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1092,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 390,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 702,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1874,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "tracking",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": true,
+        "#dashboard": true,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1096,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "history",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "calendar",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 840,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "analysis",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 915,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "calculator",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 8387,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "iframeOverflow": 0,
+      "overhang": []
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "settings",
+      "height": 840,
+      "scrollTop": 0,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1067,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "pdf",
+      "height": 840,
+      "scrollTop": 256,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": true,
+        "#taxCardEstimate": true,
+        ".beta-pdf-slot": true,
+        "#replacementTarget": false,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1096,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "buildCommit": "86c6bb818f9dc411e934a5c8df4ca55bd5bc2db7",
+      "width": 412,
+      "name": "conflict",
+      "height": 840,
+      "scrollTop": 707,
+      "firstScreen": {
+        ".compact-amount": false,
+        "#dashboard": false,
+        "#taxCardRemaining": false,
+        "#taxCardEstimate": false,
+        ".beta-pdf-slot": false,
+        "#replacementTarget": true,
+        "#cancelConflictButton": false
+      },
+      "header": 48,
+      "pageHeight": 1879,
+      "overflow": 0,
+      "small": [],
+      "tabs": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    }
+  ]
+}
