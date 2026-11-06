@@ -111,3 +111,8 @@ html,body {background:var(--canvas);color:var(--ink);}
 .shell #conflictSection {border-left:2px solid var(--amber);padding-inline:10px}
 .shell .beta-pdf-slot .file-button {color:var(--mint);border-left:2px solid var(--mint)}
 .compact-sources summary {padding-block:12px;cursor:pointer}
+/* Allow enlarged system text to fit all five destinations on narrow phones. */
+.tabs .tab {white-space:normal;overflow-wrap:anywhere;line-height:1.15}
+.shell .section-heading {flex-wrap:wrap}.shell .section-heading>div {min-width:0;overflow-wrap:anywhere}
+.shell select {max-width:100%}
+[data-view="data"] .summary-list {grid-template-columns:minmax(0,1fr)} [data-view="data"] .summary-row {flex-wrap:wrap;min-width:0;overflow-wrap:anywhere} [data-view="data"] button {max-width:100%;white-space:normal;overflow-wrap:anywhere}

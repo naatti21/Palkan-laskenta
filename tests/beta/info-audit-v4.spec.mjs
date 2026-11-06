@@ -19,7 +19,7 @@ test("Beta shows independent values once and keeps tax details available on dema
     });
     return JSON.stringify(model.makeBackup([row]));
   });
-  await page.getByRole("button",{name:"Data"}).click();
+  await page.getByRole("button",{name:"Asetukset"}).click();
   await page.locator("#backupInput").setInputFiles({
     name:"synthetic-info-audit.json",mimeType:"application/json",buffer:Buffer.from(backup)
   });

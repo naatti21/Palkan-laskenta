@@ -17,7 +17,7 @@ function sum(rows,key) {
 export function installCompact() {
   const settings = document.querySelector('[data-view="data"]');
   settings.prepend(node("h2","Asetukset","compact-title"));
-  for (const section of [settings.querySelectorAll("section")[1],settings.querySelector(".quiet-card")]) {
+  for (const section of settings.querySelectorAll("[data-settings-disclosure]")) {
     const group = node("details","","compact-disclosure");
     const title = section.querySelector("h2");
     group.append(node("summary",title.textContent));

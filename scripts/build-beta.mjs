@@ -125,7 +125,7 @@ html = html.replace(endTracking, `    </section>
 const dataTab = '<button class="tab" data-view-target="data">Data</button>';
 if (!html.includes(dataTab)) throw new Error('Beta navigation marker changed; inspect before adding Planning.');
 html = html.replace(dataTab,
-  '<button class="tab" data-view-target="planning">Laskuri</button>\n      ' + dataTab);
+  '<button class="tab" data-view-target="planning">Laskuri</button>\n      ' + dataTab.replace('>Data<', '>Asetukset<'));
 // Apply the UI experiment ONLY inside _beta. The shared index.html stays
 // untouched so production and QA staging keep their existing interface.
 const analysisMarker = '<section data-view="analysis" class="hidden">';
@@ -413,7 +413,7 @@ opening.append(heading, document.getElementById('dashboard'));
 opening.className = 'card ledger-opening';
 const note = document.getElementById('dashboardNote');
 opening.append(note);
-dashboard.prepend(Object.assign(document.createElement('h2'), { textContent: 'Vuoden seuranta' }));
+dashboard.setAttribute('aria-label', 'Seurannan lisätiedot');
 const { renderCalendar } = await import('./beta-ledger.mjs');
 document.getElementById('ledgerCalendar').addEventListener('ledger-render', event => renderCalendar(event.detail));
 const { installCompact } = await import('./beta-compact.mjs');
