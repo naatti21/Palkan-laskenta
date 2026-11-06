@@ -95,3 +95,64 @@ export function buildYearAnalysis(records, year) {
     months
   };
 }
+
+
+/**
+ * Source-level evidence only. Payroll-system YTD values are snapshots rather
+ * than amounts to sum, and they never certify a multi-employer tax-card total.
+ * No records are changed and no extrapolation from partial history is made.
+ */
+export function buildIncomeSourceDiagnostics(records, year) {
+  if (!Number.isInteger(year) || year < 1900 || year > 2200)
+    throw new Error("Virheellinen analyysivuosi");
+  const projection = projectPayroll(Array.isArray(records) ? records : []);
+  const visible = projection.visible.filter(r => r.kind !== "forecast" &&
+    r.taxYear === year);
+  const groups = new Map();
+  for (const row of visible) {
+    const id = row.incomeSourceId || null;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(row);
+  }
+  const sources = [];
+  for (const [incomeSourceId, rows] of groups) {
+    const sorted = [...rows].sort((a,b) => String(a.values?.payDate || "")
+      .localeCompare(String(b.values?.payDate || "")));
+    const active = sorted.filter(row => projection.active.includes(row));
+    const latest = active.at(-1) || null;
+    const unresolvedCount = rows.filter(row => projection.unresolved.includes(row)).length;
+    const issues = [];
+    if (!incomeSourceId) issues.push("Tulolähde määrittämättä");
+    if (unresolvedCount) issues.push(unresolvedCount + " ristiriitaista maksutietuetta");
+    if (!latest) issues.push("Ei vahvistettua maksua");
+    if (latest) {
+      if (finiteNumber(latest.values?.ytdTaxableIncome) === null)
+        issues.push("Palkkalaskelman YTD puuttuu");
+      if (finiteNumber(latest.values?.taxCardAccumulatedIncome) === null)
+        issues.push("Verokortin kertymä puuttuu");
+      if (finiteNumber(latest.values?.taxLimit) === null)
+        issues.push("Verokortin tuloraja puuttuu");
+      if (active.filter(r => r.values?.payDate === latest.values?.payDate).length > 1)
+        issues.push("Samana päivänä useita kertymähavaintoja");
+    }
+    const cards = new Set(active.map(r => r.taxCardId).filter(Boolean));
+    if (cards.size > 1) issues.push("Vuoden aikana useita verokorttitunnisteita");
+    sources.push({
+      incomeSourceId, recordCount: rows.length, confirmedCount: active.length,
+      unresolvedCount, lastPayDate: latest?.values?.payDate ?? null,
+      ytdObservation: latest ? finiteNumber(latest.values?.ytdTaxableIncome) : null,
+      cardObservation: latest ? finiteNumber(latest.values?.taxCardAccumulatedIncome) : null,
+      taxLimitObservation: latest ? finiteNumber(latest.values?.taxLimit) : null,
+      issues,
+      comparable: Boolean(incomeSourceId && latest && !unresolvedCount &&
+        !issues.includes("Samana päivänä useita kertymähavaintoja"))
+    });
+  }
+  const conflictCount = visible.filter(r => projection.unresolved.includes(r)).length;
+  const unspecifiedCount = visible.filter(r => !r.incomeSourceId).length;
+  return {
+    year, recordCount: visible.length, conflictCount, unspecifiedCount,
+    multipleSources: new Set(visible.map(r => r.incomeSourceId).filter(Boolean)).size > 1,
+    sources
+  };
+}
