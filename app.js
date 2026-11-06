@@ -1082,7 +1082,12 @@ function renderHistory(records) {
         document.getElementById("incomeSourceName")?.focus();
       };
       choices.append(label, selectedCount, all, clear, commit, create);
-      panel.append(choices);
+      const disclosure = document.createElement("details");
+      disclosure.className = "history-recovery-disclosure";
+      const summary = document.createElement("summary");
+      summary.textContent = "Määritä puuttuvat tulolähteet";
+      disclosure.append(summary, choices);
+      panel.append(disclosure);
       refreshSelectedCount();
     }
     host.append(panel);
