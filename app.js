@@ -29,6 +29,7 @@ import {
   clearAllRecords,
   getIncomeSources,
   createIncomeSource,
+  assignMissingIncomeSources,
   getAllRecords,
   mergeManyRecords,
   migrateLegacyLocalStorage,
@@ -44,6 +45,7 @@ let currentRawText = "";
 let currentFingerprint = "";
 let currentIncomeSourceId = null;
 let incomeSources = [];
+const selectedMissingSources = new Set();
 function sourceName(id) {
   if (!id) return "Lähde määrittämättä";
   const source = incomeSources.find(source => source.id === id);
@@ -997,6 +999,95 @@ function renderHistory(records) {
     return;
   }
 
+  // Source recovery is Beta-only: do not alter the published main/QA layout.
+  const missing = yearRecords.filter(row => projection.visible.includes(row) &&
+    row.kind !== "forecast" && !row.incomeSourceId);
+  const conflicts = yearRecords.filter(row => projection.unresolved.includes(row));
+  for (const id of [...selectedMissingSources]) if (!missing.some(row => row.id === id)) selectedMissingSources.delete(id);
+  let refreshSelectedCount = () => {};
+  if (document.getElementById("ledgerOpening") && (missing.length || conflicts.length)) {
+    const panel = document.createElement("section");
+    panel.className = "history-recovery";
+    panel.setAttribute("aria-label", "Palkkahistorian tarkistaminen");
+    const title = document.createElement("strong");
+    title.textContent = "Historian tarkistaminen";
+    const counts = document.createElement("p");
+    counts.textContent = conflicts.length + " ratkaisemattomaksi merkittyä · " +
+      missing.length + " ilman tulolähdettä";
+    const explanation = document.createElement("p");
+    explanation.textContent = "Puuttuva lähde ei yksin poista palkkaa laskennasta. Ristiriitaiset maksut eivät sisälly yhteissummiin ennen erillistä vahvistusta.";
+    panel.append(title, counts, explanation);
+    if (missing.length) {
+      const choices = document.createElement("div");
+      choices.className = "history-recovery-controls";
+      const label = document.createElement("label");
+      label.textContent = "Valituille laskelmille vahvistettava tulolähde";
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", "Historian tulolähde");
+      select.append(new Option("Valitse tulolähde", ""));
+      for (const source of incomeSources) select.add(new Option(source.name, source.id));
+      label.append(select);
+      const all = document.createElement("button");
+      all.type = "button"; all.textContent = "Valitse tämän vuoden lähteettömät";
+      all.onclick = () => {
+        missing.forEach(row => selectedMissingSources.add(row.id));
+        for (const check of host.querySelectorAll(".history-source-choice")) check.checked = true;
+        refreshSelectedCount();
+      };
+      const clear = document.createElement("button");
+      clear.type = "button"; clear.textContent = "Tyhjennä valinnat";
+      clear.onclick = () => {
+        selectedMissingSources.clear();
+        for (const check of host.querySelectorAll(".history-source-choice")) check.checked = false;
+        refreshSelectedCount();
+      };
+      const commit = document.createElement("button");
+      commit.type = "button"; commit.textContent = "Vahvista tulolähde valituille";
+      const selectedCount = document.createElement("span");
+      selectedCount.className = "history-recovery-count";
+      refreshSelectedCount = () => {
+        const count = missing.filter(row => selectedMissingSources.has(row.id)).length;
+        selectedCount.textContent = count + " laskelmaa valittu";
+        commit.disabled = count === 0 || !select.value;
+      };
+      select.onchange = refreshSelectedCount;
+      commit.onclick = async () => {
+        const chosen = missing.filter(row => selectedMissingSources.has(row.id));
+        if (!chosen.length || !select.value) return;
+        const labelName = sourceName(select.value);
+        const preview = chosen.slice(0, 8).map(row => fmtDate(row.values.payDate) +
+          " · " + fmtMoney(row.values.netPay)).join("\n");
+        if (!confirm("Vahvistetaanko tulolähde " + labelName + " " + chosen.length +
+          " laskelmalle?\n\n" + preview +
+          (chosen.length > 8 ? "\n... ja " + (chosen.length - 8) + " muuta." : "") +
+          "\n\nTämä EI ratkaise mahdollisia päällekkäisiä palkkatapahtumia. Muut lähteet pitää käsitellä erikseen.")) return;
+        commit.disabled = true;
+        try {
+          await assignMissingIncomeSources(chosen.map(row => row.id), select.value, chosen);
+          selectedMissingSources.clear();
+          await renderAll();
+          el("backupStatus").textContent = "Tulolähde tallennettiin " + chosen.length +
+            " aiempaan palkkalaskelmaan. Alkuperäiset versiot säilyvät historiassa.";
+        } catch (error) {
+          alert("Tulolähdettä ei muutettu: " + error.message);
+          await renderAll();
+        }
+      };
+      const create = document.createElement("button");
+      create.type = "button"; create.textContent = "Luo uusi tulolähde";
+      create.onclick = () => {
+        setView("tracking");
+        const details = document.querySelector(".beta-pdf-slot details");
+        if (details) details.open = true;
+        document.getElementById("incomeSourceName")?.focus();
+      };
+      choices.append(label, selectedCount, all, clear, commit, create);
+      panel.append(choices);
+      refreshSelectedCount();
+    }
+    host.append(panel);
+  }
+
   const appendField = (container, label, value) => {
     if (value == null || value === "–") return;
     const item = document.createElement("div");
@@ -1086,6 +1177,22 @@ function renderHistory(records) {
       appendField(fields, label, field === "overtimeHours" ? fmtNumber(value) + " h" : fmtFieldValue(field, value));
     }
     detail.append(fields);
+    if (document.getElementById("ledgerOpening") && missing.includes(record)) {
+      const sourceChoice = document.createElement("label");
+      sourceChoice.className = "history-recovery-choice";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "history-source-choice";
+      checkbox.value = record.id;
+      checkbox.checked = selectedMissingSources.has(record.id);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) selectedMissingSources.add(record.id);
+        else selectedMissingSources.delete(record.id);
+        refreshSelectedCount();
+      });
+      sourceChoice.append(checkbox, document.createTextNode(" Valitse tämän laskelman tulolähteen määrittämiseen"));
+      detail.prepend(sourceChoice);
+    }
     const lines = Array.isArray(record.payLines) ? record.payLines : [];
     if (lines.length) {
       const more = document.createElement("details");
