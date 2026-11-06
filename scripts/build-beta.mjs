@@ -425,7 +425,7 @@ installCompact();
 const { installHomeCalendarV2 } = await import('./beta-home-calendar-v2.mjs');
 installHomeCalendarV2();
 await import('./app.js');
-document.querySelectorAll('.tabs .tab').forEach(button => { button.disabled = false; });
+document.querySelectorAll('[data-view-target]').forEach(button => { button.disabled = false; });
 document.documentElement.dataset.betaReady = 'true';
 `);
 const manifest = JSON.parse(await readFile('manifest.webmanifest', 'utf8'));
