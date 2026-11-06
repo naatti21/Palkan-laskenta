@@ -116,3 +116,16 @@ html,body {background:var(--canvas);color:var(--ink);}
 .shell .section-heading {flex-wrap:wrap}.shell .section-heading>div {min-width:0;overflow-wrap:anywhere}
 .shell select {max-width:100%}
 [data-view="data"] .summary-list {grid-template-columns:minmax(0,1fr)} [data-view="data"] .summary-row {flex-wrap:wrap;min-width:0;overflow-wrap:anywhere} [data-view="data"] button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+
+
+/* Existing-data recovery: intentionally subdued until the user opens it. */
+.history-recovery {padding:10px 0;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge);margin-bottom:7px}
+.history-recovery>strong {display:block;font-size:.98rem;color:var(--ink)}
+.history-recovery>p {margin:5px 0;color:var(--sub);line-height:1.38;font-size:.81rem}
+.history-recovery-disclosure summary {min-height:44px;display:list-item;padding:9px 2px;color:var(--mint);font-weight:650}
+.history-recovery-controls {display:grid;gap:8px;padding:5px 0 12px}
+.history-recovery-controls label {display:grid;gap:6px;font-size:.84rem;color:var(--sub)}
+.history-recovery-controls :is(button,select) {width:100%;min-height:44px;max-width:100%;text-align:left}
+.history-recovery-count {color:var(--cyan);font-size:.85rem}
+.history-recovery-choice {display:flex;gap:9px;align-items:center;border-bottom:1px solid var(--edge);padding:10px 4px;color:var(--ink);font-size:.87rem}
+.history-recovery-choice input {width:23px;height:23px;flex:0 0 auto;accent-color:var(--mint)}
