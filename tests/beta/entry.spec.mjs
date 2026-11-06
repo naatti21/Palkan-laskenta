@@ -74,7 +74,7 @@ test("synthetic production-format JSON backup restores locally into beta analysi
     });
     return JSON.stringify(model.makeBackup([a]));
   });
-  await page.getByRole("button", { name: "Data" }).click();
+  await page.getByRole("button", { name: "Asetukset" }).click();
   await page.locator("#backupInput").setInputFiles({
     name: "synthetic-backup.json",
     mimeType: "application/json",
@@ -111,7 +111,7 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
     });
     return JSON.stringify(m.makeBackup([row]));
   });
-  await page.getByRole("button",{name:"Data"}).click();
+  await page.getByRole("button",{name:"Asetukset"}).click();
   await page.locator("#backupInput").setInputFiles({name:"synthetic-dashboard.json",mimeType:"application/json",buffer:Buffer.from(backup)});
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
   await page.getByRole("button",{name:"Seuranta"}).click();
@@ -165,7 +165,7 @@ test("year-end goal is local, compares certified YTD separately from manual annu
    parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}});
   return JSON.stringify(m.makeBackup([row],{incomeSources:[{id:"goal-job",name:"Työ"}]}));
  });
- await page.getByRole("button",{name:"Data"}).click();
+ await page.getByRole("button",{name:"Asetukset"}).click();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-progress.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Seuranta"}).click();
@@ -198,7 +198,7 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
     row("card-forecast","2026-12-23",100000,0,20,"forecast")
   ]));
  });
- await page.getByRole("button",{name:"Data"}).click();
+ await page.getByRole("button",{name:"Asetukset"}).click();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-cardchange.json",mimeType:"application/json",buffer:Buffer.from(payload)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Seuranta"}).click();
@@ -234,7 +234,7 @@ test("compact monthly net graph uses real payment months, without forecast or fi
    });
    return JSON.stringify(m.makeBackup([row("01",1800),row("03",2100),row("05",1900),row("08",9000,"forecast")]));
  });
- await page.getByRole("button",{name:"Data"}).click();
+ await page.getByRole("button",{name:"Asetukset"}).click();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-chart.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
  await page.getByRole("button",{name:"Seuranta"}).click();
@@ -291,7 +291,7 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
       ])
     ]));
   });
-  await page.getByRole("button", { name: "Data" }).click();
+  await page.getByRole("button", { name: "Asetukset" }).click();
   await page.locator("#backupInput").setInputFiles({name:"synthetic-insights.json",mimeType:"application/json",buffer:Buffer.from(fixture,"utf8")});
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
   await page.getByRole("button", { name: "Analyysi" }).click();
@@ -351,7 +351,7 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
     fingerprints:["synthetic-planner-"+n],fieldMeta:{},corrections:{},notices:[],parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}}));
   return JSON.stringify(m.makeBackup(rows,{incomeSources:[{id:"planner-work",name:"Päätyö"}]}));
  });
- await page.getByRole("button",{name:"Data"}).click();
+ await page.getByRole("button",{name:"Asetukset"}).click();
  await expect(page.locator('[data-view="data"]')).toBeVisible();
  await page.locator("#backupInput").setInputFiles({name:"synthetic-planner.json",mimeType:"application/json",buffer:Buffer.from(backup)});
  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");

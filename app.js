@@ -672,6 +672,7 @@ async function renderAll() {
   await loadYearProgressValues();
   yearProgressRecords = records;
   renderDashboard(records);
+  if (document.getElementById("ledgerOpening")) document.dispatchEvent(new CustomEvent("compact-payments", { detail: { records, year: selectedYear, sourceName } }));
   renderBetaYearProgress(records);
   renderAnalysis(records);
   renderInsightsUi(records, selectedYear);
@@ -1158,6 +1159,15 @@ function renderConflict(record, conflict) {
     renderConflict(record, { ...conflict, existing, differences: recordDifferences(existing, record) });
   });
   label.append(select); host.append(label);
+  if (document.getElementById("ledgerOpening")) {
+    const oldNet = conflict.existing.values?.netPay, newNet = record.values?.netPay;
+    const preview = document.createElement("p");
+    preview.className = "compact-decision";
+    preview.textContent = Number.isFinite(oldNet) && Number.isFinite(newNet)
+      ? `Tämän parin netto: korvaa aiempi → ${fmtMoney(newNet)}; säilytä molemmat → ${fmtMoney((Math.round(oldNet*100)+Math.round(newNet*100))/100)}. Peruuta jättää historian ennalleen.`
+      : "Netto puuttuu. Valintojen euromääräistä vaikutusta ei voi vahvistaa.";
+    host.append(preview);
+  }
   const identityRows = [
     ["Maksupäivä", fmtFieldValue("payDate", record.values?.payDate)],
     ["Palkkakausi", `${fmtFieldValue("payPeriodStart", record.values?.payPeriodStart)} – ${fmtFieldValue("payPeriodEnd", record.values?.payPeriodEnd)}`]

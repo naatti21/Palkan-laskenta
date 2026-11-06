@@ -6,7 +6,7 @@ test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
     await page.setViewportSize({width,height:800});
     await page.goto('/index.html');
     const names=await page.locator('.tabs [data-view-target]').allTextContents();
-    expect(names.map(n=>n.trim())).toEqual(['Seuranta','Analyysi','Historia','Laskuri','Data']);
+    expect(names.map(n=>n.trim())).toEqual(['Seuranta','Analyysi','Historia','Laskuri','Asetukset']);
     const layout=await page.evaluate(()=>{
       const nav=document.querySelector('.tabs');
       const tabs=[...nav.querySelectorAll('button')];
@@ -20,7 +20,7 @@ test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
         documentOverflow:document.documentElement.scrollWidth>innerWidth+1
       };
     });
-    expect(layout.bg).toBe('rgb(5, 7, 11)');
+    expect(layout.bg).toBe('rgb(5, 8, 12)');
     expect(layout.columns).toBe(5);
     expect(layout.smallestTabHeight).toBeGreaterThanOrEqual(44);
     expect(layout.allInside).toBe(true);

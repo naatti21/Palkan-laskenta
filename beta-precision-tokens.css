@@ -1,8 +1,8 @@
 :root, html.beta-integrated {
   color-scheme:dark;
-  --canvas:#05070b; --surface:#0c1118; --raised:#111923; --well:#090e15;
-  --edge:#354451; --control-edge:#647888; --ink:#edf5fa; --sub:#a8b8c8;
-  --mint:#61ffcf; --cyan:#43ecff; --violet:#b98dff; --warn:#ff8093; --amber:#ffd08c;
+  --canvas:#05080c; --surface:#0c1218; --raised:#111a21; --well:#090e15;
+  --edge:#293640; --control-edge:#647888; --ink:#f0f6f7; --sub:#aebec5;
+  --mint:#72efca; --cyan:#78d9ec; --violet:#bc9bfc; --warn:#f29ca9; --amber:#f1c27a;
   --corner:7px; --tight:5px;
 }
 :focus-visible {outline:2px solid var(--cyan);outline-offset:2px;}

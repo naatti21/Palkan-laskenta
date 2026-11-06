@@ -77,3 +77,42 @@ html,body {background:var(--canvas);color:var(--ink);}
 .beta-pdf-slot .file-button {position:relative;}
 .beta-pdf-slot .file-button input[type=file] {display:block;position:absolute;width:1px;height:1px;min-height:0;padding:0;border:0;clip-path:inset(50%);}
 .beta-pdf-slot .file-button:focus-within {outline:2px solid var(--cyan);outline-offset:2px;}
+
+/* Compact Precision shell and ledger. The lower navigation stays within the safe area. */
+.shell {max-width:540px;margin:auto;padding:0 16px calc(75px + env(safe-area-inset-bottom));font-variant-numeric:tabular-nums}
+.shell .hero {min-height:48px;padding:4px 0;display:flex;align-items:center;border-bottom:1px solid var(--edge);margin:0}
+.shell .hero h1 {font-size:1rem;letter-spacing:.1em;text-transform:uppercase;border-left:3px solid var(--mint);padding-left:8px}
+.shell .hero .light {font-size:.7rem;max-width:55%;overflow-wrap:anywhere}
+.shell .tabs {position:fixed;inset:auto 0 0;margin:auto;max-width:540px;width:100%;z-index:30;border-radius:0;padding:2px 3px calc(4px + env(safe-area-inset-bottom));background:var(--well)}
+.tabs .tab {min-height:52px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;font-size:.72rem}
+.tabs .tab svg {width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.shell [data-view]>.card,.shell .analysis-collection {border-width:0 0 1px;border-radius:0;padding:12px 0;margin:0;background:var(--canvas)}
+.shell [data-view]>.beta-compact-dashboard {background:var(--surface);padding-inline:10px}
+.shell .card .eyebrow,.shell .beta-planning-header .eyebrow {display:none}
+.shell h2 {letter-spacing:-.03em}
+.compact-lead {border-block:1px solid var(--edge);padding:8px 0}
+.compact-lead select {max-width:100%;text-transform:capitalize}
+.compact-amount {display:block;font-size:clamp(2.4rem,10vw,3.15rem);line-height:1.17;letter-spacing:-.045em;overflow-wrap:anywhere}
+.compact-lead p,.compact-gross {font-size:.82rem;color:var(--sub);margin:4px 0}
+#ledgerOpening #dashboard {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+#ledgerOpening #dashboard .metric:first-child strong {font-family:inherit;font-size:clamp(1.1rem,4vw,1.5rem)}
+#ledgerOpening #dashboard .metric {min-width:0;padding-inline:4px;overflow-wrap:anywhere}
+.compact-source {display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--edge);padding:8px 0;overflow-wrap:anywhere}
+.compact-source span {border-inline-start:2px solid var(--violet);padding-left:8px}
+.compact-decision {border-left:2px solid var(--amber);padding-left:10px}
+.shell .history-row.payslip-item {margin:0;background:transparent;border-width:0 0 1px;border-radius:0}
+.shell .ledger-switch {padding-block:4px}.ledger-switch button {flex:1}
+.shell .beta-planning-header {padding-top:12px}
+.compact-title {margin:12px 0 0;font-size:1.5rem}
+.compact-disclosure {border-bottom:1px solid var(--edge);color:var(--sub)}
+.compact-disclosure summary {display:list-item;padding:12px 0;color:var(--ink);cursor:pointer}
+.compact-disclosure .card {border:0;margin:0;padding:0;background:transparent}
+.shell #clearButton {border-color:var(--warn);color:var(--warn)}
+.shell #conflictSection {border-left:2px solid var(--amber);padding-inline:10px}
+.shell .beta-pdf-slot .file-button {color:var(--mint);border-left:2px solid var(--mint)}
+.compact-sources summary {padding-block:12px;cursor:pointer}
+/* Allow enlarged system text to fit all five destinations on narrow phones. */
+.tabs .tab {white-space:normal;overflow-wrap:anywhere;line-height:1.15}
+.shell .section-heading {flex-wrap:wrap}.shell .section-heading>div {min-width:0;overflow-wrap:anywhere}
+.shell select {max-width:100%}
+[data-view="data"] .summary-list {grid-template-columns:minmax(0,1fr)} [data-view="data"] .summary-row {flex-wrap:wrap;min-width:0;overflow-wrap:anywhere} [data-view="data"] button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
