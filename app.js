@@ -1520,6 +1520,12 @@ function installPdfBatchQueue() {
   inner.append(pickerLabel, payerLabel, note, autoLabel, actions, status, list, disclaimer);
   group.append(title, inner);
   upload.after(group);
+  const mainPicker = document.getElementById("pdfInput");
+  // The primary upload control must accept multiple files too; don't make the
+  // user discover a second, collapsed picker just to import a year's payslips.
+  if (mainPicker) mainPicker.multiple = true;
+  const mainPickerCaption = upload.querySelector(".file-button span");
+  if (mainPickerCaption) mainPickerCaption.textContent = "Lisää PDF:t (yksi tai monta)";
 
   let entries = [];
   let cursor = 0;
@@ -1589,26 +1595,39 @@ function installPdfBatchQueue() {
     el("status").textContent="Tiedosto ohitettu. Mitään ei tallennettu.";
     refresh();
   }
-  picker.addEventListener("change",()=>{
-    if (running || awaiting>=0) {
-      status.textContent="Käsittele avoin PDF-tarkistus ennen uuden jonon valintaa.";
-      picker.value=""; return;
+  function enqueueFiles(files, fromPrimary = false) {
+    if (running || awaiting >= 0) {
+      group.open = true;
+      status.textContent = "Käsittele avoin PDF-tarkistus ennen uusien PDF:ien valintaa.";
+      return false;
     }
-    const selected=Array.from(picker.files || []);
-    picker.value="";
+    const selected = Array.from(files || []);
     const valid=selected.filter(file => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
     if (!valid.length || valid.length > 80) {
-      status.textContent="Valitse 1–80 PDF-tiedostoa yhdellä kertaa.";
-      return;
+      group.open = true;
+      status.textContent = "Valitse 1–80 PDF-tiedostoa yhdellä kertaa.";
+      return false;
     }
-    if(entries.some(entry=>!finished.has(entry.state))) {
-      status.textContent="Tyhjennä tai käsittele nykyinen jono ennen uuden avaamista.";
-      return;
+    if (entries.some(entry=>!finished.has(entry.state))) {
+      group.open = true;
+      status.textContent = "Käsittele tai tyhjennä nykyinen PDF-jono ennen uuden avaamista.";
+      return false;
     }
-    entries=valid.map(file=>({file,name:file.name,state:"pending"}));
-    cursor=0; awaiting=-1;
+    entries = valid.map(file => ({file,name:file.name,state:"pending"}));
+    cursor = 0; awaiting = -1;
+    if (fromPrimary && !payer.value) {
+      const chosen = el("incomeSourceSelect")?.value || "";
+      if (incomeSources.some(source => source.id === chosen)) payer.value = chosen;
+    }
+    group.open = true;
     refresh();
     if (selected.length !== valid.length) status.textContent += " Muut kuin PDF-tiedostot ohitettiin.";
+    return true;
+  }
+  picker.addEventListener("change", () => {
+    const chosen = Array.from(picker.files || []);
+    picker.value = "";
+    enqueueFiles(chosen);
   });
   payer.addEventListener("change",refresh);
   skip.addEventListener("click",skipCurrent);
@@ -1656,8 +1675,9 @@ function installPdfBatchQueue() {
   }));
   refreshSources();
   refresh();
-  return { refreshSources, complete, skipCurrent,
+  return { refreshSources, complete, skipCurrent, enqueueFiles,
     isAwaiting() { return awaiting >= 0; },
+    hasPending() { return awaiting >= 0 || entries.some(entry => !finished.has(entry.state)); },
     chooseSource(id) {
       if(incomeSources.some(source=>source.id===id)) payer.value=id;
       refresh();
@@ -1678,8 +1698,23 @@ el("pdfInput").addEventListener("change", payrollAction(async event => {
     event.target.value = "";
     return;
   }
-  const file = event.target.files?.[0];
-  if (!file) return;
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  if (files.length > 1) {
+    // The original single-file handler must never silently discard all but
+    // the first chosen file. Route bulk selection into the reviewed queue.
+    const queued = batchQueue?.enqueueFiles(files, true);
+    event.target.value = "";
+    if (!queued) el("status").textContent = "Usean PDF:n valinta vaatii avoimen tuontijonon. Tarkista jonon tila.";
+    else el("status").textContent = files.length + " PDF:ää valittu. Valitse tulolähde ja käsittele jono alla.";
+    return;
+  }
+  if (batchQueue?.hasPending()) {
+    el("status").textContent = "Käsittele tai tyhjennä avoin PDF-jono ennen erillistä tuontia.";
+    event.target.value = "";
+    return;
+  }
+  const file = files[0];
   try {
     await processPdf(file);
   } catch (err) {
