@@ -143,7 +143,8 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   expect(width).toBeLessThanOrEqual(1);
   await page.reload();
   await expect(page.locator("#dashboard .metric")).toHaveCount(2);
-  await expect(page.locator(".beta-pdf-slot")).toBeVisible();
+  await expect(page.locator("#betaImportOpen")).toBeVisible();
+  await expect(page.locator(".beta-pdf-slot")).toBeHidden();
 });
 test("year-end goal is local, compares certified YTD separately from manual annual forecast", async({page})=>{
  await page.setViewportSize({width:360,height:780});
