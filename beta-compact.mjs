@@ -65,8 +65,11 @@ export function installCompact() {
     function update() {
       const rows = realized.filter(r=>r.values.payDate.startsWith(month.value));
       amount.textContent = sum(rows,"netPay");
-      const count = new Set(rows.map(r=>r.incomeSourceId || "")).size;
-      caption.textContent = rows.length ? "Maksuja "+rows.length+" · Tulolähteitä "+count : "Ei toteutuneita maksuja valitulle vuodelle";
+      const knownSources = new Set(rows.map(r=>r.incomeSourceId).filter(Boolean));
+      const unspecified = rows.some(r=>!r.incomeSourceId);
+      caption.textContent = rows.length
+        ? "Maksuja "+rows.length+" · Tulolähteitä "+knownSources.size+(unspecified ? " · Lähde puuttuu" : "")
+        : "Ei toteutuneita maksuja valitulle vuodelle";
       gross.textContent = rows.length ? "Kuukauden brutto · "+sum(rows,"grossPay") : "";
     }
     month.onchange = update;
