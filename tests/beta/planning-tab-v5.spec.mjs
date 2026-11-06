@@ -1,12 +1,12 @@
 import {test,expect} from '@playwright/test';
 
 // Isolated Beta UI tests. Use only invented amounts, never personal payroll data.
-test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
+test('Four compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
   for(const width of [320,360,412]){
     await page.setViewportSize({width,height:800});
     await page.goto('/index.html');
     const names=await page.locator('.tabs [data-view-target]').allTextContents();
-    expect(names.map(n=>n.trim())).toEqual(['Seuranta','Analyysi','Historia','Laskuri','Asetukset']);
+    expect(names.map(n=>n.trim())).toEqual(['Etusivu','Kalenteri','Laskuri','Asetukset']);
     const layout=await page.evaluate(()=>{
       const nav=document.querySelector('.tabs');
       const tabs=[...nav.querySelectorAll('button')];
