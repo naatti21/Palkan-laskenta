@@ -33,8 +33,9 @@ async function records(page) {
 test("select multiple PDF files, require a source and process sequentially without a duplicate",async({page})=>{
   await page.goto("/index.html");
   const id=await createSource(page);
-  await page.locator("#betaBatchQueue > summary").click();
+  await page.locator("#betaImportOpen").click();
   const next=page.locator("#betaBatchNext");
+  await page.locator("#betaBatchAuto").evaluate(el => { el.checked = false; });
   await page.locator("#betaBatchInput").setInputFiles([first(),first(),second()]);
   await expect(page.locator("#betaBatchStatus")).toContainText("3 tiedostoa");
   await expect(next).toBeDisabled();
@@ -50,7 +51,7 @@ test("select multiple PDF files, require a source and process sequentially witho
   expect(rows).toHaveLength(2);
   expect(rows.every(r=>r.incomeSourceId===id)).toBe(true);
   await page.reload();
-  await page.locator("#betaBatchQueue > summary").click();
+  await page.locator("#betaImportOpen").click();
   await expect(page.locator("#betaBatchStatus")).toContainText("Valitse PDF:t");
   await page.locator("#betaBatchInput").setInputFiles(first());
   await page.locator("#betaBatchSource").selectOption(id);
@@ -62,10 +63,10 @@ test("select multiple PDF files, require a source and process sequentially witho
 test("automatic batch stops on corrected payslip and needs explicit user decision",async({page})=>{
   await page.goto("/index.html");
   const id=await createSource(page);
-  await page.locator("#betaBatchQueue > summary").click();
+  await page.locator("#betaImportOpen").click();
   await page.locator("#betaBatchInput").setInputFiles([first(),conflict(),second()]);
   await page.locator("#betaBatchSource").selectOption(id);
-  await page.locator("#betaBatchAuto").check();
+  await page.locator("#betaBatchAuto").evaluate(el => { el.checked = true; });
   page.once("dialog",d=>d.accept());
   await page.locator("#betaBatchNext").click();
   await expect(page.locator("#conflictSection")).toBeVisible();
@@ -74,7 +75,7 @@ test("automatic batch stops on corrected payslip and needs explicit user decisio
   await expect(page.locator("#betaBatchNext")).toBeDisabled();
   await page.locator("#cancelConflictButton").click();
   await expect(page.locator("#betaBatchStatus")).toContainText("ohitettu 1");
-  await page.locator("#betaBatchAuto").uncheck();
+  await page.locator("#betaBatchAuto").evaluate(el => { el.checked = false; });
   await page.locator("#betaBatchNext").click();
   await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
   expect(await records(page)).toHaveLength(2);
@@ -107,10 +108,10 @@ test("diagnostic panel exposes unknown source and overlapping periods without cl
 test("explicitly approved automatic queue keeps the selected payer for all clear files",async({page})=>{
   await page.goto("/index.html");
   const id=await createSource(page,"Vahvistettu tulolähde");
-  await page.locator("#betaBatchQueue > summary").click();
+  await page.locator("#betaImportOpen").click();
   await page.locator("#betaBatchInput").setInputFiles([first(),second()]);
   await page.locator("#betaBatchSource").selectOption(id);
-  await page.locator("#betaBatchAuto").check();
+  await page.locator("#betaBatchAuto").evaluate(el => { el.checked = true; });
   page.once("dialog",dialog=>dialog.accept());
   await page.locator("#betaBatchNext").click();
   await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
@@ -121,14 +122,14 @@ test("explicitly approved automatic queue keeps the selected payer for all clear
 });
 
 
-test("primary visible PDF button accepts multiple documents and opens the batch queue instead of dropping files", async ({page}) => {
+test("legacy PDF input still routes multi-file selection to the queue without dropping files", async ({page}) => {
   await page.setViewportSize({width:390,height:840});
   await page.goto("/index.html");
   const id=await createSource(page,"Synteettinen päätyö");
   await expect(page.locator("#pdfInput")).toHaveAttribute("multiple", "");
   await expect(page.locator(".beta-pdf-slot .file-button")).toContainText("yksi tai monta");
-  await page.locator("#incomeSourceSelect").selectOption(id);
   await page.locator("#pdfInput").setInputFiles([first(),second()]);
+  await page.locator("#betaBatchSource").selectOption(id);
   await expect(page.locator("#betaBatchQueue")).toHaveAttribute("open", "");
   await expect(page.locator("#betaBatchStatus")).toContainText("2 tiedostoa");
   await expect(page.locator("#betaBatchSource")).toHaveValue(id);
@@ -146,5 +147,5 @@ test("single PDF on primary picker retains original immediate import flow",async
   await page.locator("#pdfInput").setInputFiles(first());
   await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
   expect(await records(page)).toHaveLength(1);
-  await expect(page.locator("#betaBatchQueue")).not.toHaveAttribute("open", "");
+  await expect(page.locator("#betaImportWorkspace")).toBeVisible();
 });

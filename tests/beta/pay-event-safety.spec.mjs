@@ -98,6 +98,7 @@ test('choosing another replacement target updates the comparison and replaces on
 });
 for(const width of [360,412]) test(`PDF source selection survives replay and reload at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:915});await page.goto('/index.html');
+ await page.locator('#betaImportOpen').click();
  for (const [name,marker] of [['Päätyö','A'],['Keikat','B']]) {
    const details=page.locator('details').filter({has:page.locator('#createIncomeSource')});
    if(!await details.evaluate(node=>node.open)) await details.locator('summary').click();
