@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 
-async function seed(page) {
-  return page.evaluate(async () => {
+async function seed(page, laterYtd = 17300) {
+  return page.evaluate(async (chosenYtd) => {
     const storage = await import("/storage.js");
     const model = await import("/model.js");
     const payer = await storage.createIncomeSource("Synteettinen työnantaja");
     const rows = [
       { id:"spring-first", payDate:"2026-05-22", gross:1750, net:1150, ytd:14500 },
-      { id:"spring-later", payDate:"2026-06-05", gross:2800, net:1800, ytd:17300 }
+      { id:"spring-later", payDate:"2026-06-05", gross:2800, net:1800, ytd:chosenYtd }
     ].map(r => model.migrateLegacyRecord({
       id:r.id, recordSchemaVersion:3, incomeSourceId:payer.id,
       values:{
@@ -19,7 +19,7 @@ async function seed(page) {
     }));
     await storage.mergeManyRecords(rows);
     return payer.id;
-  });
+  }, laterYtd);
 }
 
 async function status(page) {
@@ -57,17 +57,7 @@ for (const width of [320,390]) {
 
 test("non-matching YTD shows a neutral warning without suggesting a separate payment", async ({page})=>{
   await page.goto("/index.html");
-  await seed(page);
-  await page.evaluate(async()=>{
-    const storage=await import("/storage.js");
-    const model=await import("/model.js");
-    const rows=await storage.getAllRecords();
-    const newRows=rows.map(row=>row.id==="spring-later"
-      ? model.migrateLegacyRecord({...row,values:{...row.values,ytdTaxableIncome:17600,
-        taxCardAccumulatedIncome:17600}}) : row);
-    await storage.clearAllRecords();
-    await storage.mergeManyRecords(newRows);
-  });
+  await seed(page, 17600);
   await page.reload();
   await page.getByRole("button",{name:"Historia",exact:true}).click();
   await page.getByRole("button",{name:"Ratkaise palkkatapahtuma"}).first().click();
