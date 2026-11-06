@@ -1798,7 +1798,7 @@ function installPdfBatchQueue() {
 
   title.textContent = "PDF-tuontijono";
   pickerLabel.firstChild.textContent = "Valitse PDF-tiedostot";
-  auto.checked = true; // One explicit action handles clear files; stops at any uncertainty.
+  auto.checked = false; // Legacy single-step tests remain available; the visible action enables bulk flow.
   autoLabel.classList.add("beta-import-legacy-control");
   next.textContent = "Tallenna selkeät palkkalaskelmat";
   note.textContent = "Kaikki käsitellään vain tällä laitteella. Erilliset työnantajat tarkistetaan omana eränään.";
