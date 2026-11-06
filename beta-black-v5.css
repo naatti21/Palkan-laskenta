@@ -158,3 +158,23 @@ html,body {background:var(--canvas);color:var(--ink);}
 .beta-batch-entry{padding:5px 1px;border-bottom:1px solid var(--edge);min-width:0;overflow-wrap:anywhere;font-size:.75rem}
 .beta-batch-entry span{display:block;color:var(--ink)}
 .beta-batch-entry small{color:var(--sub)}
+
+/* Pay-cycle change: two payments, then decision; technical fields on demand. */
+#conflictSection .section-heading h2{font-size:1.1rem;line-height:1.2}
+.paycycle-target-label{display:grid;gap:5px;font-size:.79rem;color:var(--sub);margin-bottom:8px}
+.paycycle-target-label select{width:100%;min-width:0}
+.paycycle-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:9px}
+.paycycle-payment{display:flex;flex-direction:column;min-width:0;gap:4px;padding:10px;background:var(--raised);border:1px solid var(--edge);border-radius:var(--tight)}
+.paycycle-payment-label{font-size:.67rem;letter-spacing:.04em;font-weight:750;color:var(--cyan)}
+.paycycle-payment>strong:not(.paycycle-payment-net){font-size:.87rem;color:var(--ink)}
+.paycycle-payment-net{font-size:1.12rem;color:var(--mint);font-variant-numeric:tabular-nums}
+.paycycle-payment small{font-size:.73rem;color:var(--sub);line-height:1.3;overflow-wrap:anywhere}
+.paycycle-evidence{margin:7px 0 8px;padding:9px 10px;border-inline-start:2px solid var(--cyan);background:var(--well);font-size:.81rem;line-height:1.4;color:var(--ink)}
+.paycycle-evidence-positive{border-inline-start-color:var(--mint)}
+.paycycle-action-guide{margin:7px 0;font-size:.78rem;line-height:1.42;color:var(--sub)}
+.paycycle-effect{margin:8px 0;padding:8px 9px;font-size:.8rem;line-height:1.4;border-inline-start:2px solid var(--amber);color:var(--ink)}
+.paycycle-technical-details{border-top:1px solid var(--edge);margin:9px 0 3px;padding-top:4px}
+.paycycle-technical-details summary{font-size:.78rem;font-weight:650;color:var(--cyan);padding:7px 0}
+.paycycle-technical-details .summary-row{gap:10px;padding:6px 0;font-size:.75rem}
+.paycycle-technical-details .summary-row strong{overflow-wrap:anywhere;min-width:0;text-align:right}
+@media(max-width:355px){.paycycle-compare{grid-template-columns:minmax(0,1fr)}.paycycle-payment{padding:8px}}
