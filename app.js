@@ -1313,6 +1313,7 @@ async function renderLearnedProfileSummary() {
 }
 
 function renderConflict(record, conflict) {
+  batchQueue?.openWorkspace();
   currentPendingRecord = record;
   currentConflict = conflict;
   currentConflict.expected = conflict.candidates || [conflict.existing];
@@ -1723,6 +1724,7 @@ function installPdfBatchQueue() {
           el("incomeSourceSelect").value=processingSource;
           const result=await processPdf(entry.file);
           if (result?.state === "saved" || result?.state === "duplicate") {
+            showBatchOutcome();
             releaseEntry(entry,result.state);
             refresh();
             if (!auto.checked) break;
@@ -1743,9 +1745,88 @@ function installPdfBatchQueue() {
       running=false; refresh();
     }
   }));
+
+  // One entry point on Seuranta; all import work lives in a focused sheet.
+  // Existing parser, source, revision and conflict contracts remain untouched.
+  const entry = document.createElement("div");
+  entry.className = "beta-import-entry";
+  entry.id = "betaImportEntry";
+  const openButton = document.createElement("button");
+  openButton.id = "betaImportOpen";
+  openButton.type = "button";
+  openButton.textContent = "Tuo palkkalaskelmat";
+  const subline = document.createElement("span");
+  subline.textContent = "Yksi tai useita PDF:iä";
+  entry.append(openButton, subline);
+  upload.before(entry);
+
+  const workspace = document.createElement("section");
+  workspace.id = "betaImportWorkspace";
+  workspace.className = "beta-import-workspace";
+  workspace.hidden = true;
+  workspace.setAttribute("aria-label", "Palkkalaskelmien tuonti");
+  const header = document.createElement("header");
+  header.className = "beta-import-header";
+  const back = document.createElement("button");
+  back.id = "betaImportBack";
+  back.type = "button";
+  back.textContent = "← Seurantaan";
+  const heading = document.createElement("div");
+  const headingTitle = document.createElement("h2");
+  headingTitle.textContent = "Palkkalaskelmien tuonti";
+  const headingSubtitle = document.createElement("p");
+  headingSubtitle.textContent = "Valitse PDF:t, tulolähde ja vahvista. Epäselvät maksut tarkistetaan erikseen.";
+  heading.append(headingTitle, headingSubtitle);
+  header.append(back, heading);
+
+  const fileLog = document.createElement("details");
+  fileLog.className = "beta-import-file-details";
+  const fileLogTitle = document.createElement("summary");
+  fileLogTitle.textContent = "Näytä tiedostot";
+  list.before(fileLog);
+  fileLog.append(fileLogTitle, list);
+  // Keep the one-file legacy input in the DOM for older import integrations,
+  // but users see only the multi-capable picker in this sheet.
+  workspace.append(header, group, upload);
+  for (const id of ["resultSection","unknownSection","reviewSection","conflictSection"]) {
+    const section = document.getElementById(id);
+    if (section) workspace.append(section);
+  }
+  entry.after(workspace);
+
+  title.textContent = "PDF-tuontijono";
+  pickerLabel.firstChild.textContent = "Valitse PDF-tiedostot";
+  auto.checked = true; // One explicit action handles clear files; stops at any uncertainty.
+  autoLabel.classList.add("beta-import-legacy-control");
+  next.textContent = "Tallenna selkeät palkkalaskelmat";
+  note.textContent = "Kaikki käsitellään vain tällä laitteella. Erilliset työnantajat tarkistetaan omana eränään.";
+  disclaimer.textContent = "Alkuperäiset PDF:t eivät tallennu sovellukseen. Kesken jääneen jonon voit valita uudelleen; jo tallennettu laskelma tunnistetaan.";
+  function openWorkspace() {
+    workspace.hidden = false;
+    document.body.classList.add("beta-import-active");
+    group.open = true;
+    workspace.scrollTop = 0;
+    refresh();
+  }
+  function closeWorkspace() {
+    if (running) return;
+    workspace.hidden = true;
+    document.body.classList.remove("beta-import-active");
+    openButton.focus();
+  }
+  openButton.addEventListener("click", openWorkspace);
+  back.addEventListener("click", closeWorkspace);
+  picker.addEventListener("change", openWorkspace);
+  // Hide file-by-file result detail during bulk import; status row is sufficient.
+  function showBatchOutcome() {
+    if (!workspace.hidden && entries.length) {
+      document.getElementById("resultSection")?.classList.add("hidden");
+    }
+  }
+
   refreshSources();
   refresh();
-  return { refreshSources, complete, skipCurrent, enqueueFiles,
+  return { refreshSources, complete, skipCurrent, enqueueFiles, openWorkspace, closeWorkspace,
     isAwaiting() { return awaiting >= 0; },
     hasPending() { return awaiting >= 0 || entries.some(entry => !finished.has(entry.state)); },
     chooseSource(id) {
@@ -1770,6 +1851,7 @@ el("pdfInput").addEventListener("change", payrollAction(async event => {
   }
   const files = Array.from(event.target.files || []);
   if (!files.length) return;
+  batchQueue?.openWorkspace();
   if (files.length > 1) {
     // The original single-file handler must never silently discard all but
     // the first chosen file. Route bulk selection into the reviewed queue.
