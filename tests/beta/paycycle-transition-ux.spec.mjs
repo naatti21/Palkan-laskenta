@@ -38,7 +38,7 @@ for (const width of [320,390]) {
     await seed(page);
     await page.reload();
     expect(await status(page)).toEqual({active:0, unresolved:2, net:0});
-    await page.getByRole("button",{name:"Historia",exact:true}).click();
+    await page.getByRole("button",{name:"Kalenteri",exact:true}).click();
     await page.getByRole("button",{name:"Ratkaise palkkatapahtuma"}).first().click();
     await expect(page.locator("#conflictSection")).toBeVisible();
     await expect(page.locator(".paycycle-payment")).toHaveCount(2);
@@ -59,7 +59,7 @@ test("non-matching YTD shows a neutral warning without suggesting a separate pay
   await page.goto("/index.html");
   await seed(page, 17600);
   await page.reload();
-  await page.getByRole("button",{name:"Historia",exact:true}).click();
+  await page.getByRole("button",{name:"Kalenteri",exact:true}).click();
   await page.getByRole("button",{name:"Ratkaise palkkatapahtuma"}).first().click();
   await expect(page.locator(".paycycle-evidence")).not.toContainText("Kertymät viittaavat kahteen");
   await expect(page.locator(".paycycle-evidence")).toContainText("Maksupäivät eroavat");
