@@ -12,12 +12,12 @@ test("month totals use realized payments only and survive long source names on n
     }
   });
   await page.reload();
-  await page.locator("#dashboardYear").selectOption("2025");
-  await expect(page.locator(".compact-amount")).toContainText(/12\s280/);
-  await page.getByRole("combobox",{name:"Seurannan maksukuukausi"}).selectOption("2025-09");
-  await expect(page.locator(".compact-amount")).toContainText("850");
+  await expect(page.locator("#dashboardYear")).toHaveValue("2025");
+  await expect(page.locator(".beta-home-amount")).toContainText(/12\s280/);
+  await expect(page.locator(".beta-year-cell").first()).toContainText(/13\s130/);
+  await expect(page.getByRole("combobox",{name:"Seurannan maksukuukausi"})).toHaveCount(0);
   await page.addStyleTag({content:"html{font-size:125%}"});
-  for(const name of ["Seuranta","Historia","Analyysi","Laskuri","Asetukset"]){
+  for(const name of ["Etusivu","Kalenteri","Analyysi","Laskuri","Asetukset"]){
     await page.getByRole("button",{name,exact:true}).click();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
   }
@@ -48,11 +48,11 @@ test("settings stay usable with empty history, reordered sections and enlarged t
     }
   });
   await page.reload();
-  await page.locator("#dashboardYear").selectOption("2025");
-  await expect(page.locator(".compact-lead")).toContainText("Tulolähteitä 5");
+  await expect(page.locator("#dashboardYear")).toHaveValue("2025");
+  await expect(page.locator(".compact-lead")).toContainText("5 erillistä maksua");
   for (const scale of [125,200]) {
     await page.evaluate(scale=>document.documentElement.style.fontSize=scale+"%",scale);
-    for(const tab of ["Seuranta","Historia","Analyysi","Laskuri","Asetukset"]){
+    for(const tab of ["Etusivu","Kalenteri","Analyysi","Laskuri","Asetukset"]){
       await page.getByRole("button",{name:tab,exact:true}).click();
       const over=await page.evaluate(()=>[...document.querySelectorAll("body *")].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>e.className || e.id || e.tagName));
       expect(over, tab+" "+scale).toEqual([]);
