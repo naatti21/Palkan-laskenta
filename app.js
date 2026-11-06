@@ -47,6 +47,7 @@ let currentFingerprint = "";
 let currentIncomeSourceId = null;
 let incomeSources = [];
 let batchQueue = null;
+let appReadyPromise = null;
 const selectedMissingSources = new Set();
 function sourceName(id) {
   if (!id) return "Lähde määrittämättä";
@@ -408,6 +409,7 @@ function renderSuccess(record, mergedDuplicate = false) {
 }
 
 function renderUnknown() {
+  batchQueue?.openWorkspace();
   el("resultSection").classList.add("hidden");
   el("reviewSection").classList.add("hidden");
   el("conflictSection")?.classList.add("hidden");
@@ -423,6 +425,7 @@ function currentInputValue(key, parsed) {
 }
 
 function renderReview(parsed, keys = null, manual = false) {
+  batchQueue?.openWorkspace();
   el("resultSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
   el("conflictSection")?.classList.add("hidden");
@@ -1755,9 +1758,7 @@ function installPdfBatchQueue() {
   openButton.id = "betaImportOpen";
   openButton.type = "button";
   openButton.textContent = "Tuo palkkalaskelmat";
-  const subline = document.createElement("span");
-  subline.textContent = "Yksi tai useita PDF:iä";
-  entry.append(openButton, subline);
+  entry.append(openButton);
   upload.before(entry);
 
   const workspace = document.createElement("section");
@@ -1853,6 +1854,9 @@ el("createIncomeSource").addEventListener("click", payrollAction(async () => {
   batchQueue?.chooseSource(source.id);
 }));
 el("pdfInput").addEventListener("change", payrollAction(async event => {
+  // File selection can race with async database initialization after page load.
+  // The focused import sheet must exist before any result/review is rendered.
+  if (appReadyPromise) await appReadyPromise;
   if (batchQueue?.isAwaiting()) {
     el("status").textContent = "Tarkista tai ohita keskeneräinen erätuonnin PDF ennen yksittäistä tuontia.";
     event.target.value = "";
@@ -2092,4 +2096,4 @@ async function init() {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
 }
 
-init();
+appReadyPromise = init();
