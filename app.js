@@ -1765,6 +1765,8 @@ function installPdfBatchQueue() {
   workspace.className = "beta-import-workspace";
   workspace.hidden = true;
   workspace.setAttribute("aria-label", "Palkkalaskelmien tuonti");
+  workspace.setAttribute("role", "dialog");
+  workspace.setAttribute("aria-modal", "true");
   const header = document.createElement("header");
   header.className = "beta-import-header";
   const back = document.createElement("button");
@@ -1784,7 +1786,7 @@ function installPdfBatchQueue() {
   const fileLogTitle = document.createElement("summary");
   fileLogTitle.textContent = "Näytä tiedostot";
   list.before(fileLog);
-  fileLog.append(fileLogTitle, list);
+  fileLog.append(fileLogTitle, list, disclaimer, clear);
   // Keep the one-file legacy input in the DOM for older import integrations,
   // but users see only the multi-capable picker in this sheet.
   workspace.append(header, group, upload);
@@ -1814,8 +1816,15 @@ function installPdfBatchQueue() {
     document.body.classList.remove("beta-import-active");
     openButton.focus();
   }
-  openButton.addEventListener("click", openWorkspace);
+  openButton.addEventListener("click", () => {
+    auto.checked = true;
+    openWorkspace();
+    picker.focus();
+  });
   back.addEventListener("click", closeWorkspace);
+  workspace.addEventListener("keydown", event => {
+    if (event.key === "Escape") { event.preventDefault(); closeWorkspace(); }
+  });
   picker.addEventListener("change", openWorkspace);
   // Hide file-by-file result detail during bulk import; status row is sufficient.
   function showBatchOutcome() {
