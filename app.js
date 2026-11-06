@@ -1549,7 +1549,7 @@ function installPdfBatchQueue() {
         " · ohitettu " + ((counts.skipped || 0)+(counts.error || 0)) +
         (awaiting >= 0 ? " · Käsittele avoin tarkistus ennen jatkamista." : "")
       : "Valitse PDF:t aloittaaksesi. Mitään ei lähetetä palvelimelle.";
-    next.disabled = running || payrollBusy || awaiting >= 0 || cursor >= entries.length || !payer.value;
+    next.disabled = running || awaiting >= 0 || cursor >= entries.length || !payer.value;
     skip.disabled = running || awaiting < 0;
     clear.disabled = running || !entries.length;
     list.replaceChildren();
@@ -1617,6 +1617,7 @@ function installPdfBatchQueue() {
   });
   next.addEventListener("click",payrollAction(async()=>{
     if (running || awaiting>=0 || !payer.value || cursor>=entries.length) return;
+    if (auto.checked && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
     running=true;
     try {
       while(cursor<entries.length) {
@@ -1652,6 +1653,7 @@ function installPdfBatchQueue() {
   refreshSources();
   refresh();
   return { refreshSources, complete, skipCurrent,
+    isAwaiting() { return awaiting >= 0; },
     chooseSource(id) {
       if(incomeSources.some(source=>source.id===id)) payer.value=id;
       refresh();
@@ -1667,6 +1669,11 @@ el("createIncomeSource").addEventListener("click", payrollAction(async () => {
   batchQueue?.chooseSource(source.id);
 }));
 el("pdfInput").addEventListener("change", payrollAction(async event => {
+  if (batchQueue?.isAwaiting()) {
+    el("status").textContent = "Tarkista tai ohita keskeneräinen erätuonnin PDF ennen yksittäistä tuontia.";
+    event.target.value = "";
+    return;
+  }
   const file = event.target.files?.[0];
   if (!file) return;
   try {
