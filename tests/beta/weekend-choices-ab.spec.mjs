@@ -90,38 +90,66 @@ test('A/B cards stay within 320 / 360 / 412 px mobile viewports',async({page})=>
 });
 
 
-test('C uses the published 2026 reference and is placed after the planner rather than among A/B inputs',async({page})=>{
+test('C travels beside A/B through cards, results, sample tables and two relevant charts',async({page})=>{
   await page.setViewportSize({width:360,height:800});
   await page.goto('/index.html');
   await page.getByRole('button',{name:'Laskuri'}).click();
   const p=frameOf(page);
   const card=p.locator('.beta-ab-c');
   await expect(card).toBeVisible();
-  const order=await card.evaluate(el=>({
-    afterAB:!!(document.getElementById('betaAnnualABSummary')
-      .compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING),
-    afterPoints:!!(document.getElementById('sample-title').closest('section')
-      .compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING)
+  const sameGroup=await card.evaluate(el=>({
+    insideAB:document.getElementById('betaAnnualABSummary').contains(el),
+    sameCards:el.parentElement.classList.contains('beta-ab-cards'),
+    afterB:!!(document.querySelector('.beta-ab-b').compareDocumentPosition(el)&
+      Node.DOCUMENT_POSITION_FOLLOWING)
   }));
-  expect(order.afterAB).toBe(true);
-  expect(order.afterPoints).toBe(true);
+  expect(sameGroup).toEqual({insideAB:true,sameCards:true,afterB:true});
   await p.locator('#planYear').fill('2026');
   await p.locator('#baseGross').fill('35000');
   await p.locator('#weekendGross').fill('1000');
   await expect(p.locator('#betaCCount')).toHaveText('5 viikonloppua');
+  await expect(p.locator('#betaCGross')).toHaveText('40 000 €');
+  await expect(p.locator('#betaCNet')).toHaveText('30 268 €');
   await expect(p.locator('#betaCMarginal')).toHaveText('595 € → 522 €');
-  await expect(p.locator('#betaCReason')).toContainText('EI todista');
-  await expect(p.locator('#betaCWeekendsTable tr')).toHaveCount(17); // header + sampled rows incl C
-  await expect(p.locator('#betaCCompare')).toContainText('Yleinen koko vuoden netto');
+  await expect(p.locator('#betaCResult')).toContainText('30 268 €');
+  await expect(p.locator('#betaCMonth')).toHaveText('2 522 €');
+  await expect(p.locator('#betaCPeriod')).toHaveText('1 164 €');
+  await expect(p.locator('#samples').closest('table').locator('thead')).toContainText('C: netto');
+  await expect(p.locator('#allSamples').closest('table').locator('thead')).toContainText('C: netto');
+  await expect(p.locator('#samples .beta-c-net-cell').first()).toBeVisible();
+  await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
+  await expect(p.locator('#samples [data-c-knee="yes"] .point-count')).toHaveText('5');
+  await expect(p.locator('#netChart svg polyline.line')).toHaveCount(3);
+  await expect(p.locator('#netChart')).toContainText('C');
+  await expect(p.locator('#betaProgressChart svg [data-series="C"]')).toHaveCount(1);
+  await expect(p.locator('#betaCReason')).toContainText('EI paras');
   await p.locator('#betaWeekendsA').fill('3');
   await p.locator('#betaWeekendsB').fill('9');
   await expect(p.locator('#betaCCount')).toHaveText('5 viikonloppua');
-  await expect(p.locator('#betaCWeekendsTable')).toContainText('3 A');
-  await expect(p.locator('#betaCWeekendsTable')).toContainText('9 B');
+  await expect(p.locator('#betaWeekendsA')).toHaveValue('3');
+  await expect(p.locator('#betaWeekendsB')).toHaveValue('9');
+  await expect(p.locator('#betaCNextImpact')).toContainText('C (vuoden 2026 veroviite)');
   await p.locator('#baseGross').fill('65000');
   await expect(p.locator('#betaCCount')).toHaveText('Ei selvää käännettä');
   await expect(p.locator('#betaCUseGoal')).toBeDisabled();
+  await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
+  await expect(p.locator('#netChart svg polyline.line')).toHaveCount(3);
   await p.locator('#planYear').fill('2027');
-  await expect(p.locator('#betaCReason')).toContainText('ei ole tässä julkaistua yleistä verotaulukkoa');
-  await expect(p.locator('#betaCWeekendsTable tr')).toHaveCount(0);
+  await expect(p.locator('#betaCCompare')).toContainText('vuoden 2026 viimeksi vahvistettua yleisviitettä');
+  await expect(p.locator('#betaCUseGoal')).toBeDisabled();
+});
+
+test('C reference curve does not hide unrepresented income ranges or compare as a tax-card rate',async({page})=>{
+  await page.goto('/index.html');
+  await page.getByRole('button',{name:'Laskuri'}).click();
+  const p=frameOf(page);
+  await p.locator('#planYear').fill('2026');
+  await p.locator('#baseGross').fill('135000');
+  await p.locator('#weekendGross').fill('1000');
+  await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
+  await expect(p.locator('#allSamples tr').last().locator('.beta-c-net-cell')).toHaveText('–');
+  await expect(p.locator('#betaCCompare')).toContainText('A/B ovat verokortin jälkeistä kassavirtaa');
+  await p.locator('#baseGross').fill('180000');
+  await expect(p.locator('#betaCCount')).toHaveText('–');
+  await expect(p.locator('#betaCReason')).toContainText('ei saada vertailua');
 });
