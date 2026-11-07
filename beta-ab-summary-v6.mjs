@@ -1,6 +1,7 @@
 // Beta-only readout for the existing A/B planner — no parallel tax calculation.
 // Reads the planner's displayed annual gross / annual after-withholding net.
 // Monthly and fortnight values are arithmetic annual averages, never pay-date promises.
+import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference } from './ab-summary-model.mjs';
 import { NET_ANCHORS_2026, referenceNet2026 } from './net-reference-2026.mjs';
 
 // 2026 comparison, not a personalized tax calculator. Annual A/B estimates
@@ -122,13 +123,7 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB) {
 
 const money=n=>Math.round(n).toLocaleString('fi-FI')+' €';
 function displayedEuro(id) {
-  const node=document.getElementById(id);
-  const original=node?.textContent?.trim()||'';
-  if(original==='–'||original==='')return null;
-  const cleaned=original.replace(/[\s\u00a0\u202f€]/g,'').replace('−','-').replace(',','.');
-  if(!/^-?\d+(?:\.\d+)?$/.test(cleaned))return null;
-  const number=Number(cleaned);
-  return Number.isFinite(number) ? number : null;
+  return parseDisplayedEuro(document.getElementById(id)?.textContent);
 }
 function mount() {
   if(document.getElementById('betaAnnualABSummary'))return;
@@ -289,16 +284,7 @@ function mount() {
   const put=(id,value)=>{document.getElementById(id).textContent=value;};
   const weekFieldA=document.getElementById('betaWeekendsA');
   const weekFieldB=document.getElementById('betaWeekendsB');
-  const originalWeekends=()=>{
-    const raw=document.getElementById('weekends')?.value;
-    const v=Number(raw);
-    return raw!=='' && Number.isInteger(v) && v>=0 && v<=52 ? v : null;
-  };
-  const chosenWeekends=field=>{
-    if(field.value.trim()==='')return null;
-    const value=Number(field.value);
-    return Number.isInteger(value)&&value>=0&&value<=52?value:null;
-  };
+  const chosenWeekends=field=>parseWeekendCount(field.value);
   const syncModelFromA=()=>{
     const chosen=chosenWeekends(weekFieldA);
     if(chosen===null)return;
@@ -307,27 +293,12 @@ function mount() {
     shared.value=String(chosen);
     shared.dispatchEvent(new Event('input',{bubbles:true}));
   };
-  const breakdown=plan=>{
-    const fields=['weekends','sat','sun','baseGross','holiday','bonus','other',
-      'raise','raiseMonth','weekendGross','hourlyRate','ktaRate','limitA','limitB',
-      'rateA','rateB','extraA','extraB','otherDeductions'];
-    const inputs=Object.fromEntries(fields.map(id=>[id,progressVal(id)]));
-    if(fields.some(id=>inputs[id]===null))return null;
-    const a=chosenWeekends(weekFieldA),b=chosenWeekends(weekFieldB);
-    const common=originalWeekends();
-    if(a==null||b==null||common==null)return null;
-    try{
-      const computed=globalThis.PalkkaPlannerCore?.computePlan({
-        ...inputs,weekends:Math.max(common,a,b),
-        weekendMethod:document.getElementById('weekendMethod')?.value||'manual',
-        rulesConfirmed:!!document.getElementById('rulesConfirmed')?.checked
-      });
-      if(!computed)return null;
-      return {computed,a,b,common,
-        reference:computed.series[common],
-        rowA:computed.series[a],rowB:computed.series[b]};
-    }catch{return null;}
-  };
+  const breakdown=()=>summaryBreakdown({
+    ...Object.fromEntries(SUMMARY_INPUT_FIELDS.map(id=>[id,progressVal(id)])),
+    weekends:parseWeekendCount(document.getElementById('weekends')?.value),
+    weekendMethod:document.getElementById('weekendMethod')?.value||'manual',
+    rulesConfirmed:!!document.getElementById('rulesConfirmed')?.checked
+  },weekFieldA.value,weekFieldB.value,globalThis.PalkkaPlannerCore?.computePlan);
   const signed=n=>(n>=0?'+':'−')+money(Math.abs(n));
   const reset=message=>{
     for(const id of ['betaABGross','betaABGrossA','betaABGrossB',
@@ -379,10 +350,7 @@ function mount() {
         money(Math.abs(delta))+' enemmän. Ero sisältää sekä työn määrän että verokorttien ennakonpidätyksen vaikutuksen.';
     put('betaABDifference',text);
     if(!same){
-      // Symmetrical two-factor decomposition: exact sum of the observed A-B
-      // cash-flow gap without assigning the nonlinear interaction to either side.
-      const withholdingPart=((rowA.netA-rowA.netB)+(rowB.netA-rowB.netB))/2;
-      const workloadPart=((rowA.netA-rowB.netA)+(rowA.netB-rowB.netB))/2;
+      const {withholdingPart,workloadPart}=cashFlowDifference(rowA,rowB);
       put('betaABBreakdown','Nettoero A − B: työmäärän vaikutus '+signed(workloadPart)+
         ' · korttien pidätyseron vaikutus '+signed(withholdingPart)+
         '. Laskurin kaksisuuntainen vertailuerittely, ei lopullinen veropäätös.');
