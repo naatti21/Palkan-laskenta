@@ -329,7 +329,7 @@ function mount() {
       return card+': tuloraja '+money(row.limit)+' ei ylity 0–52 viikonlopulla';
     };
     put('betaCCompare',describe('A')+' · '+describe('B')+'.');
-    put('betaCFormula','Perusbrutto '+money(c.baseline)+' + yksi työviikonloppu '+
+    put('betaCFormula','Vuosibrutto ilman työviikonloppuja '+money(c.baseline)+' + yksi työviikonloppu '+
       money(c.grossPerWeekend)+'. C lasketaan niistä ja kummankin kortin omista tulorajoista.');
     if(!c.found){
       put('betaCCount','Ei taitekohtaa');
