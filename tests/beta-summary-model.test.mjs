@@ -133,8 +133,12 @@ test('public C reference finds actual net-retention drop from 35k without imposi
 test('C never silently uses 2026 public tax reference for 2027 or extrapolates unavailable gross',()=>{
   const series=computePlan({...inputs,weekends:52}).series;
   const wrongYear=referenceWeekendAnalysis(series,referenceNet2026,2027);
-  assert.equal(wrongYear.available,false);
-  assert.equal(wrongYear.reason,'year');
+  assert.equal(wrongYear.available,true);
+  assert.equal(wrongYear.provisional,true);
+  assert.equal(wrongYear.referenceYear,2026);
+  assert.equal(wrongYear.planningYear,2027);
+  assert.equal(referenceWeekendAnalysis(series,referenceNet2026,2026).provisional,false);
+  assert.equal(referenceWeekendAnalysis(series,referenceNet2026,NaN).reason,'year');
   const outside=referenceWeekendAnalysis(
     computePlan({...inputs,baseGross:180000,weekends:52}).series,referenceNet2026,2026);
   assert.equal(outside.available,false);
