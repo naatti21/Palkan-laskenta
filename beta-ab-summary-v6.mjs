@@ -335,6 +335,14 @@ function mount() {
     fact.innerHTML='<small>C: yleinen veroviite 2026</small><strong id="betaCResult">–</strong><span>Arvioitu vuosinetto C:n kohdalla¹, eri menetelmä kuin A/B</span>';
     results?.append(fact);
   }
+  const samplePanel=document.getElementById('sample-title')?.closest('section.card');
+  if(samplePanel&&!document.getElementById('betaCSamplesNote')){
+    const note=document.createElement('p');
+    note.id='betaCSamplesNote';
+    note.className='hint';
+    note.textContent='¹ C: Veronmaksajien vuoden 2026 yleinen vuotuinen nettotulo (verot ja työntekijämaksut mukana). A/B: ennakonpidätyksen mukainen kassavirta. Merkki – tarkoittaa, ettei C-viite kata tätä tulotasoa.';
+    samplePanel.querySelector('.comparison-table-wrap')?.before(note);
+  }
   const nextImpact=document.getElementById('nextImpact');
   if(nextImpact&&!document.getElementById('betaCNextImpact')){
     const note=document.createElement('p');
