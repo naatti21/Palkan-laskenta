@@ -119,7 +119,7 @@ test('C explains exact tax card threshold and responds to underlying payroll inp
   // Changing relevant income and tax inputs MUST update the suggestion.
   await p.locator('#baseGross').fill('70000');
   await expect(p.locator('#betaCCount')).toHaveText('7 viikonloppua · kortti A');
-  await expect(p.locator('#betaCFormula')).toContainText('Perusbrutto 70 000 €');
+  await expect(p.locator('#betaCFormula')).toContainText('Vuosibrutto ilman työviikonloppuja 70 000 €');
   await p.locator('#weekendGross').fill('2000');
   await expect(p.locator('#betaCCount')).toHaveText('3 viikonloppua · kortti A');
   await expect(p.locator('#betaCLimit')).toContainText('4. viikonlopulla brutto 78 000 €');
