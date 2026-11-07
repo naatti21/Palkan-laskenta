@@ -120,6 +120,9 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#dashboardDetails .metric")).toHaveCount(2);
   await expect(page.locator("#dashboardMore")).toBeVisible();
   await expect(page.locator("#dashboardMore")).not.toHaveAttribute("open","");
+  await expect(page.locator("#dashboard")).toBeHidden();
+  await expect(page.locator("#dashboardMore #dashboard")).toHaveCount(1);
+  await expect(page.locator(".compact-amount")).toContainText("2 100");
   await expect(page.locator("#dashboard")).toContainText("Viimeisin netto");
   await expect(page.locator("#dashboard")).not.toContainText("Kortin marginaali");
   await expect(page.locator("#dashboard")).not.toContainText("8 000");
@@ -133,6 +136,7 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
+  await expect(page.locator("#dashboard")).toBeVisible();
   await expect(page.locator("#dashboard")).toContainText("Veronalainen kertymä");
   await expect(page.locator("#dashboardDetails")).toContainText("Viimeisin bruttopalkka");
   await expect(page.locator("#dashboardDetails")).not.toContainText("Kortin kertymä");
