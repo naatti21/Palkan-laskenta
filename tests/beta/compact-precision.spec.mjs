@@ -33,7 +33,7 @@ test("settings stay usable with empty history, reordered sections and enlarged t
   });
   await page.setViewportSize({width:320,height:840});
   await page.goto("/index.html");
-  await expect(page.locator(".compact-lead")).toContainText("Ei vielä toteutuneita");
+  await expect(page.locator(".compact-lead").first()).toContainText("Ei vielä toteutuneita");
   await page.getByRole("button",{name:"Asetukset"}).click();
   await expect(page.locator("#exportButton")).toBeVisible();
   await expect(page.locator("#importButton")).toBeVisible();
@@ -51,7 +51,7 @@ test("settings stay usable with empty history, reordered sections and enlarged t
   });
   await page.reload();
   await page.locator("#dashboardYear").selectOption("2025");
-  await expect(page.locator(".compact-lead")).toContainText("5 maksua");
+  await expect(page.locator(".compact-lead").first()).toContainText("5 maksua");
   for (const scale of [125,200]) {
     await page.evaluate(scale=>document.documentElement.style.fontSize=scale+"%",scale);
     for(const tab of ["Seuranta","Historia","Analyysi","Laskuri","Asetukset"]){
