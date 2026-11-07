@@ -202,7 +202,7 @@ function mount() {
         <div><span>Vuosinetto · C¹</span><b id="betaCNet">–</b></div>
         <div><span>Netto / kk (12)</span><b id="betaCMonth">–</b></div>
         <div><span>Netto / 2 viikkoa (26)</span><b id="betaCPeriod">–</b></div>
-        <div><span>Seuraava työviikonloppu · lisää käteen¹</span><b id="betaCMarginal">–</b></div>
+        <div><span id="betaCMarginalLabel">Lisänetto / työviikonloppu¹</span><b id="betaCMarginal">–</b></div>
         <p id="betaCReason" class="hint" role="status">Ilman omaa tavoitetta ei ole yhtä laskennallista optimia.</p>
         <p id="betaCFormula" class="hint"></p>
         <p id="betaCLimit" class="hint"></p>
@@ -499,6 +499,7 @@ function mount() {
         putSafe(id,'–');
       putSafe('betaCCompare','C on yleinen veroviite, ei A/B:n ennakonpidätys.');
       putSafe('betaCReason',message);
+      putSafe('betaCMarginalLabel','Lisänetto / työviikonloppu¹');
       putSafe('betaCNextImpact','');
       if(computed)paintTables(computed,reference);
     };
@@ -556,6 +557,7 @@ function mount() {
       putSafe('betaCNet',money(current.net));
       putSafe('betaCMonth',money(current.monthlyNet));
       putSafe('betaCPeriod',money(current.fortnightNet));
+      putSafe('betaCMarginalLabel','Seuraava työviikonloppu · lisää käteen¹');
       putSafe('betaCMarginal',current.nextGain===null?'Ei seuraavaa (52 vkl)'
         :'+'+money(current.nextGain));
       putSafe('betaCReason',targetText+'Tähän riittää vähintään '+
@@ -570,7 +572,9 @@ function mount() {
       putSafe('betaCNet',money(endNet));
       putSafe('betaCMonth',money(endNet/12));
       putSafe('betaCPeriod',money(endNet/26));
-      putSafe('betaCMarginal','+'+money(analysis.marginal[analysis.eligibleMax]?.gain??0));
+      putSafe('betaCMarginalLabel','Viimeinen ehdot täyttävä viikonloppu · lisänetto¹');
+      const lastGain=analysis.marginal[analysis.eligibleMax-1]?.gain;
+      putSafe('betaCMarginal',Number.isFinite(lastGain)?'+'+money(lastGain):'–');
       putSafe('betaCReason',targetText+'Viite kattaa enintään '+
         analysis.eligibleMax+' kannattavaa työviikonloppua. Nettotavoitteesta jää '+
         money(analysis.missedBy)+' vuodessa puuttumaan. C ei nimeä mahdotonta tavoitetta optimaaliseksi.');
@@ -580,6 +584,7 @@ function mount() {
       putSafe('betaCNet',output(analysis.baselineNet,endNet));
       putSafe('betaCMonth',output(analysis.baselineNet,endNet,12));
       putSafe('betaCPeriod',output(analysis.baselineNet,endNet,26));
+      putSafe('betaCMarginalLabel','Lisänetto / viikonloppu · alussa → lopussa¹');
       putSafe('betaCMarginal','+'+money(analysis.firstGain)+' → +'+money(analysis.endGain));
       putSafe('betaCReason','Lisätyö kasvattaa nettotuloa mutta vie vapaa-aikaa. '+
         'Ilman nettotavoitetta ei ole yhtä laskennallista optimia. '+
