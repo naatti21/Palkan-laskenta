@@ -676,6 +676,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       el('rulesConfirmed').checked=false;
       el('weekendPayDetails').open=true;
     }
+    showWeekendHistoryProposal();
     render();
     setStatus('Ehdotuksia siirretty ('+changed.length+' kpl). '+(weekendSuggested?'Tuntihintoja löytyi, mutta erikoista viikonloppumallia ei otettu automaattisesti käyttöön. ':'Viikonlopun korvausmallia ei tunnistettu. ')+'Bonuksia ei lisätty. Vahvista lisäbrutto ja veroprosentit.');
   });
