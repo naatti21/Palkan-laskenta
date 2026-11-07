@@ -104,7 +104,7 @@ test('C explains exact tax card threshold and responds to underlying payroll inp
   await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua · kortti A');
   await expect(p.locator('#betaCCompare')).toContainText('A: 12 viikonloppua');
   await expect(p.locator('#betaCCompare')).toContainText('B: 35 viikonloppua');
-  await expect(p.locator('#betaCFormula')).toContainText('Perusbrutto 65 000 € + yksi työviikonloppu 1 000 €');
+  await expect(p.locator('#betaCFormula')).toContainText('Vuosibrutto ilman työviikonloppuja 65 000 € + yksi työviikonloppu 1 000 €');
   await expect(p.locator('#betaCLimit')).toContainText('12 viikonloppua: brutto 77 000 €');
   await expect(p.locator('#betaCLimit')).toContainText('13. viikonlopulla brutto 78 000 €');
   await expect(p.locator('#betaCLimit')).toContainText('tulorajan 77 000 €');
