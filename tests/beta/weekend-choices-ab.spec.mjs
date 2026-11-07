@@ -90,39 +90,29 @@ test('A/B cards stay within 320 / 360 / 412 px mobile viewports',async({page})=>
 });
 
 
-test('personal best weekend count uses net benefit, not maximum total pay or tax rate alone',async({page})=>{
+test('computed C shows tax step next to A/B without a leisure-value input',async({page})=>{
   await page.setViewportSize({width:360,height:800});
   await page.goto('/index.html');
   await page.getByRole('button',{name:'Laskuri'}).click();
   const p=frameOf(page);
-  const panel=p.locator('#betaWeekendOptimumPanel');
-  await expect(panel).toHaveCount(1);
-  await expect(p.locator('#betaOptimumA')).toHaveText('–');
-  await panel.locator('summary').click();
-  await p.locator('#baseGross').fill('52000');
+  await expect(p.locator('.beta-ab-c #betaCCount')).toBeVisible();
+  await expect(p.locator('#betaFreeWeekendValue')).toHaveCount(0);
+  await expect(p.locator('#betaCCount')).toHaveText('–');
+  await p.locator('#planYear').fill('2026');
+  await p.locator('#baseGross').fill('65000');
   await p.locator('#weekendGross').fill('1000');
-  await p.locator('#limitA').fill('62000');
-  await p.locator('#limitB').fill('72000');
-  await p.locator('#betaFreeWeekendValue').fill('500');
-  await expect(p.locator('#betaOptimumA')).toHaveText('10 viikonloppua');
-  await expect(p.locator('#betaOptimumB')).toHaveText('20 viikonloppua');
-  await expect(p.locator('#betaOptimumAInfo')).toContainText('6 000');
-  await expect(p.locator('#betaOptimumBInfo')).toContainText('11 400');
-  await expect(p.locator('#betaOptimumNote')).toContainText('ei lopullista veroa');
-  await p.locator('#betaFreeWeekendValue').fill('650');
-  await expect(p.locator('#betaOptimumA')).toHaveText('0 viikonloppua');
-  await expect(p.locator('#betaOptimumB')).toHaveText('0 viikonloppua');
-  await p.locator('#betaFreeWeekendValue').fill('');
-  await expect(p.locator('#betaOptimumA')).toHaveText('–');
-  await expect(p.locator('#betaOptimumBInfo')).toContainText('Anna oma arvo');
-  await p.locator('#betaFreeWeekendValue').fill('500');
-  await p.locator('#betaWeekendsA').fill('2');
-  await p.locator('#betaWeekendsB').fill('10');
-  await expect(p.locator('#betaOptimumA')).toHaveText('10 viikonloppua');
-  await expect(p.locator('#betaOptimumB')).toHaveText('20 viikonloppua');
-  // Suggested count does not silently rewrite the user's A/B choices.
-  await expect(p.locator('#betaWeekendsA')).toHaveValue('2');
-  await expect(p.locator('#betaWeekendsB')).toHaveValue('10');
-  await p.locator('#weekendGross').fill('0');
-  await expect(p.locator('#betaOptimumA')).toHaveText('–');
+  await p.locator('#limitA').fill('77000');
+  await p.locator('#limitB').fill('100000');
+  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua');
+  await expect(p.locator('#betaCMarginal')).toHaveText('600 € → 420 €');
+  await expect(p.locator('#betaCReason')).toContainText('ei ennusta lopullista veroa');
+  await p.locator('#betaWeekendsA').fill('3');
+  await p.locator('#betaWeekendsB').fill('9');
+  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua');
+  await expect(p.locator('#betaWeekendsA')).toHaveValue('3');
+  await expect(p.locator('#betaWeekendsB')).toHaveValue('9');
+  await p.locator('#limitA').fill('200000');
+  await p.locator('#limitB').fill('210000');
+  await expect(p.locator('#betaCCount')).toHaveText('–');
+  await expect(p.locator('#betaCReason')).toContainText('Selvää verotuksen taitekohtaa ei löydy');
 });
