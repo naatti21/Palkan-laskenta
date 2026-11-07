@@ -25,19 +25,6 @@ export function installCompact() {
     group.append(section);
     title.hidden = true;
   }
-  const planner = byId("plannerFrame");
-  const jump = node("select","");
-  jump.setAttribute("aria-label","Siirry laskurin osaan");
-  jump.add(new Option("Siirry laskurin osaan",""));
-  for (const [key,label] of [["history","Historian esitäyttö"],["weekends","Työaika ja viikonloput"],["income","Vuosibrutto"],["tax","Verokortit A/B"],["results","Tulokset"],["curves","Käyrät"],["sample","Vertailupisteet"]]) {
-    jump.add(new Option(label,key+"-title"));
-  }
-  jump.onchange = () => {
-    const target = planner.contentDocument?.getElementById(jump.value);
-    if (target) { target.tabIndex = -1; target.focus(); target.scrollIntoView({block:"start"}); }
-    jump.value = "";
-  };
-  planner.before(jump);
   const opening = byId("ledgerOpening");
   opening.querySelector("h2").textContent = "Seuranta";
 
@@ -66,6 +53,10 @@ export function installCompact() {
   const dashboard = byId("dashboard");
   opening.insertBefore(lead,dashboard);
   opening.insertBefore(annual,dashboard);
+  // Latest net already has a dedicated headline above. Preserve the existing
+  // YTD/net/brutto/overtime metrics, but show them only on explicit expansion
+  // instead of repeating the same payday across the home screen.
+  byId("dashboardDetails").before(dashboard);
   opening.append(byId("taxCardProgress"));
   let latestPayDate = null;
 
