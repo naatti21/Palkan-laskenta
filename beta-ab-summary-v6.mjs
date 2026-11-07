@@ -1,7 +1,7 @@
 // Beta-only readout for the existing A/B planner — no parallel tax calculation.
 // Reads the planner's displayed annual gross / annual after-withholding net.
 // Monthly and fortnight values are arithmetic annual averages, never pay-date promises.
-import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference, calculateTaxKnee, referenceWeekendAnalysis } from './ab-summary-model.mjs';
+import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference, calculateTaxKnee, referenceWeekendAnalysis, optimizeWeekendWorkload } from './ab-summary-model.mjs';
 import { NET_ANCHORS_2026, referenceNet2026 } from './net-reference-2026.mjs';
 
 // 2026 comparison, not a personalized tax calculator. Annual A/B estimates
@@ -156,7 +156,7 @@ function mount() {
   section.innerHTML=`
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
     <h2 id="betaABHeading">Vuosiansio · A / B / C</h2>
-    <p class="beta-ab-description">A ja B ovat omat verokorttiarviosi. C laskee yleisen veroviitteen vertailukohdan automaattisesti samoista työtuloista.</p>
+    <p class="beta-ab-description">A ja B: omat verokorttiarviot. C: lisätyön hyöty ja tarvittava työmäärä vuoden 2026 veroviitteellä.</p>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
         <label class="beta-ab-workload-a">A · työviikonloppuja / vuosi
@@ -189,22 +189,33 @@ function mount() {
         <div><span>Netto / kk (12)</span><b id="betaABMonthB">–</b></div>
         <div><span>Netto / 2 viikkoa (26)</span><b id="betaABPeriodB">–</b></div>
       </section>
-      <section class="beta-ab-option beta-ab-c" aria-label="Veroviitteen laskennallinen C-vaihtoehto">
-        <h3>C · Veroviite 2026</h3>
-        <small>Taitekohta · työviikonloppuja</small><strong id="betaCCount">–</strong>
-        <p id="betaCCompare" class="hint">Vuoden 2026 Veronmaksajien julkaistu viite, ei henkilökohtainen verokortti.</p>
-        <div><span>Vuosibrutto / C</span><b id="betaCGross">–</b></div>
-        <div><span>Arvioitu vuosinetto / C¹</span><b id="betaCNet">–</b></div>
+      <section class="beta-ab-option beta-ab-c" aria-label="C lisätyön kannattavuus ja optimointi">
+        <h3>C · Lisätyön optimointi</h3>
+        <p id="betaCCompare" class="hint">Vuoden 2026 yleinen veroviite. A/B ovat omia ennakonpidätysarvioita.</p>
+        <label for="betaCTarget">Nettotavoite / kk (€) · valinnainen
+          <input id="betaCTarget" type="number" inputmode="decimal" min="0" max="1000000" step="50" placeholder="Ei tavoitetta">
+        </label>
+        <label for="betaCMinPerHour">Alin lisänetto / työtunti (€) · valinnainen
+          <input id="betaCMinPerHour" type="number" inputmode="decimal" min="0" max="100000" step="1" placeholder="Ei alarajaa">
+        </label>
+        <small>Työviikonloppuja vuodessa</small>
+        <strong id="betaCCount">–</strong>
+        <div><span>Vuosibrutto · C</span><b id="betaCGross">–</b></div>
+        <div><span>Vuosinetto · C¹</span><b id="betaCNet">–</b></div>
         <div><span>Netto / kk (12)</span><b id="betaCMonth">–</b></div>
         <div><span>Netto / 2 viikkoa (26)</span><b id="betaCPeriod">–</b></div>
-        <div><span>Lisänetto / viimeinen ennen rajaa → ensimmäinen yli rajan</span><b id="betaCMarginal">–</b></div>
-        <p id="betaCFormula" class="hint">C laskee vuosituloista yhden lisäviikonlopun nettovaikutuksen vuoden 2026 yleisen veroastevertailun perusteella.</p>
+        <div><span>Lisänetto / viikonloppu (1. → viimeinen katettu)</span><b id="betaCMarginal">–</b></div>
+        <div><span>Lisänetto / lisätyötunti</span><b id="betaCHour">–</b></div>
+        <p id="betaCReason" class="hint" role="status">Ilman omaa tavoitetta ei ole yhtä laskennallista optimia.</p>
+        <p id="betaCFormula" class="hint"></p>
         <p id="betaCLimit" class="hint"></p>
-        <p id="betaCReason" class="hint">C tarkastelee kaikki 0–52 viikonloppua. A/B-korttien luvut näkyvät vertailutaulukossa, mutta eivät muuta julkaistua veromallia.</p>
-        <p class="hint">Viitteessä ovat mukana työntekijämaksut ja keskimääräiset kunnallis-/kirkollisverot. Ei henkilökohtainen veroennuste.</p>
-        <p class="hint">C:n vuosinetto ja lisäviikonloppujen vaikutus näkyvät myös jäljempänä A/B/C-taulukoissa ja käyrissä.</p>
-        <a href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/" target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat 2026</a>
-        <button type="button" class="chip" id="betaCUseGoal" disabled>Aseta C tavoitteeksi</button>
+        <details class="scenario-explain">
+          <summary>Miten C valitsee työmäärän?</summary>
+          <p class="hint">C tutkii työviikonloput järjestyksessä. Jos asetat nettotavoitteen, se valitsee ensimmäisen määrän, jolla tavoite täyttyy. Halutessasi määrität myös lisäneton alimman hyväksyttävän euromäärän työtuntia kohti. C ei hyppää huonotuottoisen viikonlopun yli.</p>
+          <p class="hint">Jos et aseta tavoitetta, näytetään työmäärän mahdollinen alue, ei yhtä oikeaa lukua. Malli vertaa vuoden 2026 yleistä vuosinettoa, ei henkilökohtaista lopullista verotusta. Työntekijämaksut sisältyvät viitteeseen. C:n arvot näkyvät A/B:n rinnalla myös taulukoissa ja käyrissä.</p>
+        </details>
+        <a href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/" target="_blank" rel="noopener noreferrer">Veroviitteen lähde (2026)</a>
+        <button type="button" class="chip" id="betaCUseGoal" disabled>Aseta C tavoitteeksi Analyysiin</button>
         <p id="betaCStatus" class="hint" role="status" aria-live="polite"></p>
       </section>
     </div>
@@ -332,7 +343,7 @@ function mount() {
     const results=resultSection.querySelector('.grid.two');
     const fact=document.createElement('div');
     fact.className='fact';
-    fact.innerHTML='<small>C: yleinen veroviite 2026</small><strong id="betaCResult">–</strong><span>Arvioitu vuosinetto C:n kohdalla¹, eri menetelmä kuin A/B</span>';
+    fact.innerHTML='<small>C: yleinen veroviite 2026</small><strong id="betaCResult">–</strong><span>C:n arvioitu vuosinetto¹ tai saatavilla oleva vaihteluväli</span>';
     results?.append(fact);
   }
   const samplePanel=document.getElementById('sample-title')?.closest('section.card');
