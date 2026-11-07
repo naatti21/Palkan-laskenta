@@ -141,7 +141,7 @@ function mount() {
   section.innerHTML=`
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
     <h2 id="betaABHeading">Vuosiansio ja verokortit A / B</h2>
-    <p class="beta-ab-description">Yllä olevan laskurin käyrät näyttävät <strong>saman viikonloppumäärän verokorttivertailun</strong>. Tässä loppuyhteenvedossa voit valita A:lle ja B:lle eri työmäärät. Nettotulokset lasketaan edelleen samalla laskurimallilla.</p>
+    <p class="beta-ab-description">Valitse A:lle ja B:lle työviikonloppujen määrä. Muut lähtötiedot täytetään alla. Vertailu päivittyy automaattisesti.</p>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
         <label class="beta-ab-workload-a">A · työviikonloppuja / vuosi
@@ -199,7 +199,49 @@ function mount() {
       <p class="beta-progress-caveat">A/B-merkit näyttävät laskurin vähennysten osuuden, eivät virallista veroastetta. Vihreä käyrä sisältää työntekijän eläke- ja työttömyysvakuutusmaksut, keskimääräiset kunnallis- ja kirkollisverot sekä tavalliset vähennykset. Marginaali kertoo seuraavan ansaitun euron arvioidun verorasituksen. Vertailupisteet on harvennettu ja välit yhdistetty suorilla.</p>
       <a class="beta-progress-source" href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/" target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat, palkansaajan veroprosentit 2026</a>
     </div>`;
-  oldComparison.insertAdjacentElement('afterend',section);
+  // The independent A/B choices are the planner's main workflow, not a
+  // second calculator bolted on after the charts.
+  const weekendsPanel=document.getElementById('weekends-title')?.closest('section.card');
+  if(!weekendsPanel)throw new Error('Missing planner weekend section');
+  weekendsPanel.before(section);
+  const cards=[section.querySelector('.beta-ab-a'),section.querySelector('.beta-ab-b')];
+  const labels=[...section.querySelectorAll('.beta-ab-workload-grid label')];
+  if(cards.some(x=>!x)||labels.length!==2)throw new Error('Missing A/B input cards');
+  cards.forEach((card,i)=>{
+    labels[i].firstChild.textContent='Työviikonloppuja vuodessa';
+    card.querySelector('h3').after(labels[i]);
+  });
+  section.querySelector('.beta-ab-workload').remove();
+  // These summary fields still receive updates for compatibility but must not
+  // repeat the same gross amounts already printed inside each A/B card.
+  section.querySelector('.beta-ab-gross').style.display='none';
+  const caveats=document.createElement('details');
+  caveats.className='scenario-explain beta-ab-explanation';
+  const caution=document.createElement('summary');
+  caution.textContent='Miten arviot on laskettu?';
+  caveats.append(caution,...section.querySelectorAll('.beta-ab-caveat'));
+  section.append(caveats);
+  const progress=section.querySelector('.beta-progress');
+  const extra=document.createElement('details');
+  extra.className='scenario-explain beta-ab-progress-details';
+  const extraTitle=document.createElement('summary');
+  extraTitle.textContent='Veroprogressio 2026 · lisäkuva';
+  extra.append(extraTitle,progress);
+  oldComparison.insertAdjacentElement('afterend',extra);
+
+  // Keep the verified shared-scenario calculation as an internal A-reference.
+  // Its duplicate week-count selector and presets are unnecessary once the
+  // two primary A/B inputs are visible at the start.
+  const oldCount=weekendsPanel.querySelector('.field:has(#weekends)');
+  const oldPresets=weekendsPanel.querySelector('#presets');
+  const oldFacts=weekendsPanel.querySelector('#hoursResult')?.closest('.grid');
+  for(const item of [oldCount,oldPresets,oldFacts])if(item){item.hidden=true;item.style.display='none';}
+  document.getElementById('weekends-title').textContent='1. Työviikonlopun tunnit';
+  const oldHint=weekendsPanel.querySelector('.hint');
+  if(oldHint)oldHint.textContent='Lauantai- ja sunnuntaitunnit ovat samat molemmissa vaihtoehdoissa. Työviikonloppujen määrät valitaan A- ja B-korteissa.';
+  const taxLead=document.querySelector('#tax-title + .muted');
+  if(taxLead)taxLead.textContent='Tarkista A- ja B-verokortin tuloraja sekä prosentit OmaVerosta. Vertailu perustuu omiin arvioihisi.';
+
   const css=document.createElement('style');
   css.textContent=`
     .beta-ab-summary{background:#111920!important;border:1px solid #394956!important;padding:14px!important;margin-top:11px!important;}
@@ -234,8 +276,8 @@ function mount() {
     .beta-progress-source{display:inline-block;margin-top:6px;color:#a6d6ff;font-size:.73rem;line-height:1.4;}
     .beta-ab-workload{margin:11px 0;border:1px solid #44576a;background:#17212b;border-radius:10px;padding:11px;}
     .beta-ab-workload-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
-    .beta-ab-workload-grid label{display:grid;gap:6px;min-width:0;color:#d6e2f1;font-size:.75rem;font-weight:700;}
-    .beta-ab-workload-grid input{width:100%;min-width:0;border:1px solid #647991;border-radius:8px;background:#0b151e;color:#fff;padding:9px;font:inherit;font-size:1rem;}
+    .beta-ab-workload-grid label,.beta-ab-option>label{display:grid;gap:6px;min-width:0;color:#d6e2f1;font-size:.75rem;font-weight:700;margin:8px 0 10px;}
+    .beta-ab-workload-grid input,.beta-ab-option>label input{width:100%;min-width:0;border:1px solid #647991;border-radius:8px;background:#0b151e;color:#fff;padding:9px;font:inherit;font-size:1rem;}
     .beta-ab-workload-a input{border-color:#6bba95}.beta-ab-workload-b input{border-color:#80a8e0}
     .beta-ab-workload-reset{font-size:.74rem;border:1px solid #59758a;border-radius:8px;color:#e0edfa;background:#283748;padding:8px 10px;margin-top:10px;cursor:pointer;}
     .beta-ab-workload-help{font-size:.72rem;color:#becddd;line-height:1.5;margin:8px 0 0;}
@@ -247,7 +289,6 @@ function mount() {
   const put=(id,value)=>{document.getElementById(id).textContent=value;};
   const weekFieldA=document.getElementById('betaWeekendsA');
   const weekFieldB=document.getElementById('betaWeekendsB');
-  let followOriginalWeekends=true;
   const originalWeekends=()=>{
     const raw=document.getElementById('weekends')?.value;
     const v=Number(raw);
@@ -258,12 +299,13 @@ function mount() {
     const value=Number(field.value);
     return Number.isInteger(value)&&value>=0&&value<=52?value:null;
   };
-  const syncIfFollowing=()=>{
-    if(!followOriginalWeekends)return;
-    const chosen=originalWeekends();
-    if(chosen==null)return;
-    weekFieldA.value=String(chosen);
-    weekFieldB.value=String(chosen);
+  const syncModelFromA=()=>{
+    const chosen=chosenWeekends(weekFieldA);
+    if(chosen===null)return;
+    const shared=document.getElementById('weekends');
+    if(!shared||Number(shared.value)===chosen)return;
+    shared.value=String(chosen);
+    shared.dispatchEvent(new Event('input',{bubbles:true}));
   };
   const breakdown=plan=>{
     const fields=['weekends','sat','sun','baseGross','holiday','bonus','other',
@@ -299,7 +341,6 @@ function mount() {
     if(summary)summary.textContent='Täytä kelvolliset laskurin lähtöarvot, niin vertailukäyrä ilmestyy.';
   };
   const update=()=>{
-    syncIfFollowing();
     const sharedGross=displayedEuro('grossResult');
     const sharedA=displayedEuro('netA'),sharedB=displayedEuro('netB');
     if(sharedGross==null||sharedA==null||sharedB==null||sharedGross<0){
@@ -348,16 +389,10 @@ function mount() {
     }else put('betaABBreakdown','Sama työmäärä molemmissa: erotus kuvaa tämän laskurin verokorttioletusten eroa.');
     drawProgressChart(computed,rowA,rowB,year,nA,nB);
   };
-  syncIfFollowing();
-  for(const field of [weekFieldA,weekFieldB]){
-    field.addEventListener('input',()=>{followOriginalWeekends=false;update();});
-    field.addEventListener('change',update);
-  }
-  document.getElementById('betaWeekendsReset').addEventListener('click',()=>{
-    followOriginalWeekends=true;
-    syncIfFollowing();
-    update();
-  });
+  weekFieldA.addEventListener('input',()=>{syncModelFromA();update();});
+  weekFieldA.addEventListener('change',update);
+  weekFieldB.addEventListener('input',update);
+  weekFieldB.addEventListener('change',update);
   for(const id of ['grossResult','netA','netB']){
     const node=document.getElementById(id);
     if(node)new MutationObserver(update).observe(node,{childList:true,characterData:true,subtree:true});
