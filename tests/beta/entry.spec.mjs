@@ -402,7 +402,7 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await planner.locator("#rateA").fill("30");
  await planner.locator("#rateB").fill("34");
  await planner.locator("#raise").fill("0");
- await planner.locator("#weekends").fill("13");
+ await planner.locator('#betaWeekendsA').fill("13");
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
  await expect(planner.locator("#rateUncertainty")).toHaveValue("1");
  await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(3);
