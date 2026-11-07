@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference} from '../beta-ab-summary-model.mjs';
+import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference,optimalWeekendCount} from '../beta-ab-summary-model.mjs';
 
 const html=readFileSync(new URL('../experiments/year-planner/index.html',import.meta.url),'utf8');
 const context={};
@@ -51,4 +51,35 @@ test('missing inputs or failing/unavailable planner never produce a summary',()=
   assert.equal(summaryBreakdown({...inputs,rateA:Infinity},'2','2',computePlan),null);
   assert.equal(summaryBreakdown(inputs,'2','2',undefined),null);
   assert.equal(summaryBreakdown(inputs,'2','2',()=>{throw Error('invalid');}),null);
+});
+
+
+test('optimum balances marginal weekend net against a declared leisure value',()=>{
+  const series=computePlan({...inputs,weekends:52}).series;
+  const a=optimalWeekendCount(series,'A',500);
+  const b=optimalWeekendCount(series,'B',500);
+  assert.equal(a.n,10);
+  assert.equal(b.n,20);
+  assert.equal(a.free,42);
+  assert.equal(b.free,32);
+  assert.equal(Math.round(a.gain),6000);
+  assert.equal(Math.round(b.gain),11400);
+  assert.equal(Math.round(a.netPerNext),420);
+  assert.equal(Math.round(b.netPerNext),420);
+  assert.equal(optimalWeekendCount(series,'A',650).n,0);
+  assert.equal(optimalWeekendCount(series,'B',650).n,0);
+  assert.equal(optimalWeekendCount(series,'A',400).n,52);
+  assert.equal(optimalWeekendCount(series,'B',400).n,52);
+  // Equal utility chooses fewer weekends; no "one weekend is best" shortcut.
+  assert.equal(optimalWeekendCount(series,'A',600).n,0);
+  assert.equal(optimalWeekendCount(series,'B',570).n,0);
+});
+test('optimum is unavailable for invalid free-time values or incomplete series',()=>{
+  const series=computePlan({...inputs,weekends:52}).series;
+  for(const bad of [null,undefined,-1,NaN,Infinity,100001])
+    assert.equal(optimalWeekendCount(series,'A',bad),null);
+  assert.equal(optimalWeekendCount(series,'C',500),null);
+  assert.equal(optimalWeekendCount(series.slice(1),'A',500),null);
+  assert.equal(optimalWeekendCount(series.map((row,i)=>i===7?{...row,netA:NaN}:row),'A',500),null);
+  assert.deepEqual(series,computePlan({...inputs,weekends:52}).series);
 });
