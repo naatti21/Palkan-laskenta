@@ -1,4 +1,5 @@
 import { paymentState, projectPayroll } from "./model.js";
+import { installWeekendTracker } from "./beta-weekend-tracker.mjs";
 
 const money = new Intl.NumberFormat("fi-FI",{style:"currency",currency:"EUR"});
 const months = new Intl.DateTimeFormat("fi-FI",{month:"long",timeZone:"UTC"});
@@ -15,6 +16,7 @@ function sum(rows,key) {
 }
 
 export function installCompact() {
+  installWeekendTracker();
   const settings = document.querySelector('[data-view="data"]');
   settings.prepend(node("h2","Asetukset","compact-title"));
   for (const section of settings.querySelectorAll("[data-settings-disclosure]")) {
