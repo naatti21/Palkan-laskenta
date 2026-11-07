@@ -43,49 +43,47 @@ export function cashFlowDifference(rowA,rowB) {
 }
 
 
-// C is a *withholding knee*, not a claim about the final tax optimum.
-// Evaluate the better of the two complete card scenarios at each workload.
-// Return the LAST weekend before the first meaningful fall in marginal take-home.
-// No knee is a legitimate result; never invent an "optimal" number.
-export function calculateTaxKnee(series, {rateA,rateB,extraA,extraB,otherDeductions}={}) {
+// A/B tax-card assumptions are separate complete scenarios. Never splice their
+// annual net values together at different workload counts to invent a C result.
+// C identifies an observable withholding threshold, NOT an income-tax optimum.
+export function calculateTaxKnee(series, {limitA,limitB,rateA,rateB,extraA,extraB,otherDeductions}={}) {
   if(!Array.isArray(series)||series.length!==53 ||
-    ![rateA,rateB,extraA,extraB,otherDeductions].every(v=>
-      typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=100) ||
+    ![limitA,limitB,rateA,rateB,extraA,extraB,otherDeductions].every(v=>
+      typeof v==='number'&&Number.isFinite(v)&&v>=0) ||
+    [rateA,rateB,extraA,extraB,otherDeductions].some(v=>v>100) ||
+    [limitA,limitB].some(v=>v>1000000) ||
     series.some((row,i)=>row?.n!==i ||
       !Number.isFinite(row.gross)||row.gross<0||
       !Number.isFinite(row.netA)||!Number.isFinite(row.netB)))return null;
-  const grossPerWeekend=series[1].gross-series[0].gross;
+  const baseline=series[0].gross;
+  const grossPerWeekend=series[1].gross-baseline;
   if(!(grossPerWeekend>0))return null;
-  for(let n=2;n<=52;n++)
-    if(Math.abs(series[n].gross-series[n-1].gross-grossPerWeekend)>.01)return null;
+  for(let n=2;n<=52;n++)if(Math.abs(series[n].gross-series[n-1].gross-grossPerWeekend)>.01)return null;
 
-  const best=row=>row.netA>=row.netB
-    ?{card:'A',net:row.netA}:{card:'B',net:row.netB};
-  const start=best(series[0]);
-  const rawStartRate=start.card==='A'?rateA:rateB;
-  const initialFullRate=grossPerWeekend*(1-(rawStartRate+otherDeductions)/100);
-  // First weekend may already cross the limit. Only compare actual losses,
-  // never equate a higher annual total with a better marginal return.
-  const firstGain=best(series[1]).net-start.net;
-  const materialDrop=Math.max(1,grossPerWeekend*.01);
-  let knee=initialFullRate-firstGain>=materialDrop?0:null;
-  if(knee===null){
-    let previous=firstGain;
-    for(let n=2;n<=52;n++){
-      const marginal=best(series[n]).net-best(series[n-1]).net;
-      if(previous-marginal>=materialDrop){knee=n-1;break;}
-      previous=marginal;
-    }
-  }
-  if(knee===null)return {found:false,reason:'no-step'};
-  const picked=best(series[knee]);
-  const previousNet=knee?best(series[knee-1]).net:null;
-  const nextNet=knee<52?best(series[knee+1]).net:null;
-  return {
-    found:true,n:knee,card:picked.card,gross:series[knee].gross,
-    net:picked.net,free:52-knee,
-    gainBefore:knee?picked.net-previousNet:initialFullRate,
-    gainAfter:nextNet===null?null:nextNet-picked.net,
-    stepAt:knee+1
+  const card=letter=>{
+    const limit=letter==='A'?limitA:limitB;
+    const baseRate=letter==='A'?rateA:rateB;
+    const extraRate=letter==='A'?extraA:extraB;
+    const netKey='net'+letter;
+    const crossing=series.find(p=>p.gross>limit+.005)?.n??null;
+    if(crossing===null)return {card:letter,found:false,reason:'no-crossing',limit,baseRate,extraRate};
+    if(crossing===0)return {card:letter,found:false,reason:'already-over',limit,baseRate,extraRate};
+    // A tax-card limit is not a penalty in final taxation. Only call it a
+    // marginal "step" if the card's withholding rate actually rises.
+    const knee=crossing-1;
+    const before=knee?series[knee][netKey]-series[knee-1][netKey]
+      :grossPerWeekend*(1-(baseRate+otherDeductions)/100);
+    const after=series[crossing][netKey]-series[knee][netKey];
+    if(extraRate<=baseRate||before-after<Math.max(.01,grossPerWeekend*.00001))
+      return {card:letter,found:false,reason:'no-drop',limit,baseRate,extraRate,crossing};
+    return {card:letter,found:true,n:knee,stepAt:crossing,limit,baseRate,extraRate,
+      gross:series[knee].gross,nextGross:series[crossing].gross,net:series[knee][netKey],
+      gainBefore:before,gainAfter:after,free:52-knee};
   };
+  const cards={A:card('A'),B:card('B')};
+  const steps=Object.values(cards).filter(x=>x.found)
+    .sort((a,b)=>a.n-b.n || a.card.localeCompare(b.card));
+  if(!steps.length)return {found:false,reason:'no-step',cards,baseline,grossPerWeekend};
+  return {...steps[0],found:true,cards,baseline,grossPerWeekend,
+    selectionReason:'first-card-threshold'};
 }
