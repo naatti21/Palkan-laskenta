@@ -1012,6 +1012,32 @@ function renderAnalysis(records) {
       ? `${fmtNumber(overtime.knownHours)} h ${overtime.complete ? "" : "(osittainen)"}`
       : "Ei tietoa");
   }
+  // Latest evidenced payroll deduction share, matching the four codes used
+  // by the planner's history suggestions. Not a personal tax rate or annual
+  // average; never infer it from gross-minus-net or missing codes.
+  const deduction = info.deductions;
+  metric("Muut palkkavähennykset · havaittu",
+    deduction.latestRate === null ? "–" :
+      deduction.latestRate.toLocaleString("fi-FI", {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      }) + " %");
+  const deductionNote = document.createElement("p");
+  deductionNote.className = "muted analysis-deductions-note";
+  if (deduction.blockedByConflicts) {
+    deductionNote.textContent = "Vähennysosuutta ei näytetä ristiriitaisesta palkkahistoriasta.";
+  } else if (deduction.latestRate === null) {
+    deductionNote.textContent = "Ei täydellistä neljän vähennyskoodin erittelyä valitun vuoden laskelmissa.";
+  } else {
+    const payDate = deduction.latestPayDate?.split("-").reverse().join(".") || "–";
+    const source = deduction.incomeSourceId
+      ? " · " + sourceName(deduction.incomeSourceId) : "";
+    deductionNote.textContent = "Viimeisin tunnistettu laskelma " + payDate + source +
+      ". Koodit 90100, 90200, 90400 ja 90920 yhteensä suhteessa bruttoon. " +
+      "Ei koko vuoden keskiarvo eikä veroprosentti. " +
+      "Havaintoja " + deduction.supportedPayslips + "/" + deduction.reviewedPayslips + ".";
+  }
+  metrics.append(deductionNote);
+
   const coverage = document.createElement("p");
   coverage.className = "muted analysis-coverage";
   coverage.textContent = `Ylityötietoa ${overtime.recordsWithHours}/${overtime.recordsTotal - overtime.excludedConflicts} yksiselitteisestä laskelmasta.`
