@@ -35,13 +35,14 @@ test('C target saves only for its planner work year, without rewriting actual co
   await p.locator('#planYear').fill('2026');
   await p.locator('#baseGross').fill('35000');
   await p.locator('#weekendGross').fill('1000');
+  await p.locator('#betaCTarget').fill('3000');
   await p.locator('#limitA').fill('77000');
   await p.locator('#limitB').fill('100000');
-  await expect(p.locator('#betaCCount')).toHaveText('5 viikonloppua');
+  await expect(p.locator('#betaCCount')).toHaveText('17 viikonloppua');
   await p.locator('#betaCUseGoal').click();
-  await expect(p.locator('#betaCStatus')).toContainText('Tavoite 5 viikonloppua tallennettu');
+  await expect(p.locator('#betaCStatus')).toContainText('Tavoite 17 viikonloppua tallennettu');
   await page.getByRole('button',{name:'Analyysi'}).click();
-  await expect(page.locator('#betaWeekendGoal')).toHaveText('5');
+  await expect(page.locator('#betaWeekendGoal')).toHaveText('17');
   await expect(page.locator('#betaWeekendDone')).toHaveText('–');
   await page.locator('#betaWeekendAdd').click();
   await expect(page.locator('#betaWeekendDone')).toHaveText('1');
@@ -54,5 +55,5 @@ test('C target saves only for its planner work year, without rewriting actual co
   })).toBeNull();
   await page.getByRole('button',{name:'Analyysi'}).click();
   await expect(page.locator('#betaWeekendDone')).toHaveText('1');
-  await expect(page.locator('#betaWeekendGoal')).toHaveText('5');
+  await expect(page.locator('#betaWeekendGoal')).toHaveText('17');
 });
