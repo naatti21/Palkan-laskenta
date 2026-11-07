@@ -1,7 +1,7 @@
 // Beta-only readout for the existing A/B planner — no parallel tax calculation.
 // Reads the planner's displayed annual gross / annual after-withholding net.
 // Monthly and fortnight values are arithmetic annual averages, never pay-date promises.
-import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference } from './ab-summary-model.mjs';
+import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference, optimalWeekendCount } from './ab-summary-model.mjs';
 import { NET_ANCHORS_2026, referenceNet2026 } from './net-reference-2026.mjs';
 
 // 2026 comparison, not a personalized tax calculator. Annual A/B estimates
@@ -170,6 +170,19 @@ function mount() {
         <div><span>Netto / 2 viikkoa (26)</span><b id="betaABPeriodB">–</b></div>
       </section>
     </div>
+    <details id="betaWeekendOptimumPanel" class="scenario-explain">
+      <summary>Kannattavin työmäärä</summary>
+      <p class="hint">Laskuri vertaa jokaisen lisätyöviikonlopun nettorahaa menetetyn vapaan arvoon. Sinä päätät rajan.</p>
+      <div class="field">
+        <label for="betaFreeWeekendValue">Minkä arvoinen vapaa viikonloppu on sinulle (€)?</label>
+        <input id="betaFreeWeekendValue" type="number" inputmode="decimal" min="0" max="100000" step="50" placeholder="Esim. 500">
+      </div>
+      <div class="grid two" style="margin-top:10px">
+        <div class="fact"><small>A · paras työmäärä</small><strong id="betaOptimumA">–</strong><span id="betaOptimumAInfo">Anna oma arvo.</span></div>
+        <div class="fact"><small>B · paras työmäärä</small><strong id="betaOptimumB">–</strong><span id="betaOptimumBInfo">Anna oma arvo.</span></div>
+      </div>
+      <p class="hint" id="betaOptimumNote" role="status" aria-live="polite">Tulokset perustuvat laskurin ennakonpidätysarvioon, eivät lopulliseen verotukseen tai palautumisen arviointiin.</p>
+    </details>
     <p class="beta-ab-difference" id="betaABDifference" role="status">Täytä laskurin lähtöarvot vertailua varten.</p>
     <p class="beta-ab-breakdown" id="betaABBreakdown"></p>
     <p class="beta-ab-caveat">A/B perustuu käyttäjän syöttämiin ennakonpidätysprosentteihin,
@@ -285,6 +298,47 @@ function mount() {
   const weekFieldA=document.getElementById('betaWeekendsA');
   const weekFieldB=document.getElementById('betaWeekendsB');
   const chosenWeekends=field=>parseWeekendCount(field.value);
+  const freeWeekendValueField=document.getElementById('betaFreeWeekendValue');
+  const renderOptimum=computed=>{
+    const raw=freeWeekendValueField.value.trim();
+    const setEmpty=(message)=>{
+      for(const option of ['A','B']){
+        put('betaOptimum'+option,'–');
+        put('betaOptimum'+option+'Info',message);
+      }
+    };
+    if(!raw){
+      setEmpty('Anna oma arvo.');
+      put('betaOptimumNote','Tähän ei ole yhtä oikeaa vastausta ilman oman vapaa-ajan arvostusta.');
+      return;
+    }
+    const value=Number(raw);
+    if(!Number.isFinite(value)||value<0||value>100000){
+      setEmpty('Virheellinen arvo.');
+      put('betaOptimumNote','Syötä vapaan viikonlopun arvo euroina välillä 0–100 000.');
+      return;
+    }
+    if(!computed||!(computed.grossPerWeekend>0)){
+      setEmpty('Täytä viikonlopun lisäbrutto.');
+      put('betaOptimumNote','Arviota ei voi tehdä ilman viikonlopusta saatavaa lisäansiota.');
+      return;
+    }
+    const a=optimalWeekendCount(computed.series,'A',value);
+    const b=optimalWeekendCount(computed.series,'B',value);
+    if(!a||!b){
+      setEmpty('Laskentatiedot puuttuvat.');
+      put('betaOptimumNote','Tarkista laskurin lähtötiedot.');
+      return;
+    }
+    for(const [option,result] of [['A',a],['B',b]]){
+      put('betaOptimum'+option,result.n+' viikonloppua');
+      put('betaOptimum'+option+'Info','Lisänetto '+money(result.gain)+' · vapaita '+result.free);
+    }
+    put('betaOptimumNote','Valinta maksimoi vuoden lisäneton vähennettynä '+money(value)+
+      ' jokaiselta tehdyltä viikonlopulta. '+
+      (a.n===52||b.n===52?'52 viikonloppua on mallin yläraja, ei työsuositus. ':'')+
+      'Tulos kuvaa ennakonpidätyksen jälkeistä rahaa, ei lopullista veroa.');
+  };
   const syncModelFromA=()=>{
     const chosen=chosenWeekends(weekFieldA);
     if(chosen===null)return;
@@ -307,6 +361,7 @@ function mount() {
     put('betaABCount','–');
     put('betaABDifference',message||'Tarkista puuttuvat tai virheelliset lähtöarvot.');
     put('betaABBreakdown','');
+    renderOptimum(null);
     document.getElementById('betaProgressChart')?.replaceChildren();
     const summary=document.getElementById('betaProgressSummary');
     if(summary)summary.textContent='Täytä kelvolliset laskurin lähtöarvot, niin vertailukäyrä ilmestyy.';
@@ -355,12 +410,14 @@ function mount() {
         ' · korttien pidätyseron vaikutus '+signed(withholdingPart)+
         '. Laskurin kaksisuuntainen vertailuerittely, ei lopullinen veropäätös.');
     }else put('betaABBreakdown','Sama työmäärä molemmissa: erotus kuvaa tämän laskurin verokorttioletusten eroa.');
+    renderOptimum(computed);
     drawProgressChart(computed,rowA,rowB,year,nA,nB);
   };
   weekFieldA.addEventListener('input',()=>{syncModelFromA();update();});
   weekFieldA.addEventListener('change',update);
   weekFieldB.addEventListener('input',update);
   weekFieldB.addEventListener('change',update);
+  freeWeekendValueField.addEventListener('input',update);
   for(const id of ['grossResult','netA','netB']){
     const node=document.getElementById(id);
     if(node)new MutationObserver(update).observe(node,{childList:true,characterData:true,subtree:true});
