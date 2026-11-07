@@ -324,86 +324,179 @@ function mount() {
   const cButton=document.getElementById('betaCUseGoal');
   const cStatus=document.getElementById('betaCStatus');
   let currentC=null;
+
+  // C is a third display series, *not* a third user-provided tax card.
+  // Update the planner's existing tables and chart after its own render:
+  // every row at the same weekend count uses the same underlying annual gross.
+  const paintTables=(computed,reference)=>{
+    const summaries=['samples','allSamples'];
+    for(const id of summaries){
+      const body=document.getElementById(id);
+      if(!body)continue;
+      const header=body.closest('table')?.querySelector('thead tr');
+      if(header&&!header.querySelector('[data-c-header]')){
+        const th=document.createElement('th');
+        th.dataset.cHeader='yes';
+        th.textContent='C: netto¹';
+        th.title='2026 Veronmaksajien yleinen vuosinettoviite, ei A/B-verokortin ennakonpidätys.';
+        header.append(th);
+      }
+      for(const row of body.querySelectorAll('tr')){
+        const n=Number(row.querySelector('.point-count')?.textContent);
+        if(!Number.isInteger(n)||n<0||n>52)continue;
+        const td=row.querySelector('.beta-c-net-cell')||document.createElement('td');
+        td.className='beta-c-net-cell';
+        td.textContent=reference?.points[n]?.net==null?'–':money(reference.points[n].net);
+        if(!td.parentElement)row.append(td);
+        if(reference?.knee?.n===n)row.dataset.cKnee='yes';
+        else delete row.dataset.cKnee;
+      }
+    }
+    // The core's compact comparison picks its own thresholds. Add a C-knee
+    // row when absent; do not claim the A/B tax-card limits are C thresholds.
+    const n=reference?.knee?.n,summary=document.getElementById('samples');
+    if(!Number.isInteger(n)||!summary)return;
+    const exists=[...summary.querySelectorAll('.point-count')].some(x=>Number(x.textContent)===n);
+    if(exists)return;
+    const from=document.getElementById('allSamples')?.querySelectorAll('tr')[n];
+    if(!from)return;
+    const row=from.cloneNode(true);
+    row.dataset.cKnee='yes';
+    row.classList.add('threshold-point');
+    const first=row.querySelector('td');
+    const note=document.createElement('span');
+    note.className='point-note';note.textContent='C: viitekäänne';
+    first?.append(note);
+    const next=[...summary.querySelectorAll('tr')].find(x=>Number(x.querySelector('.point-count')?.textContent)>n);
+    summary.insertBefore(row,next||null);
+  };
+  const svgNode=(tag,attributes={},label)=>{
+    const node=document.createElementNS('http://www.w3.org/2000/svg',tag);
+    for(const [key,val] of Object.entries(attributes))node.setAttribute(key,String(val));
+    if(label!==undefined)node.textContent=label;
+    return node;
+  };
+  const paintMarginalChart=(computed,reference)=>{
+    if(!reference?.available)return; // Keep original A/B chart if C is unavailable.
+    const host=document.getElementById('netChart');
+    if(!host)return;
+    const W=740,H=267,L=68,R=20,T=29,B=43;
+    const rows=computed.series.slice(1);
+    const all=rows.flatMap(row=>[row.gainA,row.gainB,
+      reference.points[row.n]?.gain]).filter(v=>Number.isFinite(v));
+    const min=Math.min(0,...all),max=Math.max(1,...all);
+    const hi=max===min?min+1:max;
+    const x=n=>L+n/52*(W-L-R);
+    const y=n=>T+(hi-n)/(hi-min)*(H-T-B);
+    const svg=svgNode('svg',{viewBox:'0 0 740 267',role:'img',
+      'aria-label':'Lisäviikonlopun netto: A ja B ennakonpidätysoletuksilla, C vuoden 2026 yleisellä veroviitteellä'});
+    svg.append(svgNode('title',{},'A/B/C seuraavan viikonlopun lisänetto'));
+    for(let i=0;i<=4;i++){
+      const v=min+(hi-min)*i/4,yy=y(v);
+      svg.append(svgNode('line',{class:'gridline',x1:L,y1:yy,x2:W-R,y2:yy}));
+      svg.append(svgNode('text',{x:L-9,y:yy+4,'text-anchor':'end'},Math.round(v).toLocaleString('fi-FI')));
+    }
+    for(const n of [0,13,26,39,52])
+      svg.append(svgNode('text',{x:x(n),y:H-13,'text-anchor':'middle'},String(n)));
+    const specs=[
+      {name:'A',value:row=>row.gainA,color:'#7cb4fc'},
+      {name:'B',value:row=>row.gainB,color:'#f9c880'},
+      {name:'C',value:row=>reference.points[row.n]?.gain,color:'#de95e3'}
+    ];
+    for(const spec of specs){
+      let segment=[];
+      const draw=()=>{
+        if(segment.length>1)svg.append(svgNode('polyline',{
+          class:'line',stroke:spec.color,fill:'none',
+          points:segment.map(row=>x(row.n)+','+y(spec.value(row))).join(' ')
+        }));
+        segment=[];
+      };
+      for(const row of rows){
+        if(Number.isFinite(spec.value(row)))segment.push(row);else draw();
+      }
+      draw();
+    }
+    if(reference.knee){
+      const cx=x(reference.knee.n);
+      svg.append(svgNode('line',{x1:cx,x2:cx,y1:T,y2:H-B,stroke:'#de95e3',
+        'stroke-width':2,'stroke-dasharray':'5 5'}));
+      svg.append(svgNode('text',{x:Math.min(W-35,Math.max(L+35,cx)),y:T+13,
+        'text-anchor':'middle',fill:'#f0c6f7','font-size':13},'C '+reference.knee.n));
+    }
+    svg.append(svgNode('text',{x:W/2,y:H-1,'text-anchor':'middle'},'Työviikonloppuja vuodessa'));
+    host.replaceChildren(svg);
+  };
+  const netLegend=document.getElementById('netChart')?.previousElementSibling;
+  if(netLegend?.classList?.contains('legend')&&!netLegend.querySelector('[data-c-legend]')){
+    const item=document.createElement('span');
+    item.dataset.cLegend='yes';
+    const dot=document.createElement('i');
+    dot.className='dot';dot.style.background='#de95e3';
+    item.append(dot,document.createTextNode(' C: Veronmaksajat 2026¹'));
+    netLegend.append(item);
+  }
   const renderC=computed=>{
     currentC=null;
     cButton.disabled=true;
-    const host=document.getElementById('betaCWeekendsTable');
-    host.replaceChildren();
     const putSafe=(id,value)=>put(id,value);
     const clear=message=>{
-      for(const id of ['betaCCount','betaCNet','betaCMarginal','betaCFormula','betaCLimit'])putSafe(id,'–');
-      putSafe('betaCCompare','Yleinen veromalli, ei A/B:n ennakonpidätys.');
+      for(const id of ['betaCCount','betaCGross','betaCNet','betaCMonth',
+        'betaCPeriod','betaCMarginal','betaCResult','betaCFormula','betaCLimit'])
+        putSafe(id,'–');
+      putSafe('betaCCompare','C perustuu julkaistuun vuoden 2026 yleiseen veroviitteeseen.');
       putSafe('betaCReason',message);
+      putSafe('betaCNextImpact','');
     };
     if(!computed||!(computed.grossPerWeekend>0)){
-      clear('Täytä laskurin perusansio ja viikonlopun brutto.');
-      return;
+      clear('Täytä perusansio ja yhden työviikonlopun brutto.');
+      return null;
     }
     const year=Number(document.getElementById('planYear')?.value);
     const result=referenceWeekendAnalysis(computed.series,referenceNet2026,year,2026);
     if(!result||!result.available){
-      clear(result?.reason==='year'
-        ?'Vuodelle '+year+' ei ole tässä julkaistua yleistä verotaulukkoa. Vuoden 2026 lukuja ei esitetä vuoden '+year+' veroennusteena.'
-        :'Vuosibrutto on 20 000–140 000 € viitealueen ulkopuolella tai viikonloppulisä puuttuu.');
-      return;
+      clear('Yleisestä vuoden 2026 viiteaineistosta ei saada vertailua tälle tulovälille.');
+      paintTables(computed,null);
+      return null;
     }
     const rows=result.points;
-    const showRows=new Set([0,1,4,8,12,16,20,24,28,32,40,44,48,52,
-      chosenWeekends(weekFieldA),chosenWeekends(weekFieldB)]);
-    if(result.knee)for(const x of [result.knee.n,result.knee.stepAt])showRows.add(x);
-    const table=document.createElement('table');
-    table.style.width='100%';
-    table.style.fontSize='.73rem';
-    table.style.fontVariantNumeric='tabular-nums';
-    const head=document.createElement('thead');
-    const header=document.createElement('tr');
-    for(const label of ['Vkl','Vuosibrutto','Vuosinetto¹','Seur. vkl netto']){
-      const th=document.createElement('th');th.textContent=label;
-      th.style.padding='6px 3px';th.style.textAlign='right';header.append(th);
-    }
-    head.append(header);table.append(head);
-    const body=document.createElement('tbody');
-    for(const n of [...showRows].filter(n=>Number.isInteger(n)&&n>=0&&n<=52).sort((a,b)=>a-b)){
-      const row=rows[n];
-      const tr=document.createElement('tr');
-      if(result.knee?.n===n)tr.style.fontWeight='800';
-      const next=rows[n+1]||null;
-      const figures=[
-        n+(n===chosenWeekends(weekFieldA)?' A':'')+(n===chosenWeekends(weekFieldB)?' B':'')+
-          (result.knee?.n===n?' C':''),
-        money(row.gross),row.net===null?'–':money(row.net),
-        next?.gain===null||next===null?'–':money(next.gain)
-      ];
-      for(const value of figures){
-        const td=document.createElement('td');td.textContent=value;
-        td.style.textAlign='right';td.style.padding='6px 3px';
-        td.style.borderBottom='1px solid #435162';tr.append(td);
-      }
-      body.append(tr);
-    }
-    table.append(body);host.append(table);
-    putSafe('betaCFormula','Lähtöbrutto '+money(rows[0].gross)+
-      ' + '+money(result.perWeekend)+' / työviikonloppu. Näytetty netto = vuoden 2026 julkaistun vertailutaulukon pisteiden välinen arvio.');
-    putSafe('betaCCompare','Taulukossa A ja B merkitsevät valitsemasi työmäärät, C mahdollista verohyödyn käännettä. ¹ Yleinen koko vuoden netto, eri asia kuin A/B:n palkasta ennakonpidätyksen jälkeen jäävä summa.');
+    paintTables(computed,result);
+    paintMarginalChart(computed,result);
+    const aCount=chosenWeekends(weekFieldA);
+    const next=Number.isInteger(aCount)&&aCount<52?rows[aCount+1]:null;
+    putSafe('betaCNextImpact',next?.gain==null
+      ?'C: seuraavan viikonlopun yleinen 2026 nettoarvio ei ole tällä tulovälillä saatavilla.'
+      :'C (vuoden 2026 veroviite): '+(aCount+1)+'. viikonlopun arvioitu lisänetto '+
+        money(next.gain)+'. A ja B käyttävät eri, omia ennakonpidätysprosenttejasi.');
+    const tag=result.provisional
+      ?'Vertailuvuosi '+year+' · C käyttää vuoden 2026 viimeksi vahvistettua yleisviitettä, ei vuoden '+year+' verolakia.'
+      :'C käyttää Veronmaksajien vuoden 2026 yleistä koko vuoden nettoarviota.';
+    putSafe('betaCCompare',tag+' A/B ovat verokortin jälkeistä kassavirtaa, joten euroarvot eivät ole yksi yhteen verrannollisia.');
+    putSafe('betaCFormula','Vuoden lähtöbrutto '+money(rows[0].gross)+
+      ' + '+money(result.perWeekend)+' / työviikonloppu. C vertailee 0–52 viikonloppua.');
+    putSafe('betaCLimit','Viitteen vuositulot 20 000–140 000 €. Välisummat arvioidaan julkaistun taulukon pisteiden väliltä.');
     if(result.knee){
       const k=result.knee;
-      currentC={n:k.n,found:true};
-      cButton.disabled=false;
       putSafe('betaCCount',k.n+' viikonloppua');
+      putSafe('betaCGross',money(k.gross));
       putSafe('betaCNet',money(k.net));
+      putSafe('betaCMonth',money(k.net/12));
+      putSafe('betaCPeriod',money(k.net/26));
+      putSafe('betaCResult',money(k.net)+'¹');
       putSafe('betaCMarginal',money(k.beforeGain)+' → '+money(k.afterGain));
-      putSafe('betaCLimit','Ensimmäinen vähintään 3 prosenttiyksikön pudotus nettotuotto-osuudessa: '+
-        k.beforeRetained.toFixed(1).replace('.',',')+' % → '+
-        k.afterRetained.toFixed(1).replace('.',',')+' % lisäbrutosta.');
-      putSafe('betaCReason','Taitekohta löytyi '+k.stepAt+'. viikonlopun kohdalla. Tämä EI todista, että '+
-        k.n+' viikonloppua olisi taloudellisesti paras; lisää työstä jää tämän jälkeenkin nettoa.');
+      putSafe('betaCReason','C näyttää ensimmäisen vähintään 3 prosenttiyksikön laskun lisäbrutosta käteen jäävässä osuudessa (viikonloppu '+k.stepAt+'). '+
+        'Tämä on havaittu viitekäänne, EI paras tai suositeltu työmäärä.');
+      if(!result.provisional){currentC={found:true,n:k.n};cButton.disabled=false;}
+      else cStatus.textContent='C käyttää vuoden 2026 viitettä. Tarkkaa tavoitetta ei tallenneta vuodelle '+year+' ennen uuden verovuoden aineistoa.';
     }else{
+      for(const id of ['betaCGross','betaCNet','betaCMonth','betaCPeriod'])
+        putSafe(id,'–');
       putSafe('betaCCount','Ei selvää käännettä');
-      putSafe('betaCNet','–');
-      putSafe('betaCMarginal','Katso taulukko');
-      putSafe('betaCLimit','Tämän tulovälin marginaalinen nettotuotto pysyy melko samanlaisena tai julkaistu viite ei kata koko vertailua.');
-      putSafe('betaCReason','Taulukosta näkee lisäviikonlopun nettovaikutuksen. Yksittäistä verotuksellista optimaalista viikonloppumäärää ei näillä tiedoilla voi perustella.');
+      putSafe('betaCResult','Ei yhtä C-lukua');
+      putSafe('betaCMarginal','Katso A/B/C-käyrä');
+      putSafe('betaCReason','Veroviite ei osoita yhtä erityistä optimaalista viikonloppumäärää. Vuosinettot C:n mukaan näkyvät kaikkien viikonloppumäärien vertailutaulukoissa.');
     }
+    return result;
   };
   cButton.addEventListener('click',()=>{
     if(!currentC)return;
@@ -494,8 +587,8 @@ function mount() {
         ' · korttien pidätyseron vaikutus '+signed(withholdingPart)+
         '. Laskurin kaksisuuntainen vertailuerittely, ei lopullinen veropäätös.');
     }else put('betaABBreakdown','Sama työmäärä molemmissa: erotus kuvaa tämän laskurin verokorttioletusten eroa.');
-    renderC(computed);
-    drawProgressChart(computed,rowA,rowB,year,nA,nB);
+    const cReference=renderC(computed);
+    drawProgressChart(computed,rowA,rowB,year,nA,nB,cReference);
   };
   weekFieldA.addEventListener('input',()=>{syncModelFromA();update();});
   weekFieldA.addEventListener('change',update);
