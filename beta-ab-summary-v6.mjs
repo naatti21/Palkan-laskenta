@@ -453,6 +453,15 @@ function mount() {
     const node=document.getElementById(id);
     if(node)new MutationObserver(update).observe(node,{childList:true,characterData:true,subtree:true});
   }
+  // Recompute C on every relevant underlying assumption, not only when a
+  // rounded result node happens to change its displayed whole-euro text.
+  for(const id of ['baseGross','weekendGross','sat','sun','holiday','bonus',
+    'other','raise','raiseMonth','limitA','limitB','rateA','rateB',
+    'extraA','extraB','otherDeductions','hourlyRate','ktaRate']){
+    document.getElementById(id)?.addEventListener('input',update);
+  }
+  document.getElementById('weekendMethod')?.addEventListener('change',update);
+  document.getElementById('rulesConfirmed')?.addEventListener('change',update);
   document.getElementById('planYear')?.addEventListener('input',update);
   document.getElementById('weekends')?.addEventListener('input',update);
   update();
