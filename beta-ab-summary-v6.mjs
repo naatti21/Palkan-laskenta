@@ -135,8 +135,8 @@ function mount() {
   section.setAttribute('aria-labelledby','betaABHeading');
   section.innerHTML=`
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
-    <h2 id="betaABHeading">Vuosiansio ja verokortit A / B</h2>
-    <p class="beta-ab-description">Valitse A:lle ja B:lle työviikonloppujen määrä. Muut lähtötiedot täytetään alla. Vertailu päivittyy automaattisesti.</p>
+    <h2 id="betaABHeading">Vuosiansio · A / B / C</h2>
+    <p class="beta-ab-description">A ja B ovat omat verokorttiarviosi. C laskee yleisen veroviitteen vertailukohdan automaattisesti samoista työtuloista.</p>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
         <label class="beta-ab-workload-a">A · työviikonloppuja / vuosi
@@ -169,17 +169,20 @@ function mount() {
         <div><span>Netto / kk (12)</span><b id="betaABMonthB">–</b></div>
         <div><span>Netto / 2 viikkoa (26)</span><b id="betaABPeriodB">–</b></div>
       </section>
-      <section class="beta-ab-option beta-ab-c" aria-label="Laskennallinen C-verorajan taitekohta">
-        <h3>C · Lisätyön verohyöty 2026</h3>
-        <small>Yleisen veromallin rajakohta</small><strong id="betaCCount">–</strong>
+      <section class="beta-ab-option beta-ab-c" aria-label="Veroviitteen laskennallinen C-vaihtoehto">
+        <h3>C · Veroviite 2026</h3>
+        <small>Taitekohta · työviikonloppuja</small><strong id="betaCCount">–</strong>
         <p id="betaCCompare" class="hint">Vuoden 2026 Veronmaksajien julkaistu viite, ei henkilökohtainen verokortti.</p>
-        <div><span>Viitteen vuosinetto rajakohdassa</span><b id="betaCNet">–</b></div>
+        <div><span>Vuosibrutto / C</span><b id="betaCGross">–</b></div>
+        <div><span>Arvioitu vuosinetto / C¹</span><b id="betaCNet">–</b></div>
+        <div><span>Netto / kk (12)</span><b id="betaCMonth">–</b></div>
+        <div><span>Netto / 2 viikkoa (26)</span><b id="betaCPeriod">–</b></div>
         <div><span>Lisänetto / viimeinen ennen rajaa → ensimmäinen yli rajan</span><b id="betaCMarginal">–</b></div>
         <p id="betaCFormula" class="hint">C laskee vuosituloista yhden lisäviikonlopun nettovaikutuksen vuoden 2026 yleisen veroastevertailun perusteella.</p>
         <p id="betaCLimit" class="hint"></p>
         <p id="betaCReason" class="hint">C tarkastelee kaikki 0–52 viikonloppua. A/B-korttien luvut näkyvät vertailutaulukossa, mutta eivät muuta julkaistua veromallia.</p>
         <p class="hint">Viitteessä ovat mukana työntekijämaksut ja keskimääräiset kunnallis-/kirkollisverot. Ei henkilökohtainen veroennuste.</p>
-        <div id="betaCWeekendsTable" role="table" aria-label="Työviikonloppujen lisänettovertailu"></div>
+        <p class="hint">C:n vuosinetto ja lisäviikonloppujen vaikutus näkyvät myös jäljempänä A/B/C-taulukoissa ja käyrissä.</p>
         <a href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/" target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat 2026</a>
         <button type="button" class="chip" id="betaCUseGoal" disabled>Aseta C tavoitteeksi</button>
         <p id="betaCStatus" class="hint" role="status" aria-live="polite"></p>
@@ -203,6 +206,7 @@ function mount() {
         <span class="p-marg">Marginaalivero</span>
         <span class="p-a">Laskuri A</span>
         <span class="p-b">Laskuri B</span>
+        <span class="p-c">C · 2026-viite</span>
       </div>
       <div id="betaProgressChart" class="beta-progress-chart"></div>
       <p id="betaProgressSummary" class="beta-progress-summary" role="status">Käyrä näkyy laskurin lukujen valmistuttua.</p>
@@ -238,12 +242,8 @@ function mount() {
   extraTitle.textContent='Veroprogressio 2026 · lisäkuva';
   extra.append(extraTitle,progress);
   oldComparison.insertAdjacentElement('afterend',extra);
-  // C is a result, not an input: present it after the other planner sections
-  // and the source comparison, rather than beside A/B input cards.
-  const cCard=section.querySelector('.beta-ab-c');
-  if(!cCard)throw new Error('Missing C outcome card');
-  cCard.classList.add('card');
-  extra.insertAdjacentElement('afterend',cCard);
+  // Keep C in the same comparison group as A/B. On narrow phones it spans
+  // both columns rather than compressing three numeric cards into tiny widths.
 
   // Keep the verified shared-scenario calculation as an internal A-reference.
   // Its duplicate week-count selector and presets are unnecessary once the
@@ -286,7 +286,7 @@ function mount() {
     .beta-progress-desc,.beta-progress-caveat{font-size:.75rem;line-height:1.55;color:#c2d2df;margin:7px 0;}
     .beta-progress-legend{display:flex;flex-wrap:wrap;gap:7px 13px;margin:11px 0 3px;font-size:.7rem;color:#d4e0ec;}
     .beta-progress-legend span::before{content:'';display:inline-block;width:12px;height:4px;border-radius:3px;margin-right:5px;vertical-align:middle;}
-    .p-ref::before{background:#70dea9}.p-marg::before{background:#f4bb67}.p-a::before{background:#81caff}.p-b::before{background:#bb9afb}
+    .p-ref::before{background:#70dea9}.p-marg::before{background:#f4bb67}.p-a::before{background:#81caff}.p-b::before{background:#bb9afb}.p-c::before{background:#f4d98f}
     .beta-progress-chart{width:100%;overflow:hidden;}
     .beta-progress-chart svg{display:block;width:100%;height:auto;max-height:320px;}
     .beta-progress-summary{font-size:.78rem;line-height:1.58;color:#e5eff9;background:#192432;border-left:3px solid #70dea9;padding:10px 11px;border-radius:6px;}
@@ -307,6 +307,20 @@ function mount() {
   const weekFieldA=document.getElementById('betaWeekendsA');
   const weekFieldB=document.getElementById('betaWeekendsB');
   const chosenWeekends=field=>parseWeekendCount(field.value);
+  const resultSection=document.getElementById('results-title')?.closest('section.card');
+  if(resultSection&&!document.getElementById('betaCResult')){
+    const results=resultSection.querySelector('.grid.two');
+    const fact=document.createElement('div');
+    fact.className='fact';
+    fact.innerHTML='<small>C: yleinen veroviite 2026</small><strong id="betaCResult">–</strong><span>Arvioitu vuosinetto C:n kohdalla¹, eri menetelmä kuin A/B</span>';
+    results?.append(fact);
+  }
+  const nextImpact=document.getElementById('nextImpact');
+  if(nextImpact&&!document.getElementById('betaCNextImpact')){
+    const note=document.createElement('p');
+    note.id='betaCNextImpact';note.className='hint';
+    nextImpact.after(note);
+  }
   const cButton=document.getElementById('betaCUseGoal');
   const cStatus=document.getElementById('betaCStatus');
   let currentC=null;
