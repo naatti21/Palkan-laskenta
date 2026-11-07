@@ -90,29 +90,44 @@ test('A/B cards stay within 320 / 360 / 412 px mobile viewports',async({page})=>
 });
 
 
-test('computed C shows tax step next to A/B without a leisure-value input',async({page})=>{
+test('C explains exact tax card threshold and responds to underlying payroll inputs',async({page})=>{
   await page.setViewportSize({width:360,height:800});
   await page.goto('/index.html');
   await page.getByRole('button',{name:'Laskuri'}).click();
   const p=frameOf(page);
   await expect(p.locator('.beta-ab-c #betaCCount')).toBeVisible();
-  await expect(p.locator('#betaFreeWeekendValue')).toHaveCount(0);
-  await expect(p.locator('#betaCCount')).toHaveText('–');
   await p.locator('#planYear').fill('2026');
   await p.locator('#baseGross').fill('65000');
   await p.locator('#weekendGross').fill('1000');
   await p.locator('#limitA').fill('77000');
   await p.locator('#limitB').fill('100000');
-  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua');
+  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua · kortti A');
+  await expect(p.locator('#betaCCompare')).toContainText('A: 12 viikonloppua');
+  await expect(p.locator('#betaCCompare')).toContainText('B: 35 viikonloppua');
+  await expect(p.locator('#betaCFormula')).toContainText('Perusbrutto 65 000 € + yksi työviikonloppu 1 000 €');
+  await expect(p.locator('#betaCLimit')).toContainText('12 viikonloppua: brutto 77 000 €');
+  await expect(p.locator('#betaCLimit')).toContainText('13. viikonlopulla brutto 78 000 €');
+  await expect(p.locator('#betaCLimit')).toContainText('tulorajan 77 000 €');
   await expect(p.locator('#betaCMarginal')).toHaveText('600 € → 420 €');
-  await expect(p.locator('#betaCReason')).toContainText('ei ennusta lopullista veroa');
-  await p.locator('#betaWeekendsA').fill('3');
-  await p.locator('#betaWeekendsB').fill('9');
-  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua');
-  await expect(p.locator('#betaWeekendsA')).toHaveValue('3');
-  await expect(p.locator('#betaWeekendsB')).toHaveValue('9');
+  await expect(p.locator('#betaCReason')).toContainText('A/B-korttien viikonloppumäärät eivät muuta C:tä');
+
+  // Replacing A/B card weekend counts does NOT change C's 0–52 analysis.
+  await p.locator('#betaWeekendsA').fill('52');
+  await p.locator('#betaWeekendsB').fill('52');
+  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua · kortti A');
+
+  // Changing relevant income and tax inputs MUST update the suggestion.
+  await p.locator('#baseGross').fill('70000');
+  await expect(p.locator('#betaCCount')).toHaveText('7 viikonloppua · kortti A');
+  await expect(p.locator('#betaCFormula')).toContainText('Perusbrutto 70 000 €');
+  await p.locator('#weekendGross').fill('2000');
+  await expect(p.locator('#betaCCount')).toHaveText('3 viikonloppua · kortti A');
+  await expect(p.locator('#betaCLimit')).toContainText('4. viikonlopulla brutto 78 000 €');
   await p.locator('#limitA').fill('200000');
+  await expect(p.locator('#betaCCount')).toHaveText('15 viikonloppua · kortti B');
+  await expect(p.locator('#betaCCompare')).toContainText('A: tuloraja 200 000 € ei ylity');
   await p.locator('#limitB').fill('210000');
-  await expect(p.locator('#betaCCount')).toHaveText('–');
-  await expect(p.locator('#betaCReason')).toContainText('Selvää verotuksen taitekohtaa ei löydy');
+  await expect(p.locator('#betaCCount')).toHaveText('Ei taitekohtaa');
+  await expect(p.locator('#betaCReason')).toContainText('ei tuota selkeää lisäneton pudotusta');
+  await expect(p.locator('#betaCUseGoal')).toBeDisabled();
 });
