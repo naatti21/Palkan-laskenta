@@ -170,12 +170,15 @@ function mount() {
         <div><span>Netto / 2 viikkoa (26)</span><b id="betaABPeriodB">–</b></div>
       </section>
       <section class="beta-ab-option beta-ab-c" aria-label="Laskennallinen C-verorajan taitekohta">
-        <h3>C · Verotuksen taitekohta</h3>
-        <small>Työviikonloppuja vuodessa</small><strong id="betaCCount">–</strong>
-        <div><span>Vuosinetto (syötetty A/B-kortti)</span><b id="betaCNet">–</b></div>
-        <div><span>Lisänetto / edellinen → seuraava viikonloppu</span><b id="betaCMarginal">–</b></div>
-        <p id="betaCReason" class="hint">C etsii ensimmäisen selvän pudotuksen lisäviikonlopun nettotuotossa.</p>
-        <button type="button" class="chip" id="betaCUseGoal" disabled>Ota C tavoitteeksi</button>
+        <h3>C · Verokorttien tulorajat</h3>
+        <small>Ensimmäinen tulorajan taitekohta</small><strong id="betaCCount">–</strong>
+        <p id="betaCCompare" class="hint">A- ja B-korttien rajakohdat lasketaan erikseen.</p>
+        <div><span>Vuosinetto rajakohdassa</span><b id="betaCNet">–</b></div>
+        <div><span>Lisänetto / viimeinen ennen rajaa → ensimmäinen yli rajan</span><b id="betaCMarginal">–</b></div>
+        <p id="betaCFormula" class="hint">C muodostuu perusbrutosta, yhden viikonlopun brutosta sekä A/B-verokorttien tulorajoista ja prosenteista.</p>
+        <p id="betaCLimit" class="hint"></p>
+        <p id="betaCReason" class="hint">C tarkastelee 0–52 työviikonloppua, eikä siksi muutu vain vaihtamalla A/B-korttien viikonloppumääriä.</p>
+        <button type="button" class="chip" id="betaCUseGoal" disabled>Aseta taitekohta tavoitteeksi</button>
         <p id="betaCStatus" class="hint" role="status" aria-live="polite"></p>
       </section>
     </div>
@@ -302,33 +305,53 @@ function mount() {
     currentC=null;
     cButton.disabled=true;
     const clear=message=>{
-      put('betaCCount','–');
-      put('betaCNet','–');
-      put('betaCMarginal','–');
+      for(const id of ['betaCCount','betaCNet','betaCMarginal','betaCFormula','betaCLimit'])
+        put(id,'–');
+      put('betaCCompare','A- ja B-kortit lasketaan erikseen.');
       put('betaCReason',message);
     };
     if(!computed||!(computed.grossPerWeekend>0)){
-      clear('Anna lähtöansiot, viikonlopun arvo ja verokorttien tiedot.');
+      clear('Täytä lähtöansiot, viikonlopun brutto ja verokorttitiedot.');
       return;
     }
-    const vars=Object.fromEntries(['rateA','rateB','extraA','extraB','otherDeductions']
+    const vars=Object.fromEntries(['limitA','limitB','rateA','rateB','extraA','extraB','otherDeductions']
       .map(key=>[key,progressVal(key)]));
     const c=calculateTaxKnee(computed.series,vars);
     if(!c){
-      clear('C ei ole laskettavissa näillä lähtötiedoilla.');
+      clear('C ei ole laskettavissa. Tarkista tulorajat ja prosentit.');
       return;
     }
+    const describe=card=>{
+      const row=c.cards[card];
+      if(row.found)return card+': '+row.n+' viikonloppua (seuraava ylittää '+money(row.limit)+')';
+      if(row.reason==='already-over')return card+': raja '+money(row.limit)+' ylittyy jo perusansiolla';
+      if(row.reason==='no-drop')return card+': tuloraja '+money(row.limit)+' ylittyy, mutta lisänetto ei putoa';
+      return card+': tuloraja '+money(row.limit)+' ei ylity 0–52 viikonlopulla';
+    };
+    put('betaCCompare',describe('A')+' · '+describe('B')+'.');
+    put('betaCFormula','Perusbrutto '+money(c.baseline)+' + yksi työviikonloppu '+
+      money(c.grossPerWeekend)+'. C lasketaan niistä ja kummankin kortin omista tulorajoista.');
     if(!c.found){
-      clear('Selvää verotuksen taitekohtaa ei löydy 0–52 viikonlopun alueelta.');
+      put('betaCCount','Ei taitekohtaa');
+      put('betaCNet','–');
+      put('betaCMarginal','–');
+      put('betaCLimit','–');
+      put('betaCReason','Näillä oletuksilla kumpikaan kortti ei tuota selkeää lisäneton pudotusta 0–52 viikonlopun alueella. Tulorajan puuttuminen ei tarkoita optimaalista työmäärää.');
       return;
     }
     currentC=c;
     cButton.disabled=false;
-    put('betaCCount',c.n+' viikonloppua');
+    put('betaCCount',c.n+' viikonloppua · kortti '+c.card);
     put('betaCNet',money(c.net)+' · kortti '+c.card);
     put('betaCMarginal',money(c.gainBefore)+' → '+money(c.gainAfter));
-    put('betaCReason','C on ensimmäistä lisäneton pudotusta edeltävä työmäärä. '+
-      'Vertailu käyttää syötettyjä A/B-verokorttiolettamuksia. Perusprosentti ei muutu automaattisesti; tämä ei ennusta lopullista veroa.');
+    put('betaCLimit',c.n+' viikonloppua: brutto '+money(c.gross)+
+      '. '+c.stepAt+'. viikonlopulla brutto '+money(c.nextGross)+
+      ' ylittää '+c.card+'-kortin tulorajan '+money(c.limit)+
+      '. Pidätysprosentti '+progressPct(c.baseRate)+' → '+progressPct(c.extraRate)+
+      ' vain rajan ylittävältä osalta.');
+    put('betaCReason','Näytetään A:n ja B:n erillisten laskelmien ensimmäinen taitekohta. '+
+      'A/B-korttien viikonloppumäärät eivät muuta C:tä: muuta perusbruttoa, viikonlopun bruttoa, tulorajoja tai prosentteja. '+
+      'Tämä on ennakonpidätyksen rajakohta – ei paras työmäärä eikä lopullinen vero.');
   };
   cButton.addEventListener('click',()=>{
     if(!currentC)return;
