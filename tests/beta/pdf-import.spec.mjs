@@ -99,6 +99,9 @@ test("QA-import-06: import does not require external PDF runtime requests", asyn
   page.on("request", r => {if (/^https?:\/\//.test(r.url()) && !/127\.0\.0\.1:4177/.test(r.url())) remote.push(r.url());});
   await page.route("https://**/*", route => route.abort());
   await page.goto("/index.html");
+  // A file input is visible before the Beta entry module has finished wiring
+  // its change handler; wait for the first completed startup render.
+  await expect(page.locator("#historyYear option")).toHaveCount(1);
   await page.locator("#pdfInput").setInputFiles(synthetic("offline-readable.pdf", base()));
   await expect(page.locator("#status")).toContainText("tallennettiin automaattisesti");
   expect(remote).toEqual([]);
