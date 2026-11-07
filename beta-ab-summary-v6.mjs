@@ -96,16 +96,16 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
     svg.append(progressSvg('title',{},label+': vuosibrutto '+money(gross)+
       ', laskurin vähennysosuus '+progressPct(percent)));
   }
-  // A and B are withholding-based points. C is on the already drawn
-  // reference-tax curve, NOT a third user-entered tax card.
-  if(cReference?.knee){
-    const gross=cReference.knee.gross;
+  // C is a user-constrained workload from the PUBLIC net reference, not a
+  // third withholding percentage. No unique point when no goal is selected.
+  if(cReference?.selection){
+    const gross=cReference.selection.gross;
     const cTax=referenceNet2026(gross);
     if(cTax){
       svg.append(progressSvg('circle',{cx:x(gross),cy:y(cTax.effectiveAllInPercent),
         r:7,fill:'#de95e3',stroke:'#101820','stroke-width':2,
         'data-series':'C'}));
-      svg.append(progressSvg('title',{},'C: '+cReference.knee.n+' viikonloppua, '+
+      svg.append(progressSvg('title',{},'C: '+cReference.selection.n+' viikonloppua, '+
         money(gross)+' vuosibrutto, yleinen 2026 vero- ja maksutaso '+
         progressPct(cTax.effectiveAllInPercent)));
     }
@@ -133,11 +133,12 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
       ', laskurin vähennysosuus '+progressPct(b.bDeductionPercent)+
       '.'+shift+' A/B-vähennysosuus ei ole lopullinen veroaste.'+yearWarning;
   }
-  if(cReference?.knee){
-    note.textContent+=' C: '+cReference.knee.n+' viikonloppua vuoden 2026 yleisen veroviitteen taitekohdassa. '+
-      'C ei ole oma ennakonpidätysprosentti eikä verosuositus.';
+  if(cReference?.selection){
+    note.textContent+=' C: '+cReference.selection.n+' viikonloppua nettotavoitteen ja käyttäjän asettamien lisätyön ehtojen mukaan. '+
+      'C käyttää vuoden 2026 yleistä veroviitettä.';
   }else if(cReference?.available){
-    note.textContent+=' C: Veronmaksajien yleinen 2026 verokäyrä ei osoita selvää taitekohtaa näillä tuloilla.';
+    note.textContent+=' C: vuoden 2026 nettoviite jatkuu taulukoissa ja lisätyön nettokäyrässä. '+
+      'Ilman nettotavoitetta ei nimetä yhtä optimaalista työmäärää.';
   }
 }
 
@@ -367,7 +368,7 @@ function mount() {
   // C is a third display series, *not* a third user-provided tax card.
   // Update the planner's existing tables and chart after its own render:
   // every row at the same weekend count uses the same underlying annual gross.
-  const paintTables=(computed,reference)=>{
+  const paintTables=(computed,reference,opt=null)=>{
     const summaries=['samples','allSamples'];
     for(const id of summaries){
       const body=document.getElementById(id);
@@ -389,22 +390,26 @@ function mount() {
         if(!td.parentElement)row.append(td);
         if(reference?.knee?.n===n)row.dataset.cKnee='yes';
         else delete row.dataset.cKnee;
+        if(opt?.selection?.n===n)row.dataset.cOptimized='yes';
+        else delete row.dataset.cOptimized;
       }
     }
     // The core's compact comparison picks its own thresholds. Add a C-knee
     // row when absent; do not claim the A/B tax-card limits are C thresholds.
-    const n=reference?.knee?.n,summary=document.getElementById('samples');
+    const n=opt?.selection?.n??reference?.knee?.n,summary=document.getElementById('samples');
     if(!Number.isInteger(n)||!summary)return;
     const exists=[...summary.querySelectorAll('.point-count')].some(x=>Number(x.textContent)===n);
     if(exists)return;
     const from=document.getElementById('allSamples')?.querySelectorAll('tr')[n];
     if(!from)return;
     const row=from.cloneNode(true);
-    row.dataset.cKnee='yes';
+    if(reference?.knee?.n===n)row.dataset.cKnee='yes';
+    if(opt?.selection?.n===n)row.dataset.cOptimized='yes';
     row.classList.add('threshold-point');
     const first=row.querySelector('td');
     const note=document.createElement('span');
-    note.className='point-note';note.textContent='C: viitekäänne';
+    note.className='point-note';
+    note.textContent=opt?.selection?.n===n?'C: nettotavoite':'Viitetaite';
     first?.append(note);
     const next=[...summary.querySelectorAll('tr')].find(x=>Number(x.querySelector('.point-count')?.textContent)>n);
     summary.insertBefore(row,next||null);
@@ -415,7 +420,7 @@ function mount() {
     if(label!==undefined)node.textContent=label;
     return node;
   };
-  const paintMarginalChart=(computed,reference)=>{
+  const paintMarginalChart=(computed,reference,opt=null)=>{
     if(!reference?.available)return; // Keep original A/B chart if C is unavailable.
     const host=document.getElementById('netChart');
     if(!host)return;
@@ -456,12 +461,15 @@ function mount() {
       }
       draw();
     }
-    if(reference.knee){
-      const cx=x(reference.knee.n);
+    const marked=opt?.selection?.n??reference.knee?.n??null;
+    if(marked!==null){
+      const cx=x(marked);
       svg.append(svgNode('line',{x1:cx,x2:cx,y1:T,y2:H-B,stroke:'#de95e3',
-        'stroke-width':2,'stroke-dasharray':'5 5'}));
-      svg.append(svgNode('text',{x:Math.min(W-35,Math.max(L+35,cx)),y:T+13,
-        'text-anchor':'middle',fill:'#f0c6f7','font-size':13},'C '+reference.knee.n));
+        'stroke-width':2,'stroke-dasharray':'5 5',
+        ...(opt?.selection?{'data-c-selected':'yes'}:{})}));
+      svg.append(svgNode('text',{x:Math.min(W-50,Math.max(L+50,cx)),y:T+13,
+        'text-anchor':'middle',fill:'#f0c6f7','font-size':13},
+        opt?.selection?'C '+marked:'Viitetaite '+marked));
     }
     svg.append(svgNode('text',{x:W/2,y:H-1,'text-anchor':'middle'},'Työviikonloppuja vuodessa'));
     host.replaceChildren(svg);
