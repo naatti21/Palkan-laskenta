@@ -12,17 +12,17 @@ test("calendar groups realized source payments by payday and remembers the view"
     }
   });
   await page.reload();
+  await page.getByRole("button", {name: "Historia", exact:true}).click();
+  await page.locator("#historyYear").selectOption("2025");
   await page.getByRole("button", {name: "Kalenteri", exact:true}).click();
-  await expect(page.locator("#historyYear")).toHaveValue("2025");
-  await page.getByRole("button", {name: "Kuukausi", exact:true}).click();
   await expect(page.locator("#ledgerCalendar")).toContainText(/3\s100,00/);
   await expect(page.locator("#history .history-row:visible")).toHaveCount(2);
   await page.getByRole("button", {name:"Edellinen kuukausi"}).click();
   await expect(page.locator("#history .history-row:visible")).toHaveCount(0);
   await page.reload();
-  await page.getByRole("button", {name: "Kalenteri", exact:true}).click();
-  await expect(page.getByRole("button", {name:"Kuukausi",exact:true})).toHaveAttribute("aria-pressed","true");
+  await page.getByRole("button", {name: "Historia", exact:true}).click();
+  await expect(page.getByRole("button", {name:"Kalenteri",exact:true})).toHaveAttribute("aria-pressed","true");
   await page.getByRole("button", {name:"Lista",exact:true}).click();
-  await expect(page.locator("#historyYear")).toHaveValue("2025");
+  await page.locator("#historyYear").selectOption("2025");
   await expect(page.locator("#history .history-row:visible")).toHaveCount(2);
 });

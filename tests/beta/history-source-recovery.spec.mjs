@@ -22,7 +22,7 @@ test("History assigns a source to existing payslips without reimport, preserves 
     return source.id;
   });
   await page.reload();
-  await page.getByRole("button",{name:"Kalenteri",exact:true}).click();
+  await page.getByRole("button",{name:"Historia",exact:true}).click();
   await expect(page.locator(".history-recovery")).toContainText("2 ilman tulolähdettä");
   await page.locator(".history-recovery-disclosure summary").click();
   await page.getByRole("button",{name:"Valitse tämän vuoden lähteettömät"}).click();
@@ -51,7 +51,7 @@ test("History assigns a source to existing payslips without reimport, preserves 
     preserved:true,restored:4,originalRecords:true
   });
   await page.reload();
-  await page.getByRole("button",{name:"Kalenteri",exact:true}).click();
+  await page.getByRole("button",{name:"Historia",exact:true}).click();
   await expect(page.locator(".history-recovery")).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth+1)).toBe(true);
 });
@@ -108,6 +108,6 @@ test("older unresolved period does not hide the latest confirmed net, but YTD re
   await expect(page.locator("#dashboard .metric").first()).toContainText(/1\s800/);
   await expect(page.locator("#taxCardRemaining")).toHaveText("Ei luotettavaa kertymää");
   await expect(page.locator("#taxCardEstimate")).toContainText("Ratkaise Historian ristiriidat");
-  await page.getByRole("button",{name:"Kalenteri",exact:true}).click();
+  await page.getByRole("button",{name:"Historia",exact:true}).click();
   await expect(page.locator(".history-recovery")).toContainText("2 ratkaisemattomaksi");
 });

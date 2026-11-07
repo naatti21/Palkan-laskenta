@@ -18,7 +18,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
   throw new Error('Use only the approved palkka-beta.pages.dev origin or a dedicated local beta test port.');
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = ['beta-compact.mjs', 'beta-ledger.mjs', 'beta-home-calendar-v2.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
+const files = ['beta-compact.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
@@ -26,7 +26,7 @@ for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
 hash.update(await readFile('beta-net-reference-2026.mjs')); // Beta-only tax benchmark invalidates cache
 hash.update(await readFile('beta-ab-summary-v6.mjs')); // Final A/B presentation is also offline versioned
-for (const themeFile of ['beta-precision-tokens.css', 'beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css', 'beta-black-v5.css', 'beta-planner-black-v5.css', 'beta-home-calendar-v2.css']) {
+for (const themeFile of ['beta-precision-tokens.css', 'beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css', 'beta-black-v5.css', 'beta-planner-black-v5.css']) {
   hash.update(await readFile(themeFile)); // changing the visual theme invalidates the Beta offline cache
 }
 const revision = hash.digest('hex').slice(0, 16);
@@ -108,8 +108,6 @@ html = html.replace(dashboardBlock, `<div id="dashboard" class="metrics beta-pri
         </div>
       </details>`);
 // Keep card-specific tax status near the main KPI metrics; never present it as a full-year limit.
-// The obsolete personal annual goal widget is no longer part of the Beta home screen.
-html = html.replace(/<details class="beta-year-progress" id="yearProgressPanel">[\s\S]*?<\/details>/, '');
 const dashboardNoteMarker = '<p id="dashboardNote" class="muted">Tallenna vähintään yksi palkkalaskelma.</p>';
 if (!html.includes(dashboardNoteMarker)) throw new Error('Dashboard note changed');
 // The tax-card source note now belongs to its own expandable panel above.
@@ -360,7 +358,6 @@ const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
 const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
 const precisionTokens = await readFile('beta-precision-tokens.css', 'utf8');
 const betaBlackV5 = await readFile('beta-black-v5.css', 'utf8');
-const betaHomeCss = await readFile('beta-home-calendar-v2.css', 'utf8');
 const betaImportCss = `
 .ledger-opening #dashboard {display:block}
 .ledger-opening #dashboard .metric {min-height:76px;border:0;border-radius:0;border-bottom:1px solid #36454b;background:transparent;box-shadow:none}
@@ -383,7 +380,7 @@ const betaImportCss = `
 .beta-pdf-slot .privacy { display:none; }
 `;
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss + '\n' + betaHomeCss);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');
@@ -398,7 +395,7 @@ const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme +
 await writeFile(plannerPath, plannerWithTheme.replace('</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>'));
 html = html.replace('<div id="history"></div>', `<div class="ledger-switch" role="group" aria-label="Historian näkymä">
-  <button data-ledger-mode="calendar">Kuukausi</button><button data-ledger-mode="list">Lista</button>
+  <button data-ledger-mode="list">Lista</button><button data-ledger-mode="calendar">Kalenteri</button>
 </div><section id="ledgerCalendar" hidden></section><div id="history"></div>`);
 html = html.replace('<section data-view="tracking">', '<section data-view="tracking"><div id="ledgerOpening"></div>');
 await writeFile(`${output}/index.html`, html);
@@ -408,15 +405,6 @@ if (location.origin !== expectedOrigin) {
   document.body.textContent = 'BETA ESTETTY: väärä origin';
   throw new Error('Beta origin mismatch; app and service worker not started.');
 }
-// Capture an early PDF selection until the import handler has been attached.
-let betaImportReady = false;
-let betaPendingPdfChange = false;
-document.addEventListener('change', event => {
-  if (event.target?.id !== 'pdfInput' || betaImportReady) return;
-  betaPendingPdfChange = true;
-  event.stopImmediatePropagation();
-}, true);
-document.querySelectorAll('.tabs .tab').forEach(button => { button.disabled = true; });
 const opening = document.getElementById('ledgerOpening');
 const dashboard = document.querySelector('.beta-compact-dashboard');
 const heading = dashboard.querySelector('.section-heading');
@@ -430,15 +418,7 @@ const { renderCalendar } = await import('./beta-ledger.mjs');
 document.getElementById('ledgerCalendar').addEventListener('ledger-render', event => renderCalendar(event.detail));
 const { installCompact } = await import('./beta-compact.mjs');
 installCompact();
-const { installHomeCalendarV2 } = await import('./beta-home-calendar-v2.mjs');
-installHomeCalendarV2();
 await import('./app.js');
-betaImportReady = true;
-if (betaPendingPdfChange && document.getElementById('pdfInput')?.files?.length) {
-  document.getElementById('pdfInput').dispatchEvent(new Event('change', { bubbles:true }));
-}
-document.querySelectorAll('[data-view-target]').forEach(button => { button.disabled = false; });
-document.documentElement.dataset.betaReady = 'true';
 `);
 const manifest = JSON.parse(await readFile('manifest.webmanifest', 'utf8'));
 manifest.name = qaPreview ? 'Palkka TUONTITESTI' : 'Palkka BETA';
@@ -452,7 +432,7 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 }
 sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";')
   .replace('const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
-  .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs", "./beta-home-calendar-v2.mjs",')
+  .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs",')
   .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",')
   .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs"')
   .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",');

@@ -32,7 +32,7 @@ test("Beta dashboard remains dense without decorative icons at narrow mobile wid
     await page.reload();
     await expect(page.locator("#dashboard .metric")).toHaveCount(2);
     await expect(page.locator("#dashboard")).toContainText("1 988");
-    const state = await page.locator(".beta-year-cell").evaluateAll(cards =>
+    const state = await page.locator(".beta-primary-metrics .metric").evaluateAll(cards =>
       cards.map(el => {
         const rect = el.getBoundingClientRect();
         const css = getComputedStyle(el);
@@ -49,9 +49,9 @@ test("Beta dashboard remains dense without decorative icons at narrow mobile wid
     );
     expect(state).toHaveLength(2);
     for (const card of state) {
-      expect(card.height).toBeLessThan(140);
-      expect(card.height).toBeGreaterThan(50);
-      expect(card.layout).toBe("grid");
+      expect(card.height).toBeLessThan(115);
+      expect(card.height).toBeGreaterThan(70);
+      expect(card.layout).toBe("flex");
       expect(card.iconImage).toBe("none");
       expect(card.pseudoContent).toBe("none");
       expect(card.hasOverflow).toBe(false);
@@ -64,9 +64,9 @@ test("Beta dashboard remains dense without decorative icons at narrow mobile wid
 
 test("Historical payslip expansion and tax-card information remain available", async ({page}) => {
   await page.goto("/index.html");
-  await page.getByRole("button",{name:"Kalenteri"}).click();
+  await page.getByRole("button",{name:"Historia"}).click();
   await expect(page.locator("#history")).toBeVisible();
-  await page.getByRole("button",{name:"Etusivu"}).click();
+  await page.getByRole("button",{name:"Seuranta"}).click();
   await expect(page.locator("#taxCardProgress")).toBeVisible();
   await expect(page.locator("#taxCardEstimate")).toHaveCount(1);
   await expect(page.locator("#dashboardMore")).toHaveCount(1);

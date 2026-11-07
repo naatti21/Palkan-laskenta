@@ -24,7 +24,7 @@ test("Beta shows independent values once and keeps tax details available on dema
     name:"synthetic-info-audit.json",mimeType:"application/json",buffer:Buffer.from(backup)
   });
   await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
-  await page.getByRole("button",{name:"Etusivu"}).click();
+  await page.getByRole("button",{name:"Seuranta"}).click();
 
   await expect(page.locator("#dashboard .metric")).toHaveCount(2);
   await expect(page.locator("#dashboard")).toContainText("Viimeisin nettopalkka");

@@ -1060,7 +1060,7 @@ function renderHistory(records) {
   const yearRecords = records.filter(r => r.taxYear === selectedYear || !r.taxYear);
   host.replaceChildren();
   const calendar = document.getElementById("ledgerCalendar");
-  const paid = calendar ? projection.active.filter(r => ["realized", "confirmed_future"].includes(paymentState(r))) : [];
+  const paid = calendar ? projection.active.filter(r => paymentState(r) === "realized") : [];
   const updateCalendar = () => calendar.dispatchEvent(new CustomEvent("ledger-render", { detail: { active: paid, unresolved: projection.unresolved, selectedYear, history: host } }));
   if (!yearRecords.length) {
     const empty = document.createElement("p");

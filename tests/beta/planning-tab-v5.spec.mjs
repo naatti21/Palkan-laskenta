@@ -1,12 +1,12 @@
 import {test,expect} from '@playwright/test';
 
 // Isolated Beta UI tests. Use only invented amounts, never personal payroll data.
-test('Four compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
+test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
   for(const width of [320,360,412]){
     await page.setViewportSize({width,height:800});
     await page.goto('/index.html');
     const names=await page.locator('.tabs [data-view-target]').allTextContents();
-    expect(names.map(n=>n.trim())).toEqual(['Etusivu','Kalenteri','Laskuri','Asetukset']);
+    expect(names.map(n=>n.trim())).toEqual(['Seuranta','Analyysi','Historia','Laskuri','Asetukset']);
     const layout=await page.evaluate(()=>{
       const nav=document.querySelector('.tabs');
       const tabs=[...nav.querySelectorAll('button')];
@@ -21,7 +21,7 @@ test('Four compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
       };
     });
     expect(layout.bg).toBe('rgb(5, 8, 12)');
-    expect(layout.columns).toBe(4);
+    expect(layout.columns).toBe(5);
     expect(layout.smallestTabHeight).toBeGreaterThanOrEqual(44);
     expect(layout.allInside).toBe(true);
     expect(layout.documentOverflow).toBe(false);
@@ -46,7 +46,7 @@ test('Planner inputs and locally computed net survive tab switches without remou
   await page.getByRole('button',{name:'Analyysi'}).click();
   await expect(page.locator('#plannerFrame')).toBeHidden();
   await expect(page.getByRole('heading',{name:'Ansiot ja työaika'})).toBeVisible();
-  await page.getByRole('button',{name:'Kalenteri'}).click();
+  await page.getByRole('button',{name:'Historia'}).click();
   await page.getByRole('button',{name:'Laskuri'}).click();
   await expect(frame.locator('#baseGross')).toHaveValue('52000');
   await expect(frame.locator('#netref26Monthly')).toHaveText('3 030 €');
