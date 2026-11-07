@@ -37,7 +37,7 @@ test('C target saves only for its planner work year, without rewriting actual co
   await p.locator('#weekendGross').fill('1000');
   await p.locator('#limitA').fill('77000');
   await p.locator('#limitB').fill('100000');
-  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua');
+  await expect(p.locator('#betaCCount')).toHaveText('12 viikonloppua · kortti A');
   await p.locator('#betaCUseGoal').click();
   await expect(p.locator('#betaCStatus')).toContainText('Tavoite 12 viikonloppua tallennettu');
   await page.getByRole('button',{name:'Analyysi'}).click();

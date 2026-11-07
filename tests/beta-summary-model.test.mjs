@@ -54,29 +54,58 @@ test('missing inputs or failing/unavailable planner never produce a summary',()=
 });
 
 
-test('C marks the withholding knee without a leisure value or a made-up optimum',()=>{
+test('C shows independently calculated A/B thresholds and source numbers',()=>{
   const planned=computePlan({...inputs,weekends:52});
   const c=calculateTaxKnee(planned.series,inputs);
   assert.deepEqual({n:c.n,card:c.card,stepAt:c.stepAt,free:c.free},
     {n:10,card:'A',stepAt:11,free:42});
+  assert.equal(c.baseline,52000);
+  assert.equal(c.grossPerWeekend,1000);
+  assert.equal(c.cards.A.limit,62000);
+  assert.equal(c.cards.A.n,10);
+  assert.equal(c.cards.A.gross,62000);
+  assert.equal(c.cards.A.nextGross,63000);
+  assert.equal(c.cards.A.baseRate,30);
+  assert.equal(c.cards.A.extraRate,48);
+  assert.equal(c.cards.B.n,20);
+  assert.equal(c.cards.B.limit,72000);
   assert.equal(Math.round(c.gainBefore),600);
   assert.equal(Math.round(c.gainAfter),420);
-  assert.equal(Math.round(c.gross),62000);
   assert.equal(Math.round(c.net),37200);
-  // At a different annual baseline, the same model can find 12 weekends.
-  const twelve={...inputs,baseGross:65000,limitA:77000,limitB:100000};
-  const c12=calculateTaxKnee(computePlan({...twelve,weekends:52}).series,twelve);
-  assert.equal(c12.n,12);
-  assert.equal(c12.stepAt,13);
-  assert.equal(c12.card,'A');
-  // The suggestion never changes any user's selected workload.
+  // A/B selected counts do not set C. Underlying gross/limits do.
   assert.equal(inputs.weekends,2);
 });
-test('C says no knee when the model has no step; invalid or flat scenarios fail closed',()=>{
-  const noStep={...inputs,limitA:200000,limitB:210000};
-  assert.deepEqual(calculateTaxKnee(computePlan({...noStep,weekends:52}).series,noStep),
-    {found:false,reason:'no-step'});
+test('C actually reacts to changed annual pay, weekend gross and tax limits',()=>{
+  const base={...inputs,baseGross:65000,limitA:77000,limitB:100000};
+  const make=(change={})=>{
+    const config={...base,...change};
+    return calculateTaxKnee(computePlan({...config,weekends:52}).series,config);
+  };
+  assert.equal(make().n,12);
+  assert.equal(make().cards.A.n,12);
+  assert.equal(make().cards.B.n,35);
+  assert.equal(make({baseGross:70000}).n,7);
+  assert.equal(make({baseGross:70000,weekendGross:2000}).n,3);
+  assert.equal(make({limitA:200000}).n,35);
+  assert.equal(make({limitA:200000}).card,'B');
+  assert.equal(make({extraA:30}).n,35); // A tax threshold does not lower marginal gain
+  const neither=make({limitA:200000,limitB:210000});
+  assert.equal(neither.found,false);
+  assert.equal(neither.cards.A.reason,'no-crossing');
+  assert.equal(neither.cards.B.reason,'no-crossing');
+});
+test('C does not splice tax cards together and excludes invalid/flat scenarios',()=>{
   const original=computePlan({...inputs,weekends:52}).series;
+  const switcher={...inputs,limitA:62000,limitB:63000,rateA:10,rateB:30,extraA:60,extraB:35};
+  const model=computePlan({...switcher,weekends:52}).series;
+  const knee=calculateTaxKnee(model,switcher);
+  assert.equal(knee.cards.A.n,10);
+  assert.equal(knee.cards.B.n,11);
+  assert.equal(knee.n,10);
+  assert.equal(knee.gainBefore,
+    model[knee.n].netA-model[knee.n-1].netA);
+  assert.equal(knee.gainAfter,
+    model[knee.n+1].netA-model[knee.n].netA);
   for(const bad of [null,[],original.slice(1),original.map((row,i)=>i===7?{...row,netA:NaN}:row)])
     assert.equal(calculateTaxKnee(bad,inputs),null);
   assert.equal(calculateTaxKnee(original,{...inputs,rateA:NaN}),null);
