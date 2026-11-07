@@ -130,7 +130,7 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#taxCardRemaining")).toContainText("8 000");
   await expect(page.locator("#taxCardEstimate")).toContainText("lisää saman verokortin");
   await expect(page.locator("#taxCardContext")).toContainText("viimeisimmästä palkkalaskelmasta");
-  await expect(page.locator(".beta-compact-dashboard #yearProgressPanel")).toHaveCount(1);
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
   await expect(page.locator("#dashboard")).toContainText("Veronalainen kertymä");
@@ -146,41 +146,29 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#betaImportOpen")).toBeVisible();
   await expect(page.locator(".beta-pdf-slot")).toBeHidden();
 });
-test("year-end goal is local, compares certified YTD separately from manual annual forecast", async({page})=>{
- await page.setViewportSize({width:360,height:780});
- await page.goto("/index.html");
- await expect(page.locator("#yearProgressPanel")).toBeVisible();
- await expect(page.locator("#yearProgressHeadline")).toContainText("Aseta oma");
- await page.locator("#yearProgressPanel > summary").click();
- await expect(page.locator("#yearProgressStatus")).toContainText("Ei luotettavaa");
- await page.locator("#yearGrossGoal").fill("80000");
- await page.locator("#yearGrossGoal").press("Tab");
- await page.locator("#yearGrossForecast").fill("79000");
- await page.locator("#yearGrossForecast").press("Tab");
- await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
- const backup=await page.evaluate(async()=>{
-  const m=await import("/model.js");
-  const row=m.migrateLegacyRecord({recordSchemaVersion:3,incomeSourceId:"goal-job",id:"goal-synthetic-1",kind:"payslip",
-   values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
-     grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000},
-   payLines:[],fingerprints:["goal-synthetic-1"],fieldMeta:{},corrections:{},notices:[],
-   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}});
-  return JSON.stringify(m.makeBackup([row],{incomeSources:[{id:"goal-job",name:"Työ"}]}));
- });
- await page.getByRole("button",{name:"Asetukset"}).click();
- await page.locator("#backupInput").setInputFiles({name:"synthetic-progress.json",mimeType:"application/json",buffer:Buffer.from(backup)});
- await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
- await page.getByRole("button",{name:"Seuranta"}).click();
- await expect(page.locator("#yearProgressHeadline")).toContainText("71 500");
- await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
- await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
- await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
- await page.reload();
- await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
- await expect(page.locator("#yearGrossForecast")).toHaveValue("79000");
- await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
- expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+test("obsolete personal annual plan is absent while old settings and taxcard gauge stay intact", async ({ page }) => {
+  await page.setViewportSize({width:360,height:780});
+  await page.goto("/index.html");
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
+  await expect(page.locator("#yearGrossGoal")).toHaveCount(0);
+  await expect(page.locator("#yearGrossForecast")).toHaveCount(0);
+  await page.evaluate(async() => {
+    const storage = await import("/storage.js");
+    await storage.setSetting("beta:year-progress:v1:2026:goal","80000");
+    await storage.upsertRecord({id:"annual-synthetic",recordSchemaVersion:3,kind:"payslip",
+      values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
+        grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000}});
+  });
+  await page.reload();
+  await expect(page.locator(".compact-lead").nth(1)).toContainText("Vuoden 2026 koonti");
+  await expect(page.locator(".compact-lead").nth(1)).toContainText("1 850");
+  await expect(page.locator(".compact-lead").nth(1)).toContainText("3 200");
+  await expect(page.locator("#taxCardProgress")).toBeVisible();
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
+  expect(await page.evaluate(async() => (await import("/storage.js"))
+    .getSetting("beta:year-progress:v1:2026:goal"))).toBe("80000");
 });
+
 test("updated tax card data never gets mistaken for a full calendar-year threshold", async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
@@ -216,7 +204,7 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
  await expect(page.locator("#dashboardDetails")).not.toContainText("100 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin tuloraja tai prosentti");
  await expect(page.locator("#taxCardContext")).toContainText("vanhoja rajoja ei lasketa yhteen");
- await expect(page.locator("#yearProgressPanel")).toBeVisible();
+ await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
  await page.reload();
  await expect(page.locator("#taxCardRemaining")).toContainText("6 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin");
