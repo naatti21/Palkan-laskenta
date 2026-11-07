@@ -40,43 +40,89 @@ export function installCompact() {
   planner.before(jump);
   const opening = byId("ledgerOpening");
   opening.querySelector("h2").textContent = "Seuranta";
-  const month = node("select","");
-  month.setAttribute("aria-label","Seurannan maksukuukausi");
+
+  // The personal gross goal was an unused Beta experiment. Keep its saved values
+  // untouched; remove only the panel, never payroll data or the tax-card gauge.
+  byId("yearProgressPanel")?.remove();
+
   const lead = node("section","","compact-lead");
-  const amount = node("strong","","compact-amount");
-  const caption = node("p","");
-  lead.append(month,amount,caption);
+  const latestLabel = node("span","Viimeisin toteutunut palkka");
+  const latestAmount = node("strong","","compact-amount");
+  const latestNote = node("p","");
+  const latestGross = node("p","","compact-gross");
+  const calendarJump = node("button","Näytä palkkapäivä kalenterissa");
+  calendarJump.type = "button";
+  calendarJump.className = "secondary";
+  calendarJump.hidden = true;
+  lead.append(latestLabel,latestAmount,latestNote,latestGross,calendarJump);
+
+  const annual = node("section","","compact-lead");
+  const annualTitle = node("strong","Vuoden koonti");
+  const annualNet = node("p","","compact-gross");
+  const annualGross = node("p","","compact-gross");
+  const annualNote = node("p","","muted");
+  annual.append(annualTitle,annualNet,annualGross,annualNote);
+
   const dashboard = byId("dashboard");
   opening.insertBefore(lead,dashboard);
+  opening.insertBefore(annual,dashboard);
   opening.append(byId("taxCardProgress"));
-  const gross = node("div","","compact-gross");
-  dashboard.after(gross);
+  let latestPayDate = null;
+
+  calendarJump.addEventListener("click",()=>{
+    if (!latestPayDate) return;
+    const historyYear = byId("historyYear");
+    const year = latestPayDate.slice(0,4);
+    const calendar = byId("ledgerCalendar");
+    // Set the requested day first. A change of year asynchronously rerenders
+    // history; the calendar retains this pending selection until that render.
+    calendar.dispatchEvent(new CustomEvent("ledger-jump",{detail:{date:latestPayDate}}));
+    if (historyYear.value !== year && [...historyYear.options].some(x=>x.value===year)) {
+      historyYear.value = year;
+      historyYear.dispatchEvent(new Event("change",{bubbles:true}));
+    }
+    document.querySelector('[data-view-target="history"]')?.click();
+  });
+
   const sources = node("details","","compact-sources");
   byId("analysisNote").after(sources);
   document.addEventListener("compact-payments",({detail:{records,year,sourceName}})=>{
     const projection = projectPayroll(records);
-    const realized = projection.active.filter(r=>r.values.payDate.startsWith(year+"-") && paymentState(r)==="realized");
-    const keys = [...new Set(realized.map(r=>r.values.payDate.slice(0,7)))].sort().reverse();
-    const previous = month.value;
-    month.replaceChildren();
-    for (const key of keys) month.add(new Option(months.format(new Date(key+"-01T12:00Z"))+" · tilille",key));
-    if (keys.includes(previous)) month.value = previous;
-    month.hidden = !keys.length;
-    function update() {
-      const rows = realized.filter(r=>r.values.payDate.startsWith(month.value));
-      amount.textContent = sum(rows,"netPay");
-      const knownSources = new Set(rows.map(r=>r.incomeSourceId).filter(Boolean));
-      const unspecified = rows.some(r=>!r.incomeSourceId);
-      caption.textContent = rows.length
-        ? "Maksuja "+rows.length+" · Tulolähteitä "+knownSources.size+(unspecified ? " · Lähde puuttuu" : "")
-        : "Ei toteutuneita maksuja valitulle vuodelle";
-      gross.textContent = rows.length ? "Kuukauden brutto · "+sum(rows,"grossPay") : "";
+    const realized = projection.active.filter(r=>r.values?.payDate &&
+      paymentState(r)==="realized");
+    const ordered = [...realized].sort((a,b)=>a.values.payDate.localeCompare(b.values.payDate));
+    latestPayDate = ordered.at(-1)?.values.payDate ?? null;
+    const latest = latestPayDate ? ordered.filter(r=>r.values.payDate===latestPayDate) : [];
+    latestAmount.textContent = sum(latest,"netPay");
+    latestNote.textContent = latest.length
+      ? "Maksupäivä "+new Intl.DateTimeFormat("fi-FI").format(new Date(latestPayDate+"T12:00:00"))+
+        " · "+latest.length+" maksua"
+      : "Ei vielä toteutuneita maksuja";
+    latestGross.textContent = latest.length
+      ? "Brutto "+sum(latest,"grossPay")+
+        (latest.length===1 ? " · "+sourceName(latest[0].incomeSourceId) : " · Eri tulolähteet")
+      : "";
+    calendarJump.hidden = !latest.length;
+
+    const yearRows = realized.filter(r=>r.values.payDate.startsWith(year+"-"));
+    annualTitle.textContent = "Vuoden "+year+" koonti";
+    annualNet.textContent = "Netto "+sum(yearRows,"netPay");
+    annualGross.textContent = "Brutto "+sum(yearRows,"grossPay");
+    const conflicts = projection.unresolved.filter(r=>!r.values?.payDate ||
+      r.values.payDate.startsWith(year+"-"));
+    annualNote.textContent = yearRows.length
+      ? yearRows.length+" toteutunutta maksua · maksupäivän mukaan"+
+        (conflicts.length ? " · Ratkaisemattomat palkat eivät sisälly summiin." : "")
+      : "Ei toteutuneita maksuja valitulta vuodelta."+
+        (conflicts.length ? " Ratkaisemattomat palkat tarkistetaan Historiassa." : "");
+    if (yearRows.length && (yearRows.some(r=>!Number.isFinite(r.values.netPay)) ||
+      yearRows.some(r=>!Number.isFinite(r.values.grossPay)))) {
+      annualNote.textContent += " Osasta maksuja puuttuu summa: sitä ei arvioida.";
     }
-    month.onchange = update;
-    update();
+
     sources.replaceChildren(node("summary","Toteutuneet netot tulolähteittäin"));
     const groups = new Map();
-    for (const row of realized) {
+    for (const row of yearRows) {
       const id = row.incomeSourceId;
       if (!groups.has(id)) groups.set(id,[]);
       groups.get(id).push(row);
