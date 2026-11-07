@@ -483,67 +483,132 @@ function mount() {
     item.append(dot,document.createTextNode(' C: Veronmaksajat 2026¹'));
     netLegend.append(item);
   }
+  const targetField=document.getElementById('betaCTarget');
+  const hourlyField=document.getElementById('betaCMinPerHour');
+  const optionalNumber=(field,max)=>{
+    const raw=field.value.trim();
+    if(!raw)return {ok:true,value:null};
+    const n=Number(raw.replace(',','.'));
+    return Number.isFinite(n)&&n>=0&&n<=max
+      ?{ok:true,value:n}:{ok:false,value:null};
+  };
   const renderC=computed=>{
     currentC=null;
     cButton.disabled=true;
+    cStatus.textContent='';
     const putSafe=(id,value)=>put(id,value);
-    const clear=message=>{
+    const clear=(message,reference=null)=>{
       for(const id of ['betaCCount','betaCGross','betaCNet','betaCMonth',
-        'betaCPeriod','betaCMarginal','betaCResult','betaCFormula','betaCLimit'])
+        'betaCPeriod','betaCMarginal','betaCHour','betaCResult',
+        'betaCFormula','betaCLimit'])
         putSafe(id,'–');
-      putSafe('betaCCompare','C perustuu julkaistuun vuoden 2026 yleiseen veroviitteeseen.');
+      putSafe('betaCCompare','C on yleinen veroviite, ei A/B:n ennakonpidätys.');
       putSafe('betaCReason',message);
       putSafe('betaCNextImpact','');
+      if(computed)paintTables(computed,reference);
     };
     if(!computed||!(computed.grossPerWeekend>0)){
       clear('Täytä perusansio ja yhden työviikonlopun brutto.');
       return null;
     }
-    const year=Number(document.getElementById('planYear')?.value);
-    const result=referenceWeekendAnalysis(computed.series,referenceNet2026,year,2026);
-    if(!result||!result.available){
-      clear('Yleisestä vuoden 2026 viiteaineistosta ei saada vertailua tälle tulovälille.');
-      paintTables(computed,null);
+    const target=optionalNumber(targetField,1000000);
+    const floor=optionalNumber(hourlyField,100000);
+    if(!target.ok||!floor.ok){
+      clear('Nettotavoitteen ja lisäneton alarajan on oltava nollia tai positiivisia euroja.');
       return null;
     }
-    const rows=result.points;
-    paintTables(computed,result);
-    paintMarginalChart(computed,result);
+    const year=Number(document.getElementById('planYear')?.value);
+    const reference=referenceWeekendAnalysis(computed.series,referenceNet2026,year,2026);
+    if(!reference?.available){
+      clear('Yleinen 2026-veroviite ei kata näitä lähtötuloja. C ei arvaa puuttuvaa verotusta.');
+      return null;
+    }
+    const sat=progressVal('sat'),sun=progressVal('sun');
+    const hours=Number.isFinite(sat)&&Number.isFinite(sun)?sat+sun:NaN;
+    const analysis=optimizeWeekendWorkload(reference.points,hours,{
+      targetMonthlyNet:target.value,minNetPerHour:floor.value
+    });
+    if(!analysis?.available){
+      clear(hours<=0
+        ?'Täytä lauantain ja sunnuntain lisätyötunnit, jotta eurot/tunti voidaan laskea.'
+        :'Veroviite ei kata lähtötuloa ja seuraavaa viikonloppua tai syötteet ovat virheellisiä.',
+        reference);
+      return reference;
+    }
+    const rows=reference.points;
+    paintTables(computed,reference,analysis);
+    paintMarginalChart(computed,reference,analysis);
     const aCount=chosenWeekends(weekFieldA);
     const next=Number.isInteger(aCount)&&aCount<52?rows[aCount+1]:null;
     putSafe('betaCNextImpact',next?.gain==null
-      ?'C: seuraavan viikonlopun yleinen 2026 nettoarvio ei ole tällä tulovälillä saatavilla.'
-      :'C (vuoden 2026 veroviite): '+(aCount+1)+'. viikonlopun arvioitu lisänetto '+
-        money(next.gain)+'. A ja B käyttävät eri, omia ennakonpidätysprosenttejasi.');
-    const tag=result.provisional
-      ?'Vertailuvuosi '+year+' · C käyttää vuoden 2026 viimeksi vahvistettua yleisviitettä, ei vuoden '+year+' verolakia.'
-      :'C käyttää Veronmaksajien vuoden 2026 yleistä koko vuoden nettoarviota.';
-    putSafe('betaCCompare',tag+' A/B ovat verokortin jälkeistä kassavirtaa, joten euroarvot eivät ole yksi yhteen verrannollisia.');
+      ?'C:n vertailu ei kata tämän lisäviikonlopun vuosituloja.'
+      :'C (yleinen 2026-viite): '+(aCount+1)+'. lisäviikonloppu tuo noin '+
+        money(next.gain)+' eli '+money(next.gain/hours)+'/lisätyötunti. A/B käyttävät omia ennakonpidätysprosentteja.');
+    const tag=reference.provisional
+      ?'Suunnitteluvuosi '+year+': C käyttää vuoden 2026 yleisviitettä, ei vuoden '+year+' verolakia.'
+      :'C käyttää vuoden 2026 julkaistua yleistä vuosinettoviitettä.';
+    putSafe('betaCCompare',tag+' A/B kuvaavat verokortin ennakonpidätyksen jälkeistä rahaa; eurot eivät ole samaa verolaskentaa.');
     putSafe('betaCFormula','Vuoden lähtöbrutto '+money(rows[0].gross)+
-      ' + '+money(result.perWeekend)+' / työviikonloppu. C vertailee 0–52 viikonloppua.');
-    putSafe('betaCLimit','Viitteen vuositulot 20 000–140 000 €. Välisummat arvioidaan julkaistun taulukon pisteiden väliltä.');
-    if(result.knee){
-      const k=result.knee;
-      putSafe('betaCCount',k.n+' viikonloppua');
-      putSafe('betaCGross',money(k.gross));
-      putSafe('betaCNet',money(k.net));
-      putSafe('betaCMonth',money(k.net/12));
-      putSafe('betaCPeriod',money(k.net/26));
-      putSafe('betaCResult',money(k.net)+'¹');
-      putSafe('betaCMarginal',money(k.beforeGain)+' → '+money(k.afterGain));
-      putSafe('betaCReason','C näyttää ensimmäisen vähintään 3 prosenttiyksikön laskun lisäbrutosta käteen jäävässä osuudessa (viikonloppu '+k.stepAt+'). '+
-        'Tämä on havaittu viitekäänne, EI paras tai suositeltu työmäärä.');
-      if(!result.provisional){currentC={found:true,n:k.n};cButton.disabled=false;}
-      else cStatus.textContent='C käyttää vuoden 2026 viitettä. Tarkkaa tavoitetta ei tallenneta vuodelle '+year+' ennen uuden verovuoden aineistoa.';
-    }else{
-      for(const id of ['betaCGross','betaCNet','betaCMonth','betaCPeriod'])
-        putSafe(id,'–');
-      putSafe('betaCCount','Ei selvää käännettä');
-      putSafe('betaCResult','Ei yhtä C-lukua');
-      putSafe('betaCMarginal','Katso A/B/C-käyrä');
-      putSafe('betaCReason','Veroviite ei osoita yhtä erityistä optimaalista viikonloppumäärää. Vuosinettot C:n mukaan näkyvät kaikkien viikonloppumäärien vertailutaulukoissa.');
+      ' + '+money(reference.perWeekend)+' / viikonloppu · '+hours.toLocaleString('fi-FI',{maximumFractionDigits:1})+
+      ' lisätyötuntia / viikonloppu.');
+    putSafe('betaCLimit','2026-viite kattaa näillä tuloilla viikonloput 0–'+analysis.covered+
+      '. Taulukon viitealue on 20 000–140 000 €; tietoja ei ekstrapoloida.');
+    const targetText=target.value===null?'':'Nettotavoite '+money(target.value)+'/kk. ';
+    const floorText=floor.value===null?'':'Lisäneton alaraja '+money(floor.value)+'/tunti. ';
+    const current=analysis.selection;
+    const endCount=current?.n??analysis.eligibleMax;
+    const displayed=rows[endCount];
+    const endNet=displayed.net;
+    const range=!current&&analysis.reason!=='target-unreachable';
+    const output=(a,b,denominator=1)=>range
+      ?money(a/denominator)+' – '+money(b/denominator):money(b/denominator);
+    if(current){
+      putSafe('betaCCount',current.n+' viikonloppua');
+      putSafe('betaCGross',money(current.gross));
+      putSafe('betaCNet',money(current.net));
+      putSafe('betaCMonth',money(current.monthlyNet));
+      putSafe('betaCPeriod',money(current.fortnightNet));
+      putSafe('betaCMarginal',current.nextGain===null?'52. viikonloppu on yläraja'
+        :'Seuraava '+money(current.nextGain));
+      putSafe('betaCHour',current.nextNetPerHour===null?'–':money(current.nextNetPerHour)+'/h');
+      putSafe('betaCReason',targetText+floorText+'Pienin työmäärä, jolla nettotavoite täyttyy. '+
+        'Lisäviikonloput on tarkistettu järjestyksessä, mukaan lukien niiden nettohyöty tunnissa.');
+      if(!reference.provisional) {
+        currentC={found:true,n:current.n};
+        cButton.disabled=false;
+      } else cStatus.textContent='Alustavaa 2026-veroviitettä ei tallenneta vuoden '+year+' tavoitteeksi.';
+    } else if(analysis.reason==='target-unreachable'){
+      putSafe('betaCCount','Tavoite ei toteudu ehdoilla');
+      putSafe('betaCGross',money(displayed.gross));
+      putSafe('betaCNet',money(endNet));
+      putSafe('betaCMonth',money(endNet/12));
+      putSafe('betaCPeriod',money(endNet/26));
+      putSafe('betaCMarginal',money(analysis.firstGain)+' → '+money(analysis.endGain));
+      putSafe('betaCHour',money(analysis.firstNetPerHour)+' → '+money(analysis.endNetPerHour)+'/h');
+      putSafe('betaCReason',targetText+floorText+'Annetuilla ehdoilla enintään '+
+        analysis.eligibleMax+' työviikonloppua täyttää lisätyön ehdot. '+
+        'Tavoitteesta jää puuttumaan '+money(analysis.missedBy)+' vuodessa. '+
+        'C ei nimeä toteutumatonta tavoitetta optimaaliseksi.');
+    } else {
+      putSafe('betaCCount','0–'+analysis.eligibleMax+' viikonloppua');
+      putSafe('betaCGross',output(rows[0].gross,displayed.gross));
+      putSafe('betaCNet',output(analysis.baselineNet,endNet));
+      putSafe('betaCMonth',output(analysis.baselineNet,endNet,12));
+      putSafe('betaCPeriod',output(analysis.baselineNet,endNet,26));
+      putSafe('betaCMarginal',money(analysis.firstGain)+' → '+money(analysis.endGain));
+      putSafe('betaCHour',money(analysis.firstNetPerHour)+' → '+money(analysis.endNetPerHour)+'/h');
+      putSafe('betaCReason',analysis.reason==='explore'
+        ?'Lisätyö kasvattaa nettotuloa mutta vie vapaa-aikaa. Ilman nettotavoitetta ei ole yhtä laskennallista optimia. Vertaa A/B:n työmäärät taulukkoon ja käyrään.'
+        :floorText+'Nämä työmäärät täyttävät asettamasi tuntituoton alarajan. '+
+          'Alue ei ole yksittäinen työmääräsuositus: aseta nettotavoite, jos haluat vähimmäismäärän.');
     }
-    return result;
+    if(reference.provisional&&analysis.reason!=='target-met')
+      cStatus.textContent='Vertailuvuosi '+year+' käyttää yhä vuoden 2026 veroviitettä.';
+    putSafe('betaCResult',current
+      ?money(current.net)+'¹ · '+current.n+' viikonloppua'
+      :range?output(analysis.baselineNet,endNet)+'¹'
+        :money(endNet)+'¹ · tavoitetta ei saavuteta');
+    return {...reference,selection:current};
   };
   cButton.addEventListener('click',()=>{
     if(!currentC)return;
@@ -652,6 +717,8 @@ function mount() {
     'extraA','extraB','otherDeductions','hourlyRate','ktaRate']){
     document.getElementById(id)?.addEventListener('input',update);
   }
+  targetField.addEventListener('input',update);
+  hourlyField.addEventListener('input',update);
   document.getElementById('weekendMethod')?.addEventListener('change',update);
   document.getElementById('rulesConfirmed')?.addEventListener('change',update);
   document.getElementById('planYear')?.addEventListener('input',update);
