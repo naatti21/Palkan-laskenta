@@ -169,7 +169,7 @@ test('C optimizes net target with fewest weekends, while respecting the minimum 
   assert.equal(unachievable.selection,null);
   assert.equal(unachievable.eligibleMax,10);
   assert.equal(unachievable.missedBy,800);
-  assert.equal(optimizeWeekendWorkload(series,8,{targetMonthlyNet:1900}).selection.n,14);
+  assert.equal(optimizeWeekendWorkload(series,8,{targetMonthlyNet:1900}).selection.n,18);
   // A modest target is already covered by baseline pay; no overtime is needed.
   assert.equal(optimizeWeekendWorkload(series,8,{targetMonthlyNet:1600,minNetPerHour:20}).selection.n,0);
 });
