@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference,optimalWeekendCount} from '../beta-ab-summary-model.mjs';
+import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference,calculateTaxKnee} from '../beta-ab-summary-model.mjs';
 
 const html=readFileSync(new URL('../experiments/year-planner/index.html',import.meta.url),'utf8');
 const context={};
@@ -54,32 +54,31 @@ test('missing inputs or failing/unavailable planner never produce a summary',()=
 });
 
 
-test('optimum balances marginal weekend net against a declared leisure value',()=>{
-  const series=computePlan({...inputs,weekends:52}).series;
-  const a=optimalWeekendCount(series,'A',500);
-  const b=optimalWeekendCount(series,'B',500);
-  assert.equal(a.n,10);
-  assert.equal(b.n,20);
-  assert.equal(a.free,42);
-  assert.equal(b.free,32);
-  assert.equal(Math.round(a.gain),6000);
-  assert.equal(Math.round(b.gain),11400);
-  assert.equal(Math.round(a.netPerNext),420);
-  assert.equal(Math.round(b.netPerNext),420);
-  assert.equal(optimalWeekendCount(series,'A',650).n,0);
-  assert.equal(optimalWeekendCount(series,'B',650).n,0);
-  assert.equal(optimalWeekendCount(series,'A',400).n,52);
-  assert.equal(optimalWeekendCount(series,'B',400).n,52);
-  // Equal utility chooses fewer weekends; no "one weekend is best" shortcut.
-  assert.equal(optimalWeekendCount(series,'A',600).n,0);
-  assert.equal(optimalWeekendCount(series,'B',570).n,0);
+test('C marks the withholding knee without a leisure value or a made-up optimum',()=>{
+  const planned=computePlan({...inputs,weekends:52});
+  const c=calculateTaxKnee(planned.series,inputs);
+  assert.deepEqual({n:c.n,card:c.card,stepAt:c.stepAt,free:c.free},
+    {n:10,card:'A',stepAt:11,free:42});
+  assert.equal(Math.round(c.gainBefore),600);
+  assert.equal(Math.round(c.gainAfter),420);
+  assert.equal(Math.round(c.gross),62000);
+  assert.equal(Math.round(c.net),37200);
+  // At a different annual baseline, the same model can find 12 weekends.
+  const twelve={...inputs,baseGross:65000,limitA:77000,limitB:100000};
+  const c12=calculateTaxKnee(computePlan({...twelve,weekends:52}).series,twelve);
+  assert.equal(c12.n,12);
+  assert.equal(c12.stepAt,13);
+  assert.equal(c12.card,'A');
+  // The suggestion never changes any user's selected workload.
+  assert.equal(inputs.weekends,2);
 });
-test('optimum is unavailable for invalid free-time values or incomplete series',()=>{
-  const series=computePlan({...inputs,weekends:52}).series;
-  for(const bad of [null,undefined,-1,NaN,Infinity,100001])
-    assert.equal(optimalWeekendCount(series,'A',bad),null);
-  assert.equal(optimalWeekendCount(series,'C',500),null);
-  assert.equal(optimalWeekendCount(series.slice(1),'A',500),null);
-  assert.equal(optimalWeekendCount(series.map((row,i)=>i===7?{...row,netA:NaN}:row),'A',500),null);
-  assert.deepEqual(series,computePlan({...inputs,weekends:52}).series);
+test('C says no knee when the model has no step; invalid or flat scenarios fail closed',()=>{
+  const noStep={...inputs,limitA:200000,limitB:210000};
+  assert.deepEqual(calculateTaxKnee(computePlan({...noStep,weekends:52}).series,noStep),
+    {found:false,reason:'no-step'});
+  const original=computePlan({...inputs,weekends:52}).series;
+  for(const bad of [null,[],original.slice(1),original.map((row,i)=>i===7?{...row,netA:NaN}:row)])
+    assert.equal(calculateTaxKnee(bad,inputs),null);
+  assert.equal(calculateTaxKnee(original,{...inputs,rateA:NaN}),null);
+  assert.deepEqual(original,computePlan({...inputs,weekends:52}).series);
 });
