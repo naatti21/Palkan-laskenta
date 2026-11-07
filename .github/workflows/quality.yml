@@ -2,7 +2,7 @@ name: Quality gate
 
 on:
   push:
-    branches: ["main", "develop", "deploy/beta-compact-precision-20261106", "refactor/beta-summary-boundaries"]
+    branches: ["main", "develop", "deploy/beta-compact-precision-20261106"]
   pull_request:
   workflow_dispatch:
 
