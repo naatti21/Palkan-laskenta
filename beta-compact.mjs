@@ -25,19 +25,6 @@ export function installCompact() {
     group.append(section);
     title.hidden = true;
   }
-  const planner = byId("plannerFrame");
-  const jump = node("select","");
-  jump.setAttribute("aria-label","Siirry laskurin osaan");
-  jump.add(new Option("Siirry laskurin osaan",""));
-  for (const [key,label] of [["history","Historian esitäyttö"],["weekends","Työaika ja viikonloput"],["income","Vuosibrutto"],["tax","Verokortit A/B"],["results","Tulokset"],["curves","Käyrät"],["sample","Vertailupisteet"]]) {
-    jump.add(new Option(label,key+"-title"));
-  }
-  jump.onchange = () => {
-    const target = planner.contentDocument?.getElementById(jump.value);
-    if (target) { target.tabIndex = -1; target.focus(); target.scrollIntoView({block:"start"}); }
-    jump.value = "";
-  };
-  planner.before(jump);
   const opening = byId("ledgerOpening");
   opening.querySelector("h2").textContent = "Seuranta";
 
