@@ -161,7 +161,7 @@ test('C reference curve does not hide unrepresented income ranges or compare as 
   await p.locator('#weekendGross').fill('1000');
   await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
   await expect(p.locator('#allSamples tr').last().locator('.beta-c-net-cell')).toHaveText('–');
-  await expect(p.locator('#betaCCompare')).toContainText('A/B ovat verokortin jälkeistä kassavirtaa');
+  await expect(p.locator('#betaCCompare')).toContainText('A/B kuvaavat verokortin ennakonpidätyksen jälkeistä rahaa');
   await p.locator('#baseGross').fill('180000');
   await expect(p.locator('#betaCCount')).toHaveText('–');
   await expect(p.locator('#betaCReason')).toContainText('ei kata näitä lähtötuloja');
