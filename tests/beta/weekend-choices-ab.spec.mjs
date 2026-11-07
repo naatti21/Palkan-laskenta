@@ -90,7 +90,7 @@ test('A/B cards stay within 320 / 360 / 412 px mobile viewports',async({page})=>
 });
 
 
-test('C travels beside A/B through cards, results, sample tables and two relevant charts',async({page})=>{
+test('C is a real optimizer alongside A/B: no arbitrary optimum, then minimum workload for a net goal',async({page})=>{
   await page.setViewportSize({width:360,height:800});
   await page.goto('/index.html');
   await page.getByRole('button',{name:'Laskuri'}).click();
@@ -107,35 +107,48 @@ test('C travels beside A/B through cards, results, sample tables and two relevan
   await p.locator('#planYear').fill('2026');
   await p.locator('#baseGross').fill('35000');
   await p.locator('#weekendGross').fill('1000');
-  await expect(p.locator('#betaCCount')).toHaveText('5 viikonloppua');
-  await expect(p.locator('#betaCGross')).toHaveText('40 000 €');
-  await expect(p.locator('#betaCNet')).toHaveText('30 268 €');
-  await expect(p.locator('#betaCMarginal')).toHaveText('595 € → 522 €');
-  await expect(p.locator('#betaCResult')).toContainText('30 268 €');
-  await expect(p.locator('#betaCMonth')).toHaveText('2 522 €');
-  await expect(p.locator('#betaCPeriod')).toHaveText('1 164 €');
+  await expect(p.locator('#betaCCount')).toHaveText('0–52 viikonloppua');
+  await expect(p.locator('#betaCNet')).toContainText(' – ');
+  await expect(p.locator('#betaCReason')).toContainText('ei ole yhtä laskennallista optimia');
+  await expect(p.locator('#betaCUseGoal')).toBeDisabled();
   await expect(p.locator('#samples').locator('xpath=..').locator('thead')).toContainText('C: netto');
-  await expect(p.locator('#allSamples').locator('xpath=..').locator('thead')).toContainText('C: netto');
-  await expect(p.locator('#samples .beta-c-net-cell').first()).toBeVisible();
   await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
-  await expect(p.locator('#samples [data-c-knee="yes"] .point-count')).toHaveText('5');
   await expect(p.locator('#netChart svg polyline.line')).toHaveCount(3);
-  await expect(p.locator('#netChart')).toContainText('C');
+  await expect(p.locator('#betaProgressChart svg [data-series="C"]')).toHaveCount(0);
+
+  await p.locator('#betaCTarget').fill('3000');
+  await expect(p.locator('#betaCCount')).toHaveText('17 viikonloppua');
+  await expect(p.locator('#betaCGross')).toHaveText('52 000 €');
+  await expect(p.locator('#betaCNet')).toHaveText('36 363 €');
+  await expect(p.locator('#betaCMonth')).toHaveText('3 030 €');
+  await expect(p.locator('#betaCPeriod')).toHaveText('1 399 €');
+  await expect(p.locator('#betaCReason')).toContainText('Pienin työmäärä');
+  await expect(p.locator('#betaCUseGoal')).toBeEnabled();
+  await expect(p.locator('#samples [data-c-optimized="yes"] .point-count')).toHaveText('17');
+  await expect(p.locator('#netChart svg [data-c-selected="yes"]')).toHaveCount(1);
   await expect(p.locator('#betaProgressChart svg [data-series="C"]')).toHaveCount(1);
-  await expect(p.locator('#betaCReason')).toContainText('EI paras');
   await p.locator('#betaWeekendsA').fill('3');
   await p.locator('#betaWeekendsB').fill('9');
-  await expect(p.locator('#betaCCount')).toHaveText('5 viikonloppua');
+  await expect(p.locator('#betaCCount')).toHaveText('17 viikonloppua');
   await expect(p.locator('#betaWeekendsA')).toHaveValue('3');
   await expect(p.locator('#betaWeekendsB')).toHaveValue('9');
-  await expect(p.locator('#betaCNextImpact')).toContainText('C (vuoden 2026 veroviite)');
-  await p.locator('#baseGross').fill('65000');
-  await expect(p.locator('#betaCCount')).toHaveText('Ei selvää käännettä');
+
+  // A high minimum gain/hour makes the income target infeasible, not an
+  // artificially "optimal" shorter workload.
+  await p.locator('#betaCMinPerHour').fill('35');
+  await expect(p.locator('#betaCCount')).toHaveText('Tavoite ei toteudu ehdoilla');
+  await expect(p.locator('#betaCReason')).toContainText('enintään 5 työviikonloppua');
   await expect(p.locator('#betaCUseGoal')).toBeDisabled();
-  await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
-  await expect(p.locator('#netChart svg polyline.line')).toHaveCount(3);
+  await p.locator('#betaCMinPerHour').fill('');
+  await expect(p.locator('#betaCCount')).toHaveText('17 viikonloppua');
+  await p.locator('#betaCTarget').fill('');
+  await expect(p.locator('#betaCCount')).toHaveText('0–52 viikonloppua');
+  await expect(p.locator('#betaCUseGoal')).toBeDisabled();
+
   await p.locator('#planYear').fill('2027');
-  await expect(p.locator('#betaCCompare')).toContainText('vuoden 2026 viimeksi vahvistettua yleisviitettä');
+  await p.locator('#betaCTarget').fill('3000');
+  await expect(p.locator('#betaCCount')).toHaveText('17 viikonloppua');
+  await expect(p.locator('#betaCCompare')).toContainText('käyttää vuoden 2026 yleisviitettä');
   await expect(p.locator('#betaCUseGoal')).toBeDisabled();
 });
 
@@ -148,8 +161,8 @@ test('C reference curve does not hide unrepresented income ranges or compare as 
   await p.locator('#weekendGross').fill('1000');
   await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
   await expect(p.locator('#allSamples tr').last().locator('.beta-c-net-cell')).toHaveText('–');
-  await expect(p.locator('#betaCCompare')).toContainText('A/B ovat verokortin jälkeistä kassavirtaa');
+  await expect(p.locator('#betaCCompare')).toContainText('A/B kuvaavat verokortin ennakonpidätyksen jälkeistä rahaa');
   await p.locator('#baseGross').fill('180000');
   await expect(p.locator('#betaCCount')).toHaveText('–');
-  await expect(p.locator('#betaCReason')).toContainText('ei saada vertailua');
+  await expect(p.locator('#betaCReason')).toContainText('ei kata näitä lähtötuloja');
 });

@@ -131,3 +131,81 @@ export function referenceWeekendAnalysis(series, referenceNet, year, referenceYe
   }
   return {available:true,referenceYear,planningYear:year,provisional,perWeekend,points:marginal,knee};
 }
+
+
+/**
+ * Evaluate the trade-off between take-home income, weekend time and additional
+ * earnings per worked hour. The public reference series is NOT a personal tax
+ * forecast. Without a user preference there is no mathematically unique best
+ * workload: more work gives more money but costs more time.
+ *
+ * Opt-in constraints:
+ *   targetMonthlyNet – required average annual net / 12 (EUR; nullable)
+ *   minNetPerHour – minimum NET from every consecutive added weekend, per
+ *                   extra work hour (EUR; nullable)
+ *
+ * Among consecutive eligible workloads, choose the MINIMUM weekend count
+ * meeting the target. Never leap over a low-return weekend, extrapolate outside
+ * the published range, or create a fictional optimum without a target.
+ */
+export function optimizeWeekendWorkload(points, weekendHours, {
+  targetMonthlyNet=null, minNetPerHour=null
+}={}) {
+  const validOptional=(x,max)=>x===null||
+    (typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max);
+  if(!Array.isArray(points)||points.length!==53 ||
+    !Number.isFinite(weekendHours)||weekendHours<=0||weekendHours>48 ||
+    !validOptional(targetMonthlyNet,1000000)||
+    !validOptional(minNetPerHour,100000))return null;
+  const rows=points.map((p,n)=>{
+    if(p?.n!==n||!Number.isFinite(p.gross)||p.gross<0||
+       (p.net!==null&&(!Number.isFinite(p.net)||p.net<0)))return null;
+    return {n,gross:p.gross,net:p.net};
+  });
+  if(rows.some(p=>p===null))return null;
+  if(rows[0].net===null)return {available:false,reason:'missing-baseline'};
+  const marginal=[];
+  let covered=0;
+  for(let n=1;n<=52;n++){
+    if(rows[n].net===null||rows[n-1].net===null)break;
+    const gain=rows[n].net-rows[n-1].net;
+    const grossGain=rows[n].gross-rows[n-1].gross;
+    if(!(grossGain>0))return {available:false,reason:'no-extra-gross'};
+    marginal.push({n,gain,netPerHour:gain/weekendHours,grossGain});
+    covered=n;
+  }
+  if(!covered)return {available:false,reason:'missing-range'};
+  let eligibleMax=0;
+  for(const row of marginal) {
+    if(row.gain<=0.005 ||
+      (minNetPerHour!==null&&row.netPerHour+0.005<minNetPerHour))break;
+    eligibleMax=row.n;
+  }
+  const targetAnnual=targetMonthlyNet===null?null:targetMonthlyNet*12;
+  let selectedCount=null;
+  if(targetAnnual!==null)
+    for(let n=0;n<=eligibleMax;n++)
+      if(rows[n].net+0.005>=targetAnnual){selectedCount=n;break;}
+  const targetMet=targetAnnual!==null&&selectedCount!==null;
+  const reason=targetAnnual===null?(minNetPerHour===null?'explore':'eligible-range')
+    :targetMet?'target-met':'target-unreachable';
+  const selection=selectedCount===null?null:{
+    n:selectedCount,gross:rows[selectedCount].gross,net:rows[selectedCount].net,
+    monthlyNet:rows[selectedCount].net/12, fortnightNet:rows[selectedCount].net/26,
+    extraNet:rows[selectedCount].net-rows[0].net,
+    extraHours:selectedCount*weekendHours,
+    nextGain:marginal[selectedCount]?.gain??null,
+    nextNetPerHour:marginal[selectedCount]?.netPerHour??null
+  };
+  const lastEligible=rows[eligibleMax];
+  return {
+    available:true,reason,selection,covered,eligibleMax,
+    baselineNet:rows[0].net,lastCoveredNet:rows[covered].net,
+    highestEligibleMonthly:lastEligible.net/12,
+    missedBy:targetAnnual===null?null:Math.max(0,targetAnnual-lastEligible.net),
+    targetMonthlyNet,minNetPerHour,weekendHours,
+    firstGain:marginal[0].gain,firstNetPerHour:marginal[0].netPerHour,
+    endGain:marginal[covered-1].gain,endNetPerHour:marginal[covered-1].netPerHour,
+    marginal
+  };
+}

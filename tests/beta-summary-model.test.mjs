@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference,calculateTaxKnee,referenceWeekendAnalysis} from '../beta-ab-summary-model.mjs';
+import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference,calculateTaxKnee,referenceWeekendAnalysis,optimizeWeekendWorkload} from '../beta-ab-summary-model.mjs';
 
 const html=readFileSync(new URL('../experiments/year-planner/index.html',import.meta.url),'utf8');
 const context={};
@@ -144,4 +144,67 @@ test('C never silently uses 2026 public tax reference for 2027 or extrapolates u
   assert.equal(outside.available,false);
   assert.equal(outside.reason,'range');
   assert.equal(referenceWeekendAnalysis([],referenceNet2026,2026),null);
+});
+
+
+test('C optimizes net target with fewest weekends, while respecting the minimum earned EUR per work-hour',()=>{
+  const series=Array.from({length:53},(_,n)=>({
+    n,gross:35000+n*500,net:20000+200*Math.min(n,10)+100*Math.max(0,n-10)
+  }));
+  const chosen=optimizeWeekendWorkload(series,8,{targetMonthlyNet:1750,minNetPerHour:20});
+  assert.equal(chosen.reason,'target-met');
+  assert.equal(chosen.selection.n,5);
+  assert.equal(chosen.selection.net,21000);
+  assert.equal(chosen.selection.monthlyNet,1750);
+  assert.equal(chosen.selection.extraNet,1000);
+  assert.equal(chosen.selection.extraHours,40);
+  assert.equal(chosen.selection.nextGain,200);
+  assert.equal(chosen.selection.nextNetPerHour,25);
+  assert.equal(chosen.eligibleMax,10);
+  assert.equal(chosen.covered,52);
+  assert.equal(chosen.firstNetPerHour,25);
+  assert.equal(chosen.endNetPerHour,12.5);
+  const unachievable=optimizeWeekendWorkload(series,8,{targetMonthlyNet:1900,minNetPerHour:20});
+  assert.equal(unachievable.reason,'target-unreachable');
+  assert.equal(unachievable.selection,null);
+  assert.equal(unachievable.eligibleMax,10);
+  assert.equal(unachievable.missedBy,800);
+  assert.equal(optimizeWeekendWorkload(series,8,{targetMonthlyNet:1900}).selection.n,18);
+  // A modest target is already covered by baseline pay; no overtime is needed.
+  assert.equal(optimizeWeekendWorkload(series,8,{targetMonthlyNet:1600,minNetPerHour:20}).selection.n,0);
+});
+
+test('C does not invent a universal best weekend count without personal constraints',()=>{
+  const series=Array.from({length:53},(_,n)=>({n,gross:30000+1000*n,net:24000+300*n}));
+  const noGoal=optimizeWeekendWorkload(series,16);
+  assert.equal(noGoal.reason,'explore');
+  assert.equal(noGoal.selection,null);
+  assert.equal(noGoal.eligibleMax,52);
+  const minOnly=optimizeWeekendWorkload(series,16,{minNetPerHour:20});
+  assert.equal(minOnly.reason,'eligible-range');
+  assert.equal(minOnly.selection,null);
+  assert.equal(minOnly.eligibleMax,0);
+  assert.equal(minOnly.firstNetPerHour,18.75);
+  assert.equal(optimizeWeekendWorkload(series,16,{minNetPerHour:18}).eligibleMax,52);
+});
+
+test('C avoids extrapolating partial tax reference and validates income/working hours',()=>{
+  const series=Array.from({length:53},(_,n)=>({n,gross:130000+n*500,
+    net:n<=20?65000+230*n:null}));
+  const analysis=optimizeWeekendWorkload(series,16,{targetMonthlyNet:5900});
+  assert.equal(analysis.reason,'target-unreachable');
+  assert.equal(analysis.covered,20);
+  assert.equal(analysis.eligibleMax,20);
+  assert.equal(analysis.selection,null);
+  assert.equal(analysis.highestEligibleMonthly,(65000+230*20)/12);
+  const noBaseline=series.map(p=>p.n===0?{...p,net:null}:p);
+  assert.equal(optimizeWeekendWorkload(noBaseline,16).reason,'missing-baseline');
+  assert.equal(optimizeWeekendWorkload(series,0),null);
+  assert.equal(optimizeWeekendWorkload(series,49),null);
+  assert.equal(optimizeWeekendWorkload(series,16,{targetMonthlyNet:-1}),null);
+  assert.equal(optimizeWeekendWorkload(series,16,{minNetPerHour:NaN}),null);
+  assert.equal(optimizeWeekendWorkload(series.slice(1),16),null);
+  assert.equal(optimizeWeekendWorkload(series.map((p,n)=>n===15?{...p,gross:NaN}:p),16),null);
+  // Guard original reference against mutation.
+  assert.equal(series[0].gross,130000);
 });
