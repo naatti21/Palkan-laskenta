@@ -69,9 +69,7 @@ export function installCompact() {
   // Latest net already has a dedicated headline above. Preserve the existing
   // YTD/net/brutto/overtime metrics, but show them only on explicit expansion
   // instead of repeating the same payday across the home screen.
-  const more = byId("dashboardMore");
-  const extraMetrics = byId("dashboardDetails");
-  extraMetrics.before(dashboard);
+  byId("dashboardDetails").before(dashboard);
   opening.append(byId("taxCardProgress"));
   let latestPayDate = null;
 
