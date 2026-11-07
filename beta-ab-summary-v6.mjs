@@ -33,7 +33,7 @@ const progressVal=id=>{
   const n=Number(text); // Planner also treats an empty optional number as zero.
   return Number.isFinite(n)?n:null;
 };
-function drawProgressChart(plan,rowA,rowB,year,nA,nB) {
+function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
   const host=document.getElementById('betaProgressChart');
   const note=document.getElementById('betaProgressSummary');
   if(!host||!note)return;
@@ -96,6 +96,20 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB) {
     svg.append(progressSvg('title',{},label+': vuosibrutto '+money(gross)+
       ', laskurin vähennysosuus '+progressPct(percent)));
   }
+  // A and B are withholding-based points. C is on the already drawn
+  // reference-tax curve, NOT a third user-entered tax card.
+  if(cReference?.knee){
+    const gross=cReference.knee.gross;
+    const cTax=referenceNet2026(gross);
+    if(cTax){
+      svg.append(progressSvg('circle',{cx:x(gross),cy:y(cTax.effectiveAllInPercent),
+        r:7,fill:'#de95e3',stroke:'#101820','stroke-width':2,
+        'data-series':'C'}));
+      svg.append(progressSvg('title',{},'C: '+cReference.knee.n+' viikonloppua, '+
+        money(gross)+' vuosibrutto, yleinen 2026 vero- ja maksutaso '+
+        progressPct(cTax.effectiveAllInPercent)));
+    }
+  }
   host.append(svg);
   const baseRef=referenceNet2026(baseline);
   const shift=(Math.abs(rowA.gross-baseline)>.5||Math.abs(rowB.gross-baseline)>.5)&&baseRef
@@ -118,6 +132,12 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB) {
       ', viiteveroaste '+progressPct(b.referencePercent)+
       ', laskurin vähennysosuus '+progressPct(b.bDeductionPercent)+
       '.'+shift+' A/B-vähennysosuus ei ole lopullinen veroaste.'+yearWarning;
+  }
+  if(cReference?.knee){
+    note.textContent+=' C: '+cReference.knee.n+' viikonloppua vuoden 2026 yleisen veroviitteen taitekohdassa. '+
+      'C ei ole oma ennakonpidätysprosentti eikä verosuositus.';
+  }else if(cReference?.available){
+    note.textContent+=' C: Veronmaksajien yleinen 2026 verokäyrä ei osoita selvää taitekohtaa näillä tuloilla.';
   }
 }
 
