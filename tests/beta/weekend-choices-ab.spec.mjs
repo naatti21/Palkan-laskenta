@@ -114,8 +114,8 @@ test('C travels beside A/B through cards, results, sample tables and two relevan
   await expect(p.locator('#betaCResult')).toContainText('30 268 €');
   await expect(p.locator('#betaCMonth')).toHaveText('2 522 €');
   await expect(p.locator('#betaCPeriod')).toHaveText('1 164 €');
-  await expect(p.locator('#samples').closest('table').locator('thead')).toContainText('C: netto');
-  await expect(p.locator('#allSamples').closest('table').locator('thead')).toContainText('C: netto');
+  await expect(p.locator('#samples').locator('xpath=..').locator('thead')).toContainText('C: netto');
+  await expect(p.locator('#allSamples').locator('xpath=..').locator('thead')).toContainText('C: netto');
   await expect(p.locator('#samples .beta-c-net-cell').first()).toBeVisible();
   await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
   await expect(p.locator('#samples [data-c-knee="yes"] .point-count')).toHaveText('5');
