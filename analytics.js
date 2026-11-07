@@ -41,6 +41,32 @@ function sumOvertime(records) {
   };
 }
 
+
+// Exact four-code payroll evidence used by the planner history suggestions.
+// Not a standard tax rate, full gross/net gap, or yearly deduction percentage.
+// Use the newest qualifying *unambiguous* payslip, never a mean of missing
+// fields or the latest card default.
+const PLANNER_DEDUCTION_CODES = Object.freeze(["90100","90200","90400","90920"]);
+function latestRecognizedDeductions(records) {
+  const found=[];
+  for(const record of records){
+    const gross=finiteNumber(record.values?.grossPay);
+    if(gross===null||gross<=0)continue;
+    const lines=Array.isArray(record.payLines)?record.payLines:[];
+    const matches=PLANNER_DEDUCTION_CODES.map(code=>lines.find(line=>
+      String(line?.code)===code && finiteNumber(line?.amount)!==null && line.amount<0));
+    if(matches.some(line=>!line))continue;
+    const rate=matches.reduce((total,line)=>total-Math.min(0,line.amount),0)/gross*100;
+    if(rate<0||rate>30||!Number.isFinite(rate))continue;
+    found.push({rate:Math.round(rate*100)/100,
+      payDate:record.values.payDate, incomeSourceId:record.incomeSourceId||null});
+  }
+  const last=found.at(-1)||null;
+  return {latestRate:last?.rate??null,latestPayDate:last?.payDate??null,
+    incomeSourceId:last?.incomeSourceId??null,
+    supportedPayslips:found.length,reviewedPayslips:records.length};
+}
+
 export function buildYearAnalysis(records, year) {
   if (!Number.isInteger(year) || year < 1900 || year > 2200) throw new Error("Virheellinen analyysivuosi");
   const projection = projectPayroll(Array.isArray(records) ? records : []);
@@ -70,6 +96,7 @@ export function buildYearAnalysis(records, year) {
     };
   });
   const hours = sumOvertime(clean);
+  const observedDeductions = latestRecognizedDeductions(clean);
   const last = yearly.at(-1) || null;
   const totalGross = rejected ? null : sumMoney(clean, "grossPay");
   const totalNet = rejected ? null : sumMoney(clean, "netPay");
@@ -86,6 +113,10 @@ export function buildYearAnalysis(records, year) {
     sourceScope: incomeScope(yearly),
     latestYtd: rejected || incomeScope(yearly).multiple || yearly.filter(r => r.values.payDate === last?.values.payDate).length > 1 ? null : finiteNumber(last?.values?.ytdTaxableIncome),
     lastPaymentDate: last?.values?.payDate ?? null,
+    deductions: rejected
+      ? {...observedDeductions,latestRate:null,latestPayDate:null,
+          incomeSourceId:null,blockedByConflicts:true}
+      : {...observedDeductions,blockedByConflicts:false},
     overtime: {
       ...hours,
       // Missing observations and conflicting periods preclude a precise annual total.
