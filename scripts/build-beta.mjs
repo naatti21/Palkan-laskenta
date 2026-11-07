@@ -19,7 +19,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
   throw new Error('Use only the approved palkka-beta.pages.dev origin or a dedicated local beta test port.');
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = ['beta-compact.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
+const files = ['beta-compact.mjs', 'beta-weekend-tracker.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
@@ -428,7 +428,7 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 }
 sw = replaceUnique(sw, 'const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";', 'service worker dependency');
 sw = replaceUnique(sw, 'const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-beta-v' + revision}';`, 'service worker dependency');
-sw = replaceUnique(sw, '"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs",', 'service worker dependency');
+sw = replaceUnique(sw, '"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs", "./beta-weekend-tracker.mjs",', 'service worker dependency');
 sw = replaceUnique(sw, '"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",', 'service worker dependency');
 sw = replaceUnique(sw, '"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs", "./experiments/year-planner/ab-summary-model.mjs"', 'service worker dependency');
 sw = replaceUnique(sw, '"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",', 'service worker dependency');
