@@ -13,6 +13,9 @@ const state = page => page.evaluate(async()=>{
 for(const width of [360,412]) {
   test(`payment decisions remain usable and durable at ${width}px`,async({page,context})=>{
     await page.setViewportSize({width,height:915});await page.goto('/index.html');
+    // The file input is visible before app.js registers its change handler.
+    // Wait for initialized year controls before uploading a synthetic PDF.
+    await expect(page.locator('#historyYear option')).toHaveCount(1);
     await page.locator('#pdfInput').setInputFiles(pdf());
     await expect(page.locator('#status')).toContainText('tallennettiin automaattisesti');
     await page.locator('#pdfInput').setInputFiles(pdf());
