@@ -96,7 +96,10 @@ export function referenceWeekendAnalysis(series, referenceNet, year, referenceYe
   if(!Array.isArray(series)||series.length!==53||
     series.some((row,i)=>row?.n!==i||!Number.isFinite(row.gross))||
     typeof referenceNet!=='function')return null;
-  if(year!==referenceYear)return {available:false,reason:'year',year,referenceYear};
+  // A future planning year may display the *last published year* strictly as
+  // a labelled benchmark, never as that year's predicted or official taxation.
+  if(!Number.isInteger(year)||year<2020||year>2100)return {available:false,reason:'year',year,referenceYear};
+  const provisional=year!==referenceYear;
   const points=series.map(row=>{
     const result=referenceNet(row.gross);
     return {n:row.n,gross:row.gross,net:result?.net??null};
@@ -126,5 +129,5 @@ export function referenceWeekendAnalysis(series, referenceNet, year, referenceYe
       break;
     }
   }
-  return {available:true,referenceYear,perWeekend,points:marginal,knee};
+  return {available:true,referenceYear,planningYear:year,provisional,perWeekend,points:marginal,knee};
 }
