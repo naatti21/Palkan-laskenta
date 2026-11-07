@@ -111,6 +111,8 @@ test('C is a real optimizer alongside A/B: no arbitrary optimum, then minimum wo
   await expect(p.locator('#betaCNet')).toContainText(' – ');
   await expect(p.locator('#betaCReason')).toContainText('ei ole yhtä laskennallista optimia');
   await expect(p.locator('#betaCUseGoal')).toBeDisabled();
+  await expect(p.locator('#betaCMinPerHour')).toHaveCount(0);
+  await expect(p.locator('#betaCHour')).toHaveCount(0);
   await expect(p.locator('#samples').locator('xpath=..').locator('thead')).toContainText('C: netto');
   await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
   await expect(p.locator('#netChart svg polyline.line')).toHaveCount(3);
@@ -122,7 +124,9 @@ test('C is a real optimizer alongside A/B: no arbitrary optimum, then minimum wo
   await expect(p.locator('#betaCNet')).toHaveText('36 363 €');
   await expect(p.locator('#betaCMonth')).toHaveText('3 030 €');
   await expect(p.locator('#betaCPeriod')).toHaveText('1 399 €');
-  await expect(p.locator('#betaCReason')).toContainText('Pienin työmäärä');
+  await expect(p.locator('#betaCReason')).toContainText('Tähän riittää vähintään 17 työviikonloppua');
+  await expect(p.locator('#betaCMarginal')).toContainText('€');
+  await expect(p.locator('#betaCMarginal')).not.toContainText('/h');
   await expect(p.locator('#betaCUseGoal')).toBeEnabled();
   await expect(p.locator('#samples [data-c-optimized="yes"] .point-count')).toHaveText('17');
   await expect(p.locator('#netChart svg [data-c-selected="yes"]')).toHaveCount(1);
@@ -133,13 +137,11 @@ test('C is a real optimizer alongside A/B: no arbitrary optimum, then minimum wo
   await expect(p.locator('#betaWeekendsA')).toHaveValue('3');
   await expect(p.locator('#betaWeekendsB')).toHaveValue('9');
 
-  // A high minimum gain/hour makes the income target infeasible, not an
-  // artificially "optimal" shorter workload.
-  await p.locator('#betaCMinPerHour').fill('35');
-  await expect(p.locator('#betaCCount')).toHaveText('Tavoite ei toteudu ehdoilla');
-  await expect(p.locator('#betaCReason')).toContainText('enintään 5 työviikonloppua');
+  // The only optional C input is a monthly NET goal. No invented hourly wage.
+  await p.locator('#betaCTarget').fill('100000');
+  await expect(p.locator('#betaCCount')).toHaveText('Nettotavoite ei täyty');
   await expect(p.locator('#betaCUseGoal')).toBeDisabled();
-  await p.locator('#betaCMinPerHour').fill('');
+  await p.locator('#betaCTarget').fill('3000');
   await expect(p.locator('#betaCCount')).toHaveText('17 viikonloppua');
   await p.locator('#betaCTarget').fill('');
   await expect(p.locator('#betaCCount')).toHaveText('0–52 viikonloppua');
