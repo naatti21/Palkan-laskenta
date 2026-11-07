@@ -87,3 +87,47 @@ export function calculateTaxKnee(series, {limitA,limitB,rateA,rateB,extraA,extra
   return {...steps[0],found:true,cards,baseline,grossPerWeekend,
     selectionReason:'first-card-threshold'};
 }
+
+
+// C's public reference is separate from A/B's withholding assumptions.
+// It uses the year-specific published full-year NET reference only.
+// Do not extrapolate missing income ranges or silently reuse another year.
+export function referenceWeekendAnalysis(series, referenceNet, year, referenceYear=2026) {
+  if(!Array.isArray(series)||series.length!==53||
+    series.some((row,i)=>row?.n!==i||!Number.isFinite(row.gross))||
+    typeof referenceNet!=='function')return null;
+  // A future planning year may display the *last published year* strictly as
+  // a labelled benchmark, never as that year's predicted or official taxation.
+  if(!Number.isInteger(year)||year<2020||year>2100)return {available:false,reason:'year',year,referenceYear};
+  const provisional=year!==referenceYear;
+  const points=series.map(row=>{
+    const result=referenceNet(row.gross);
+    return {n:row.n,gross:row.gross,net:result?.net??null};
+  });
+  if(points.every(p=>p.net===null))return {available:false,reason:'range',year,referenceYear};
+  const perWeekend=points[1].gross-points[0].gross;
+  if(!(perWeekend>0))return {available:false,reason:'weekend-gross',year,referenceYear};
+  const marginal=points.map((p,i)=>{
+    const previous=points[i-1];
+    const gain=i>0&&p.net!==null&&previous.net!==null?p.net-previous.net:null;
+    return {...p,gain,retained:gain===null?null:100*gain/perWeekend};
+  });
+  // Find only a material (> 3 percentage points) fall in the public
+  // curve's marginal net retention. Flat/high-tax segments have NO
+  // uniquely optimal weekend count. Do not impose a fake recommendation.
+  let knee=null;
+  for(let i=2;i<marginal.length;i++){
+    const before=marginal[i-1],after=marginal[i];
+    if(before.retained===null||after.retained===null)continue;
+    if(before.retained-after.retained>=3){
+      knee={
+        n:i-1,stepAt:i,
+        beforeGain:before.gain,afterGain:after.gain,
+        beforeRetained:before.retained,afterRetained:after.retained,
+        gross:before.gross,net:before.net
+      };
+      break;
+    }
+  }
+  return {available:true,referenceYear,planningYear:year,provisional,perWeekend,points:marginal,knee};
+}

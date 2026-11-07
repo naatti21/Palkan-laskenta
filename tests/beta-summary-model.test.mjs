@@ -1,8 +1,9 @@
+import { referenceNet2026 } from '../beta-net-reference-2026.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference,calculateTaxKnee} from '../beta-ab-summary-model.mjs';
+import {parseDisplayedEuro,parseWeekendCount,summaryBreakdown,cashFlowDifference,calculateTaxKnee,referenceWeekendAnalysis} from '../beta-ab-summary-model.mjs';
 
 const html=readFileSync(new URL('../experiments/year-planner/index.html',import.meta.url),'utf8');
 const context={};
@@ -110,4 +111,37 @@ test('C does not splice tax cards together and excludes invalid/flat scenarios',
     assert.equal(calculateTaxKnee(bad,inputs),null);
   assert.equal(calculateTaxKnee(original,{...inputs,rateA:NaN}),null);
   assert.deepEqual(original,computePlan({...inputs,weekends:52}).series);
+});
+
+
+test('public C reference finds actual net-retention drop from 35k without imposing 12 weekends',()=>{
+  const c={...inputs,baseGross:35000,weekendGross:1000};
+  const series=computePlan({...c,weekends:52}).series;
+  const ref=referenceWeekendAnalysis(series,referenceNet2026,2026);
+  assert.equal(ref.available,true);
+  assert.equal(ref.knee.n,5);
+  assert.equal(Math.round(ref.knee.beforeGain),595);
+  assert.equal(Math.round(ref.knee.afterGain),522);
+  assert.equal(ref.perWeekend,1000);
+  assert.equal(ref.points[12].gross,47000);
+  const high={...inputs,baseGross:65000};
+  const flat=referenceWeekendAnalysis(computePlan({...high,weekends:52}).series,referenceNet2026,2026);
+  assert.equal(flat.available,true);
+  assert.equal(flat.knee,null);
+});
+
+test('C never silently uses 2026 public tax reference for 2027 or extrapolates unavailable gross',()=>{
+  const series=computePlan({...inputs,weekends:52}).series;
+  const wrongYear=referenceWeekendAnalysis(series,referenceNet2026,2027);
+  assert.equal(wrongYear.available,true);
+  assert.equal(wrongYear.provisional,true);
+  assert.equal(wrongYear.referenceYear,2026);
+  assert.equal(wrongYear.planningYear,2027);
+  assert.equal(referenceWeekendAnalysis(series,referenceNet2026,2026).provisional,false);
+  assert.equal(referenceWeekendAnalysis(series,referenceNet2026,NaN).reason,'year');
+  const outside=referenceWeekendAnalysis(
+    computePlan({...inputs,baseGross:180000,weekends:52}).series,referenceNet2026,2026);
+  assert.equal(outside.available,false);
+  assert.equal(outside.reason,'range');
+  assert.equal(referenceWeekendAnalysis([],referenceNet2026,2026),null);
 });
