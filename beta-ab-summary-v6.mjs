@@ -1,7 +1,7 @@
 // Beta-only readout for the existing A/B planner — no parallel tax calculation.
 // Reads the planner's displayed annual gross / annual after-withholding net.
 // Monthly and fortnight values are arithmetic annual averages, never pay-date promises.
-import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference, calculateTaxKnee } from './ab-summary-model.mjs';
+import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference, calculateTaxKnee, referenceWeekendAnalysis } from './ab-summary-model.mjs';
 import { NET_ANCHORS_2026, referenceNet2026 } from './net-reference-2026.mjs';
 
 // 2026 comparison, not a personalized tax calculator. Annual A/B estimates
@@ -170,15 +170,18 @@ function mount() {
         <div><span>Netto / 2 viikkoa (26)</span><b id="betaABPeriodB">–</b></div>
       </section>
       <section class="beta-ab-option beta-ab-c" aria-label="Laskennallinen C-verorajan taitekohta">
-        <h3>C · Verokorttien tulorajat</h3>
-        <small>Ensimmäinen tulorajan taitekohta</small><strong id="betaCCount">–</strong>
-        <p id="betaCCompare" class="hint">A- ja B-korttien rajakohdat lasketaan erikseen.</p>
-        <div><span>Vuosinetto rajakohdassa</span><b id="betaCNet">–</b></div>
+        <h3>C · Lisätyön verohyöty 2026</h3>
+        <small>Yleisen veromallin rajakohta</small><strong id="betaCCount">–</strong>
+        <p id="betaCCompare" class="hint">Vuoden 2026 Veronmaksajien julkaistu viite, ei henkilökohtainen verokortti.</p>
+        <div><span>Viitteen vuosinetto rajakohdassa</span><b id="betaCNet">–</b></div>
         <div><span>Lisänetto / viimeinen ennen rajaa → ensimmäinen yli rajan</span><b id="betaCMarginal">–</b></div>
-        <p id="betaCFormula" class="hint">C muodostuu perusbrutosta, yhden viikonlopun brutosta sekä A/B-verokorttien tulorajoista ja prosenteista.</p>
+        <p id="betaCFormula" class="hint">C laskee vuosituloista yhden lisäviikonlopun nettovaikutuksen vuoden 2026 yleisen veroastevertailun perusteella.</p>
         <p id="betaCLimit" class="hint"></p>
-        <p id="betaCReason" class="hint">C tarkastelee 0–52 työviikonloppua, eikä siksi muutu vain vaihtamalla A/B-korttien viikonloppumääriä.</p>
-        <button type="button" class="chip" id="betaCUseGoal" disabled>Aseta taitekohta tavoitteeksi</button>
+        <p id="betaCReason" class="hint">C tarkastelee kaikki 0–52 viikonloppua. A/B-korttien luvut näkyvät vertailutaulukossa, mutta eivät muuta julkaistua veromallia.</p>
+        <p class="hint">Viitteessä ovat mukana työntekijämaksut ja keskimääräiset kunnallis-/kirkollisverot. Ei henkilökohtainen veroennuste.</p>
+        <div id="betaCWeekendsTable" role="table" aria-label="Työviikonloppujen lisänettovertailu"></div>
+        <a href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/" target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat 2026</a>
+        <button type="button" class="chip" id="betaCUseGoal" disabled>Aseta C tavoitteeksi</button>
         <p id="betaCStatus" class="hint" role="status" aria-live="polite"></p>
       </section>
     </div>
@@ -235,6 +238,12 @@ function mount() {
   extraTitle.textContent='Veroprogressio 2026 · lisäkuva';
   extra.append(extraTitle,progress);
   oldComparison.insertAdjacentElement('afterend',extra);
+  // C is a result, not an input: present it after the other planner sections
+  // and the source comparison, rather than beside A/B input cards.
+  const cCard=section.querySelector('.beta-ab-c');
+  if(!cCard)throw new Error('Missing C outcome card');
+  cCard.classList.add('card');
+  extra.insertAdjacentElement('afterend',cCard);
 
   // Keep the verified shared-scenario calculation as an internal A-reference.
   // Its duplicate week-count selector and presets are unnecessary once the
@@ -304,56 +313,83 @@ function mount() {
   const renderC=computed=>{
     currentC=null;
     cButton.disabled=true;
+    const host=document.getElementById('betaCWeekendsTable');
+    host.replaceChildren();
+    const putSafe=(id,value)=>put(id,value);
     const clear=message=>{
-      for(const id of ['betaCCount','betaCNet','betaCMarginal','betaCFormula','betaCLimit'])
-        put(id,'–');
-      put('betaCCompare','A- ja B-kortit lasketaan erikseen.');
-      put('betaCReason',message);
+      for(const id of ['betaCCount','betaCNet','betaCMarginal','betaCFormula','betaCLimit'])putSafe(id,'–');
+      putSafe('betaCCompare','Yleinen veromalli, ei A/B:n ennakonpidätys.');
+      putSafe('betaCReason',message);
     };
     if(!computed||!(computed.grossPerWeekend>0)){
-      clear('Täytä lähtöansiot, viikonlopun brutto ja verokorttitiedot.');
+      clear('Täytä laskurin perusansio ja viikonlopun brutto.');
       return;
     }
-    const vars=Object.fromEntries(['limitA','limitB','rateA','rateB','extraA','extraB','otherDeductions']
-      .map(key=>[key,progressVal(key)]));
-    const c=calculateTaxKnee(computed.series,vars);
-    if(!c){
-      clear('C ei ole laskettavissa. Tarkista tulorajat ja prosentit.');
+    const year=Number(document.getElementById('planYear')?.value);
+    const result=referenceWeekendAnalysis(computed.series,referenceNet2026,year,2026);
+    if(!result||!result.available){
+      clear(result?.reason==='year'
+        ?'Vuodelle '+year+' ei ole tässä julkaistua yleistä verotaulukkoa. Vuoden 2026 lukuja ei esitetä vuoden '+year+' veroennusteena.'
+        :'Vuosibrutto on 20 000–140 000 € viitealueen ulkopuolella tai viikonloppulisä puuttuu.');
       return;
     }
-    const describe=card=>{
-      const row=c.cards[card];
-      if(row.found)return card+': '+row.n+' viikonloppua (seuraava ylittää '+money(row.limit)+')';
-      if(row.reason==='already-over')return card+': raja '+money(row.limit)+' ylittyy jo perusansiolla';
-      if(row.reason==='no-drop')return card+': tuloraja '+money(row.limit)+' ylittyy, mutta lisänetto ei putoa';
-      return card+': tuloraja '+money(row.limit)+' ei ylity 0–52 viikonlopulla';
-    };
-    put('betaCCompare',describe('A')+' · '+describe('B')+'.');
-    put('betaCFormula','Vuosibrutto ilman työviikonloppuja '+money(c.baseline)+' + yksi työviikonloppu '+
-      money(c.grossPerWeekend)+'. C lasketaan niistä ja kummankin kortin omista tulorajoista.');
-    if(!c.found){
-      put('betaCCount','Ei taitekohtaa');
-      put('betaCNet','–');
-      put('betaCMarginal','–');
-      put('betaCLimit','–');
-      put('betaCReason','Näillä oletuksilla kumpikaan kortti ei tuota selkeää lisäneton pudotusta 0–52 viikonlopun alueella. Tulorajan puuttuminen ei tarkoita optimaalista työmäärää.');
-      return;
+    const rows=result.points;
+    const showRows=new Set([0,1,4,8,12,16,20,24,28,32,40,44,48,52,
+      chosenWeekends(weekFieldA),chosenWeekends(weekFieldB)]);
+    if(result.knee)for(const x of [result.knee.n,result.knee.stepAt])showRows.add(x);
+    const table=document.createElement('table');
+    table.style.width='100%';
+    table.style.fontSize='.73rem';
+    table.style.fontVariantNumeric='tabular-nums';
+    const head=document.createElement('thead');
+    const header=document.createElement('tr');
+    for(const label of ['Vkl','Vuosibrutto','Vuosinetto¹','Seur. vkl netto']){
+      const th=document.createElement('th');th.textContent=label;
+      th.style.padding='6px 3px';th.style.textAlign='right';header.append(th);
     }
-    currentC=c;
-    cButton.disabled=false;
-    put('betaCCount',c.n+' viikonloppua · kortti '+c.card);
-    put('betaCNet',money(c.net)+' · kortti '+c.card);
-    put('betaCMarginal',money(c.gainBefore)+' → '+money(c.gainAfter));
-    put('betaCLimit',c.n+' viikonloppua: brutto '+money(c.gross)+
-      '. '+c.stepAt+'. viikonlopulla brutto '+money(c.nextGross)+
-      ' ylittää '+c.card+'-kortin tulorajan '+money(c.limit)+
-      '. Pidätysprosentti '+progressPct(c.baseRate)+' → '+progressPct(c.extraRate)+
-      ' vain rajan ylittävältä osalta.');
-    put('betaCReason','Näytetään A:n ja B:n erillisten laskelmien ensimmäinen taitekohta. '+
-      'A/B-korttien viikonloppumäärät eivät muuta C:tä, koska C tutkii 0–52 viikonloppua. '+
-      'Rajakohdan paikka muuttuu vuositulojen, viikonlopun bruton tai tulorajan mukana. '+
-      'Veroprosentit muuttavat euromääräistä hyötyä, eivät yleensä rajan paikkaa. '+
-      'Tämä ei ole paras työmäärä eikä lopullinen vero.');
+    head.append(header);table.append(head);
+    const body=document.createElement('tbody');
+    for(const n of [...showRows].filter(n=>Number.isInteger(n)&&n>=0&&n<=52).sort((a,b)=>a-b)){
+      const row=rows[n];
+      const tr=document.createElement('tr');
+      if(result.knee?.n===n)tr.style.fontWeight='800';
+      const next=rows[n+1]||null;
+      const figures=[
+        n+(n===chosenWeekends(weekFieldA)?' A':'')+(n===chosenWeekends(weekFieldB)?' B':'')+
+          (result.knee?.n===n?' C':''),
+        money(row.gross),row.net===null?'–':money(row.net),
+        next?.gain===null||next===null?'–':money(next.gain)
+      ];
+      for(const value of figures){
+        const td=document.createElement('td');td.textContent=value;
+        td.style.textAlign='right';td.style.padding='6px 3px';
+        td.style.borderBottom='1px solid #435162';tr.append(td);
+      }
+      body.append(tr);
+    }
+    table.append(body);host.append(table);
+    putSafe('betaCFormula','Lähtöbrutto '+money(rows[0].gross)+
+      ' + '+money(result.perWeekend)+' / työviikonloppu. Näytetty netto = vuoden 2026 julkaistun vertailutaulukon pisteiden välinen arvio.');
+    putSafe('betaCCompare','Taulukossa A ja B merkitsevät valitsemasi työmäärät, C mahdollista verohyödyn käännettä. ¹ Yleinen koko vuoden netto, eri asia kuin A/B:n palkasta ennakonpidätyksen jälkeen jäävä summa.');
+    if(result.knee){
+      const k=result.knee;
+      currentC={n:k.n,found:true};
+      cButton.disabled=false;
+      putSafe('betaCCount',k.n+' viikonloppua');
+      putSafe('betaCNet',money(k.net));
+      putSafe('betaCMarginal',money(k.beforeGain)+' → '+money(k.afterGain));
+      putSafe('betaCLimit','Ensimmäinen vähintään 3 prosenttiyksikön pudotus nettotuotto-osuudessa: '+
+        k.beforeRetained.toFixed(1).replace('.',',')+' % → '+
+        k.afterRetained.toFixed(1).replace('.',',')+' % lisäbrutosta.');
+      putSafe('betaCReason','Taitekohta löytyi '+k.stepAt+'. viikonlopun kohdalla. Tämä EI todista, että '+
+        k.n+' viikonloppua olisi taloudellisesti paras; lisää työstä jää tämän jälkeenkin nettoa.');
+    }else{
+      putSafe('betaCCount','Ei selvää käännettä');
+      putSafe('betaCNet','–');
+      putSafe('betaCMarginal','Katso taulukko');
+      putSafe('betaCLimit','Tämän tulovälin marginaalinen nettotuotto pysyy melko samanlaisena tai julkaistu viite ei kata koko vertailua.');
+      putSafe('betaCReason','Taulukosta näkee lisäviikonlopun nettovaikutuksen. Yksittäistä verotuksellista optimaalista viikonloppumäärää ei näillä tiedoilla voi perustella.');
+    }
   };
   cButton.addEventListener('click',()=>{
     if(!currentC)return;
