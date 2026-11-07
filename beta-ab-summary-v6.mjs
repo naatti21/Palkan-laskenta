@@ -350,8 +350,10 @@ function mount() {
       '. Pidätysprosentti '+progressPct(c.baseRate)+' → '+progressPct(c.extraRate)+
       ' vain rajan ylittävältä osalta.');
     put('betaCReason','Näytetään A:n ja B:n erillisten laskelmien ensimmäinen taitekohta. '+
-      'A/B-korttien viikonloppumäärät eivät muuta C:tä: muuta perusbruttoa, viikonlopun bruttoa, tulorajoja tai prosentteja. '+
-      'Tämä on ennakonpidätyksen rajakohta – ei paras työmäärä eikä lopullinen vero.');
+      'A/B-korttien viikonloppumäärät eivät muuta C:tä, koska C tutkii 0–52 viikonloppua. '+
+      'Rajakohdan paikka muuttuu vuositulojen, viikonlopun bruton tai tulorajan mukana. '+
+      'Veroprosentit muuttavat euromääräistä hyötyä, eivät yleensä rajan paikkaa. '+
+      'Tämä ei ole paras työmäärä eikä lopullinen vero.');
   };
   cButton.addEventListener('click',()=>{
     if(!currentC)return;
