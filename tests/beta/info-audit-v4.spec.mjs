@@ -60,7 +60,9 @@ test("Beta shows independent values once and keeps tax details available on dema
   for(const badge of badges){expect(badge.before).toBe("none");expect(badge.icon).toBe("none");}
 
   await page.getByRole("button",{name:"Analyysi"}).click();
-  await expect(page.locator("#analysisMetrics .metric")).toHaveCount(2);
+  await expect(page.locator("#analysisMetrics .metric")).toHaveCount(3);
+  await expect(page.locator("#analysisMetrics")).toContainText("Muut palkkavähennykset");
+  await expect(page.locator("#analysisMetrics .analysis-deductions-note")).toContainText("Ei täydellistä neljän vähennyskoodin");
   await expect(page.locator("#analysisMetrics")).toContainText("Tallennettujen netot yhteensä");
   await expect(page.locator("#analysisMetrics")).toContainText("Kirjatut ylityötunnit");
   await expect(page.locator("#analysisMetrics")).not.toContainText("Tallennettujen laskelmien brutto");
