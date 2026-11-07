@@ -186,6 +186,48 @@ export async function replaceRecord(existingId, record, expected = null) {
     return archiveReplacement(rows, put, existing, incoming);
   });
 }
+
+/**
+ * User-confirmed retrospective source assignment. The original payslip stays as
+ * an immutable, archived revision; only its active descendant receives the ID.
+ * All assignments run in one IndexedDB transaction so a failed source or a
+ * concurrently edited row leaves the entire selected batch unchanged.
+ */
+export async function assignMissingIncomeSources(recordIds, sourceId, expectedSnapshots = []) {
+  if (!Array.isArray(recordIds) || !recordIds.length || recordIds.length > 500 ||
+      new Set(recordIds).size !== recordIds.length || recordIds.some(id => typeof id !== "string" || !id)) {
+    throw new Error("Valitse yksi tai useampi yksiselitteinen palkkalaskelma.");
+  }
+  if (typeof sourceId !== "string" || !sourceId.trim()) {
+    throw new Error("Valitse tulolähde ennen tallennusta.");
+  }
+  if (!Array.isArray(expectedSnapshots) || expectedSnapshots.length !== recordIds.length) {
+    throw new Error("Päivitä Historia ja valitse laskelmat uudelleen.");
+  }
+  const fingerprints = new Map(expectedSnapshots.map(row => [row.id,
+    JSON.stringify([recordContentKey(row), row.payEventId, row.resolution, row.supersedes, row.distinctFrom])]));
+  return mutateRecords((rows, put) => {
+    const heads = new Set(visibleRevisions(rows).map(row => row.id));
+    const updated = [];
+    for (const id of recordIds) {
+      const current = rows.find(row => row.id === id);
+      const currentKey = current && JSON.stringify([recordContentKey(current), current.payEventId,
+        current.resolution, current.supersedes, current.distinctFrom]);
+      if (!current || !heads.has(id) || !fingerprints.has(id) || fingerprints.get(id) !== currentKey) {
+        throw new Error("Palkkahistoria muuttui. Päivitä näkymä ja valitse laskelmat uudelleen.");
+      }
+      if (current.incomeSourceId) {
+        throw new Error("Laskelmalle on jo vahvistettu tulolähde. Tietoja ei muutettu.");
+      }
+      const replacement = archiveReplacement(rows, put, current, { ...current, incomeSourceId: sourceId });
+      updated.push(replacement);
+    }
+    // mutateRecords validates source existence and entire revision-family lineage,
+    // aborting this transaction atomically if another confirmed payer is connected.
+    return { updated: updated.length, records: updated };
+  });
+}
+
 export async function upsertRecord(record) {
   const incoming = migrateLegacyRecord(record);
   if (!incoming) throw new Error("Tallennettava palkkatieto ei ole kelvollinen.");

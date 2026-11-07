@@ -13,7 +13,8 @@ test('Final A/B comparison presents annual gross, actual model net and period av
   await frame.locator('#baseGross').fill('52000');
   await frame.locator('#planYear').fill('2027');
   await frame.locator('#weekendGross').fill('1000');
-  await frame.locator('#weekends').fill('3');
+  await frame.locator('#betaWeekendsA').fill('3');
+  await frame.locator('#betaWeekendsB').fill('3');
   await expect(frame.locator('#grossResult')).toHaveText('55 000 €');
   await expect(frame.locator('#betaABGross')).toHaveText('55 000 €');
   await expect(frame.locator('#betaABCount')).toContainText('2027 · 3 työviikonloppua');

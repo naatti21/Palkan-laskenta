@@ -116,3 +116,108 @@ html,body {background:var(--canvas);color:var(--ink);}
 .shell .section-heading {flex-wrap:wrap}.shell .section-heading>div {min-width:0;overflow-wrap:anywhere}
 .shell select {max-width:100%}
 [data-view="data"] .summary-list {grid-template-columns:minmax(0,1fr)} [data-view="data"] .summary-row {flex-wrap:wrap;min-width:0;overflow-wrap:anywhere} [data-view="data"] button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+
+
+/* Existing-data recovery: intentionally subdued until the user opens it. */
+.history-recovery {padding:10px 0;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge);margin-bottom:7px}
+.history-recovery>strong {display:block;font-size:.98rem;color:var(--ink)}
+.history-recovery>p {margin:5px 0;color:var(--sub);line-height:1.38;font-size:.81rem}
+.history-recovery-disclosure summary {min-height:44px;display:list-item;padding:9px 2px;color:var(--mint);font-weight:650}
+.history-recovery-controls {display:grid;gap:8px;padding:5px 0 12px}
+.history-recovery-controls label {display:grid;gap:6px;font-size:.84rem;color:var(--sub)}
+.history-recovery-controls :is(button,select) {width:100%;min-height:44px;max-width:100%;text-align:left}
+.history-recovery-count {color:var(--cyan);font-size:.85rem}
+.history-recovery-choice {display:flex;gap:9px;align-items:center;border-bottom:1px solid var(--edge);padding:10px 4px;color:var(--ink);font-size:.87rem}
+.history-recovery-choice input {width:23px;height:23px;flex:0 0 auto;accent-color:var(--mint)}
+
+
+/* Source-level tax evidence: compact disclosure, never conflated with total tax usage. */
+.beta-source-diagnostics{margin-top:8px;padding-top:6px;border-top:1px solid var(--edge)}
+.beta-source-diagnostics>summary{min-height:42px;display:list-item;padding:9px 0;font-size:.78rem;font-weight:650;color:var(--cyan);cursor:pointer}
+.beta-source-diagnostics>div>p,.source-diagnostics-row p{font-size:.75rem;line-height:1.42;color:var(--sub);margin:5px 0}
+.source-diagnostics-row{padding:9px 0;border-top:1px solid var(--edge);min-width:0;overflow-wrap:anywhere}
+.source-diagnostics-row strong{font-size:.82rem;color:var(--ink)}
+.source-diagnostics-warning{color:var(--amber)!important}
+
+/* Import queue has no server/session sync: PDF files stay transient in browser memory. */
+.beta-batch-queue{margin:6px 0 10px;padding:5px 10px;background:var(--surface);border:1px solid var(--edge);border-radius:var(--corner)}
+.beta-batch-queue>summary{font-size:.83rem;font-weight:700;min-height:44px;display:list-item;padding:11px 1px;color:var(--mint);cursor:pointer}
+.beta-batch-queue>div{display:grid;gap:8px;padding:7px 0 12px}
+.beta-batch-queue label:not(.beta-batch-auto){display:grid;gap:6px;font-size:.8rem;color:var(--ink)}
+.beta-batch-queue input[type=file],.beta-batch-queue select{max-width:100%;min-width:0;width:100%;font-size:.85rem;min-height:43px;padding:8px;background:var(--raised);color:var(--ink);border:1px solid var(--edge);border-radius:var(--tight)}
+.beta-batch-queue input[type=file]::file-selector-button{border:1px solid var(--edge);border-radius:var(--tight);background:var(--well);color:var(--mint);padding:6px 8px;margin-right:6px}
+.beta-batch-queue p{margin:3px 0;font-size:.74rem;line-height:1.4;color:var(--sub)}
+.beta-batch-queue .beta-batch-auto{display:flex;align-items:center;gap:7px;line-height:1.35;font-size:.79rem;color:var(--ink)}
+.beta-batch-queue .beta-batch-auto input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--mint)}
+.beta-batch-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.beta-batch-actions button{min-width:0;min-height:44px;padding:8px 7px;font-size:.8rem;white-space:normal}
+.beta-batch-actions button:first-child{grid-column:span 2;border-color:var(--mint)}
+.beta-batch-actions button:disabled{opacity:.45}
+#betaBatchStatus{color:var(--cyan);font-size:.77rem}
+#betaBatchFiles{padding-left:22px;margin:0;max-height:168px;overflow:auto;overscroll-behavior:contain}
+.beta-batch-entry{padding:5px 1px;border-bottom:1px solid var(--edge);min-width:0;overflow-wrap:anywhere;font-size:.75rem}
+.beta-batch-entry span{display:block;color:var(--ink)}
+.beta-batch-entry small{color:var(--sub)}
+
+/* Pay-cycle change: two payments, then decision; technical fields on demand. */
+#conflictSection .section-heading h2{font-size:1.1rem;line-height:1.2}
+.paycycle-target-label{display:grid;gap:5px;font-size:.79rem;color:var(--sub);margin-bottom:8px}
+.paycycle-target-label select{width:100%;min-width:0}
+.paycycle-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:9px}
+.paycycle-payment{display:flex;flex-direction:column;min-width:0;gap:4px;padding:10px;background:var(--raised);border:1px solid var(--edge);border-radius:var(--tight)}
+.paycycle-payment-label{font-size:.67rem;letter-spacing:.04em;font-weight:750;color:var(--cyan)}
+.paycycle-payment>strong:not(.paycycle-payment-net){font-size:.87rem;color:var(--ink)}
+.paycycle-payment-net{font-size:1.12rem;color:var(--mint);font-variant-numeric:tabular-nums}
+.paycycle-payment small{font-size:.73rem;color:var(--sub);line-height:1.3;overflow-wrap:anywhere}
+.paycycle-evidence{margin:7px 0 8px;padding:9px 10px;border-inline-start:2px solid var(--cyan);background:var(--well);font-size:.81rem;line-height:1.4;color:var(--ink)}
+.paycycle-evidence-positive{border-inline-start-color:var(--mint)}
+.paycycle-action-guide{margin:7px 0;font-size:.78rem;line-height:1.42;color:var(--sub)}
+.paycycle-effect{margin:8px 0;padding:8px 9px;font-size:.8rem;line-height:1.4;border-inline-start:2px solid var(--amber);color:var(--ink)}
+.paycycle-technical-details{border-top:1px solid var(--edge);margin:9px 0 3px;padding-top:4px}
+.paycycle-technical-details summary{font-size:.78rem;font-weight:650;color:var(--cyan);padding:7px 0}
+.paycycle-technical-details .summary-row{gap:10px;padding:6px 0;font-size:.75rem}
+.paycycle-technical-details .summary-row strong{overflow-wrap:anywhere;min-width:0;text-align:right}
+@media(max-width:355px){.paycycle-compare{grid-template-columns:minmax(0,1fr)}.paycycle-payment{padding:8px}}
+
+
+/* One visible import action on Seuranta. All tools and messages sit inside the
+   focused import screen. No change to parser, revisions or payroll calculations. */
+.beta-import-entry{display:flex;align-items:center;gap:10px;padding:5px 0;margin:4px 0 10px;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge)}
+.beta-import-entry #betaImportOpen{min-height:46px;flex:1 1 auto;padding:10px 14px;text-align:center;border:1px solid var(--mint);background:var(--raised);border-radius:var(--tight);font-size:.86rem;font-weight:750;color:var(--mint)}
+.beta-import-entry>span{flex:0 0 auto;color:var(--sub);font-size:.69rem;line-height:1.3;max-width:33%;text-align:right}
+.beta-import-workspace{position:fixed;z-index:1000;inset:0;overflow-y:auto;overscroll-behavior:contain;padding:calc(13px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(34px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));background:var(--canvas);color:var(--ink);-webkit-overflow-scrolling:touch}
+.beta-import-workspace[hidden]{display:none!important}
+body.beta-import-active{overflow:hidden}
+.beta-import-header{display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--edge);padding:0 0 14px;margin-bottom:16px}
+.beta-import-header button{flex:0 0 auto;min-height:44px;padding:8px;color:var(--mint);background:var(--raised);border:1px solid var(--edge);border-radius:var(--tight);font-size:.8rem}
+.beta-import-header h2{font-size:1.28rem;margin:1px 0 5px;line-height:1.18;letter-spacing:-.025em}
+.beta-import-header p{margin:0;font-size:.77rem;line-height:1.42;color:var(--sub)}
+.beta-import-workspace #betaBatchQueue{display:block;min-width:0;border:none;border-radius:0;background:transparent;padding:0;margin:0 0 4px}
+.beta-import-workspace #betaBatchQueue>summary{display:none}
+.beta-import-workspace #betaBatchQueue>div{display:grid;gap:12px;padding:0}
+.beta-import-workspace #betaBatchQueue label:not(.beta-batch-auto){gap:8px;color:var(--ink);font-weight:680;font-size:.9rem}
+.beta-import-workspace #betaBatchInput{min-height:52px;background:var(--raised);border-color:var(--mint);color:var(--ink)}
+.beta-import-workspace #betaBatchInput::file-selector-button{min-height:34px;color:var(--mint);border-color:var(--mint)}
+.beta-import-workspace #betaBatchSource{min-height:48px;font-size:.95rem}
+.beta-import-workspace #betaBatchQueue #betaBatchStatus{color:var(--cyan);font-size:.81rem;line-height:1.45;padding:8px 0;border-top:1px solid var(--edge)}
+.beta-import-workspace .beta-batch-auto,.beta-import-workspace .beta-import-legacy-control{display:none!important}
+.beta-import-workspace .beta-batch-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.beta-import-workspace .beta-batch-actions::before{content:"3 · Tallenna";display:block;grid-column:span 2;font-size:.9rem;font-weight:680}
+.beta-import-workspace #betaBatchNext{grid-column:span 2;width:100%;min-height:48px;background:var(--raised);border:1px solid var(--mint);color:var(--mint);font-weight:700;text-align:center}
+.beta-import-workspace #betaBatchSkip{grid-column:span 2;min-height:42px}
+.beta-import-workspace #betaBatchSkip:disabled{display:none!important}
+.beta-import-workspace .beta-import-file-details{border-top:1px solid var(--edge);margin:0;padding:4px 0}
+.beta-import-workspace .beta-import-file-details>summary{font-size:.77rem;line-height:1.3;padding:8px 1px;color:var(--cyan)}
+.beta-import-workspace .beta-import-file-details>p{font-size:.7rem;color:var(--sub);line-height:1.4}
+.beta-import-workspace #betaBatchClear{margin:5px 0;padding:5px 8px;min-height:40px;border:1px solid var(--edge);background:transparent;color:var(--sub);font-size:.75rem}
+.beta-import-workspace #betaBatchClear:disabled{display:none!important}
+.beta-import-workspace .beta-pdf-slot{display:block;margin:0 0 4px;padding:0;background:transparent;border:0}
+.beta-import-workspace .beta-pdf-slot>label,
+.beta-import-workspace .beta-pdf-slot>.file-button,
+.beta-import-workspace .beta-pdf-slot>.privacy,
+.beta-import-workspace .beta-pdf-slot>.beta-pdf-note{display:none!important}
+.beta-import-workspace .beta-pdf-slot>details{margin:3px 0 10px;padding:4px 0;border-top:1px solid var(--edge)}
+.beta-import-workspace .beta-pdf-slot>details>summary{font-size:.75rem;color:var(--cyan);padding:7px 0}
+.beta-import-workspace .beta-pdf-slot #status{display:block;color:var(--sub);font-size:.76rem;line-height:1.4;min-height:0;margin:5px 0 10px}
+.beta-import-workspace .card{background:var(--surface);margin-block:10px;padding:11px;box-shadow:none}
+@media(max-width:355px){.beta-import-entry{gap:7px}.beta-import-entry>span{font-size:.65rem}.beta-import-header{gap:8px}.beta-import-header h2{font-size:1.12rem}.beta-import-workspace{padding-inline:11px}}

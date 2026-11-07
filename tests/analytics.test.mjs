@@ -108,3 +108,46 @@ test("source records remain unchanged", () => {
   buildYearAnalysis(items, 2026);
   assert.equal(JSON.stringify(items), original);
 });
+
+
+const deductibleLines=amounts=>["90100","90200","90400","90920"]
+  .map((code,i)=>({code,label:"Synteettinen palkkavähennys",amount:amounts[i],quantity:1}));
+
+test("latest four-code payroll evidence yields the same 10.16% as planner history",()=>{
+  const old=r("old","2026-05-08",3000,2200,null);
+  old.payLines=deductibleLines([-160,-65,-20,-10]);
+  const match=r("match","2026-10-09",3000,2100,null);
+  match.payLines=deductibleLines([-200,-75,-20,-9.8]);
+  const newestIncomplete=r("newer","2026-10-23",3000,2100,null);
+  newestIncomplete.payLines=deductibleLines([-200,-75,-20,null]);
+  const nextYear=r("nextYear","2027-01-08",3000,2100,null);
+  nextYear.payLines=deductibleLines([-300,-75,-20,-9.8]);
+  const items=[old,match,newestIncomplete,nextYear];
+  const snapshot=JSON.stringify(items);
+  const analysis=buildYearAnalysis(items,2026);
+  assert.deepEqual(analysis.deductions,{
+    latestRate:10.16,latestPayDate:"2026-10-09",
+    incomeSourceId:null,supportedPayslips:2,reviewedPayslips:3,
+    blockedByConflicts:false
+  });
+  assert.equal(JSON.stringify(items),snapshot);
+});
+
+test("unavailable or ambiguous deductions stay unavailable instead of calculating gross-net gaps",()=>{
+  const incomplete=r("missing","2026-04-01",3000,1800,null);
+  incomplete.payLines=deductibleLines([-200,-80,-20,null]);
+  assert.equal(buildYearAnalysis([incomplete],2026).deductions.latestRate,null);
+  const invalid=r("invalid","2026-04-11",3000,1800,null);
+  invalid.payLines=deductibleLines([-200,-80,-20,30]); // Positive amount cannot be a deduction.
+  assert.equal(buildYearAnalysis([invalid],2026).deductions.latestRate,null);
+  const unknownGross=r("unknown","2026-04-25",null,1800,null);
+  unknownGross.payLines=deductibleLines([-200,-75,-20,-9.8]);
+  assert.equal(buildYearAnalysis([unknownGross],2026).deductions.latestRate,null);
+  const first=r("first","2026-10-09",3000,2000,null,{start:"2026-09-21",end:"2026-10-04"});
+  first.payLines=deductibleLines([-200,-75,-20,-9.8]);
+  const conflicting=r("conflict","2026-10-09",3100,2100,null,{start:"2026-09-21",end:"2026-10-04"});
+  conflicting.payLines=deductibleLines([-200,-75,-20,-9.8]);
+  const blocked=buildYearAnalysis([first,conflicting],2026).deductions;
+  assert.equal(blocked.latestRate,null);
+  assert.equal(blocked.blockedByConflicts,true);
+});
