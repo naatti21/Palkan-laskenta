@@ -16,7 +16,7 @@ test('Analysis shows user-confirmed worked weekends, never guesses from overtime
   await expect(page.locator('#betaWeekendDone')).toHaveText('4');
   await page.locator('#betaWeekendGoalInput').fill('12');
   await page.locator('#betaWeekendGoalInput').blur();
-  await expect(page.locator('#betaWeekendGoal')).toHaveText('5');
+  await expect(page.locator('#betaWeekendGoal')).toHaveText('12');
   await expect(page.locator('#betaWeekendTrackerStatus')).toContainText('jäljellä tavoitteeseen 8');
   await expect.poll(()=>page.evaluate(async()=>{
     const {getSetting}=await import('/storage.js');
@@ -25,7 +25,7 @@ test('Analysis shows user-confirmed worked weekends, never guesses from overtime
   await page.reload();
   await page.getByRole('button',{name:'Analyysi'}).click();
   await expect(page.locator('#betaWeekendDone')).toHaveText('4');
-  await expect(page.locator('#betaWeekendGoal')).toHaveText('5');
+  await expect(page.locator('#betaWeekendGoal')).toHaveText('12');
 });
 
 test('C target saves only for its planner work year, without rewriting actual count',async({page})=>{
