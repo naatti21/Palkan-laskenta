@@ -30,7 +30,7 @@ async function importHistory(page,{rest=[8,8,8,8],mixed=false}={}){
   await page.getByRole('button',{name:'Analyysi'}).click();
 }
 
-test('Viikkolepotuntien ehdotus on vain kompaktissa Analyysin viikonloppuseurannassa',async({page})=>{
+test('Viikkolepokorvausrivien määrä näkyy Analyysissä ilman tuntijakoa tai automaattista hyväksyntää',async({page})=>{
   await page.setViewportSize({width:360,height:820});
   await page.clock.install({time:new Date('2026-10-01T12:00:00+03:00')});
   await page.goto('/index.html');
@@ -38,13 +38,13 @@ test('Viikkolepotuntien ehdotus on vain kompaktissa Analyysin viikonloppuseurann
   const tracker=page.locator('#betaWeekendTracker');
   await expect(tracker).toBeVisible();
   await expect(tracker.locator('.weekend-proposal')).toBeVisible();
-  await expect(tracker.locator('.weekend-proposal')).toContainText('32 h');
-  await expect(tracker.locator('.weekend-proposal')).toContainText('noin 4 viikonloppua');
+  await expect(tracker.locator('.weekend-proposal')).toContainText('Viikkolepo mainittu 4 palkkarivillä');
+  await expect(tracker.locator('.weekend-proposal')).toContainText('4 palkkalaskelmassa vuonna 2026');
+  await expect(tracker.locator('#betaRestHoursPerWeekend')).toHaveCount(0);
   await expect(page.locator('#betaWeekendDone')).toHaveText('–');
-  await page.locator('#betaRestHoursPerWeekend').fill('16');
-  await expect(tracker.locator('.weekend-proposal')).toContainText('noin 2 viikonloppua');
-  await page.locator('#betaWeekendUseProposal').click();
-  await expect(page.locator('#betaWeekendDone')).toHaveText('2');
+  await expect(tracker.locator('#betaWeekendUseProposal')).toHaveText('Hyväksy 4');
+  await tracker.locator('#betaWeekendUseProposal').click();
+  await expect(page.locator('#betaWeekendDone')).toHaveText('4');
   await page.locator('#betaWeekendTracker summary').click();
   await page.locator('#betaWeekendDoneInput').fill('7');
   await page.locator('#betaWeekendDoneInput').blur();
@@ -61,19 +61,27 @@ test('Viikkolepotuntien ehdotus on vain kompaktissa Analyysin viikonloppuseurann
   await expect(planner.locator('#betaWeekendsB')).toBeVisible();
 });
 
-test('Riittämättömät viikkolepokorvaustiedot eivät muuta toteumaa',async({page})=>{
+test('Yksikin viikkolepokorvausrivi lasketaan, tunteja ei käytetä määrän arviointiin',async({page})=>{
   await page.clock.install({time:new Date('2026-10-01T12:00:00+03:00')});
   await page.goto('/index.html');
   await importHistory(page,{rest:[8,0,0,0]});
-  await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toBeHidden();
+  await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toContainText('Viikkolepo mainittu 1 palkkarivillä');
   await expect(page.locator('#betaWeekendDone')).toHaveText('–');
 });
 
-test('Useita tulolähteitä ei yhdistetä viikonloppuarvioksi',async({page})=>{
+test('Useita tulolähteitä ei yhdistetä ehdotukseksi',async({page})=>{
   await page.clock.install({time:new Date('2026-10-01T12:00:00+03:00')});
   await page.goto('/index.html');
   await importHistory(page,{mixed:true});
   await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toBeHidden();
+});
+
+test('Pelkkä viikkolepotuntien arvo ilman palkkariviä ei muodosta ehdotusta',async({page})=>{
+  await page.clock.install({time:new Date('2026-10-01T12:00:00+03:00')});
+  await page.goto('/index.html');
+  await importHistory(page,{rest:[0,0,0,0]});
+  await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toBeHidden();
+  await expect(page.locator('#betaWeekendDone')).toHaveText('–');
 });
 
 test('Tiivis Analyysi ja laskuri eivät ylitä puhelimen leveyttä',async({page})=>{
