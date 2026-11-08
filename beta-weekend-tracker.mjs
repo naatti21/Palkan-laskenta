@@ -78,7 +78,9 @@ export function installWeekendTracker(){
   const css=document.createElement('style');
   css.textContent=`
     #betaWeekendTracker{margin:8px 0 5px;padding:9px 10px;border:1px solid #344d59;border-radius:9px;background:#101d26}
-    #betaWeekendTracker .weekend-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    #betaWeekendTracker{box-sizing:border-box;max-width:100%;min-width:0}
+    #betaWeekendTracker .weekend-top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}
+    #betaWeekendTracker .weekend-top button{box-sizing:border-box;flex:0 0 36px!important;width:36px!important;min-width:36px!important;max-width:36px!important;padding:4px!important}
     #betaWeekendTracker h3{font-size:.91rem;margin:0}
     #betaWeekendTracker button{min-height:34px;min-width:48px;padding:5px 10px;font-size:.78rem}
     #betaWeekendTracker .metrics{display:flex;gap:18px;margin:6px 0}
