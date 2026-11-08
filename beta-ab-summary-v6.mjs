@@ -158,19 +158,6 @@ function mount() {
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
     <h2 id="betaABHeading">Vuosiansio · A / B / C</h2>
     <p class="beta-ab-description">A ja B: omat verokorttiarviot. C: lisätyön hyöty ja tarvittava työmäärä vuoden 2026 veroviitteellä.</p>
-    <div id="betaWeekendCountHint" class="beta-weekend-count-hint" hidden>
-      <div class="beta-weekend-hint-line">
-        <span>Viikkolepokorvauksista laskettu ehdotus</span>
-        <strong id="betaWeekendCountValue">–</strong>
-      </div>
-      <div class="beta-weekend-hint-controls">
-        <label for="betaRestHoursPerWeekend">Korvaustunteja / viikonloppu
-          <input id="betaRestHoursPerWeekend" type="number" inputmode="decimal" min="1" max="24" step="0.5" value="8">
-        </label>
-        <button type="button" class="chip" id="betaApplyWeekendCount" disabled>Käytä A:ssa ja B:ssä</button>
-      </div>
-      <p id="betaWeekendCountEvidence" class="hint"></p>
-    </div>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
         <label class="beta-ab-workload-a">A · työviikonloppuja / vuosi
@@ -394,15 +381,6 @@ function mount() {
      .beta-extra-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
      .beta-extra-metrics>div{display:grid;gap:2px;border-top:1px solid #374c57;padding-top:6px;}
      .beta-extra-metrics span{font-size:.73rem;}
-     .beta-weekend-count-hint{padding:9px;border:1px solid #455b50;border-radius:9px;margin:8px 0;background:#152a23;}
-     .beta-weekend-count-hint[hidden]{display:none!important;}
-     .beta-weekend-hint-line{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.77rem;}
-     .beta-weekend-hint-line strong{white-space:nowrap;color:#aaf3c8;}
-     .beta-weekend-hint-controls{display:flex;gap:8px;align-items:end;justify-content:space-between;margin-top:7px;}
-     .beta-weekend-hint-controls label{display:grid;gap:3px;min-width:0;font-size:.72rem;color:#d5e9dc;}
-     .beta-weekend-hint-controls input{max-width:74px;min-height:36px;border-radius:6px;background:#0c1814;color:white;border:1px solid #648576;padding:6px;}
-     .beta-weekend-hint-controls button{min-height:36px;font-size:.72rem;white-space:normal;text-align:center;}
-     .beta-weekend-count-hint p{font-size:.7rem;line-height:1.42;margin:7px 0 0;}
      .planner-advanced{margin-top:12px;padding:11px!important;border:1px solid #354d58;}
      .planner-advanced>summary{font-weight:700;font-size:.88rem;}
      .planner-advanced>section.card{padding:11px 7px;margin:11px 0;}
