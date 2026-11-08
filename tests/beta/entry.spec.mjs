@@ -391,6 +391,7 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(page.locator("#plannerFrame")).toBeVisible();
  const planner=page.frameLocator("#plannerFrame");
+  await planner.locator("#plannerAdvanced > summary").click();
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
  await expect(planner.locator("#netDifferenceSummary")).toContainText("ei ole eroa");
  await expect(planner.locator("#decemberTaxNote")).toContainText("Joulukuussa");
@@ -433,6 +434,7 @@ test("inverse net target solves A and B minimum weekends and does not bypass cap
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(page.locator("#plannerFrame")).toBeVisible();
  const p=page.frameLocator("#plannerFrame");
+  await p.locator("#plannerAdvanced > summary").click();
  await expect(p.locator("#inverseGoalPanel")).toBeVisible();
  await p.locator("#inverseGoalPanel > summary").click();
  await expect(p.locator("#inverseGoalResults")).toContainText("Anna nettotavoite");
