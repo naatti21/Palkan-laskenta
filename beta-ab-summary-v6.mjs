@@ -317,7 +317,7 @@ function mount() {
   results.before(advanced);
   advanced.append(results,curves,oldComparison,extra);
   const inverse=document.getElementById('inverseGoalPanel');
-  if(inverse){inverse.hidden=true;inverse.style.display='none';}
+  // Preserve the original inverse-goal tool inside the advanced panel for expert users.
   const december=document.getElementById('decemberTaxNote');
   if(december)advanced.append(december);
   const limits=[...oldComparison.querySelectorAll('details')].find(node=>
