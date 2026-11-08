@@ -572,10 +572,50 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   const historyInput=el('historyInput');
   let lastHistory=null, lastPayload=null;
   let weekendHistoryProposal=null;
+  // Compensation-based hint; only clicking it changes the A/B workload inputs.
+  function showRestWeekendSuggestion(){
+    const box=el('betaWeekendCountHint'),value=el('betaWeekendCountValue');
+    const evidence=el('betaWeekendCountEvidence'),apply=el('betaApplyWeekendCount');
+    const hoursField=el('betaRestHoursPerWeekend');
+    if(!box||!value||!evidence||!apply||!hoursField)return;
+    const data=lastHistory?.restCountEvidence;
+    box.hidden=!data;apply.disabled=true;
+    if(!data){value.textContent='–';evidence.textContent='';return;}
+    const unit=Number(hoursField.value);
+    const count=Number.isFinite(unit)&&unit>=1&&unit<=24?Math.round(data.hours/unit):null;
+    const usable=count!==null&&count>=1&&count<=52;
+    value.textContent=usable?count+' viikonloppua':'–';
+    apply.disabled=!usable;
+    evidence.textContent='Kirjattu '+data.hours.toLocaleString('fi-FI')+
+      ' viikkolepokorvaustuntia '+data.documents+' palkkalaskelmassa vuonna '+data.year+
+      '. Oletuksella '+(Number.isFinite(unit)?unit.toLocaleString('fi-FI'):'–')+
+      ' h/viikonloppu saadaan arvio, ei todettua työviikonloppumäärää. '+
+      (data.observedMonths<10?'Aineisto kattaa '+data.observedMonths+
+        ' palkkakuukautta; lukua ei ole skaalattu koko vuodeksi.':
+        'Aineiston kattavuus: '+data.observedMonths+' palkkakuukautta.')+
+      ' Tarkista viikkolevon korvaustapa, työaikapankki ja mahdolliset muut työpäivät.';
+  }
+  document.addEventListener('input',event=>{
+    if(event.target?.id==='betaRestHoursPerWeekend')showRestWeekendSuggestion();
+  });
+  document.addEventListener('click',event=>{
+    if(event.target?.id!=='betaApplyWeekendCount'||!lastHistory?.restCountEvidence)return;
+    const unit=Number(el('betaRestHoursPerWeekend')?.value);
+    const count=Math.round(lastHistory.restCountEvidence.hours/unit);
+    if(!Number.isFinite(unit)||unit<1||unit>24||count<1||count>52)return;
+    const a=el('betaWeekendsA'),b=el('betaWeekendsB');
+    if(!a||!b)return;
+    for(const field of [a,b]){
+      field.value=String(count);
+      field.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    el('betaWeekendCountEvidence').textContent+=' Ehdotus asetettu A:han ja B:hen. Määriä voi muuttaa erikseen.';
+  });
   const suggestedFields = new Set();
   // Estimate only from one comparable salary source with >=3 hourly examples
   // and explicit KTA evidence. Never infer an actual weekend from a payslip.
   function showWeekendHistoryProposal(){
+    showRestWeekendSuggestion();
     const info=el('weekendDataExplanation'),use=el('weekendUseHistoryGross');
     weekendHistoryProposal=null;
     use.disabled=true;
