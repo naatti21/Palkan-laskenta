@@ -69,6 +69,35 @@ test('Yksikin viikkolepokorvausrivi lasketaan, tunteja ei käytetä määrän ar
   await expect(page.locator('#betaWeekendDone')).toHaveText('–');
 });
 
+test('Kaksi viikkolepokorvausriviä samassa laskelmassa lasketaan kahdeksi esiintymäksi',async({page})=>{
+  await page.clock.install({time:new Date('2026-10-01T12:00:00+03:00')});
+  await page.goto('/index.html');
+  const payload=await page.evaluate(async()=>{
+    const m=await import('/model.js');
+    const rows=[0,1,2].map(i=>m.migrateLegacyRecord({
+      recordSchemaVersion:3,id:'multi-rest-row-'+i,kind:'payslip',incomeSourceId:'job',
+      values:{payDate:'2026-'+String(i+1).padStart(2,'0')+'-15',
+        payPeriodStart:'2026-'+String(i+1).padStart(2,'0')+'-01',
+        payPeriodEnd:'2026-'+String(i+1).padStart(2,'0')+'-14',
+        grossPay:3000,netPay:2000,weeklyRestHours:10},
+      payLines:i===0?[
+        {code:'20120',label:'Viikkovapaakorvaus',category:'weekly_rest',quantity:8,amount:200},
+        {code:'20120',label:'Viikkovapa',category:'weekly_rest',quantity:2,amount:50}
+      ]:[{code:'20120',label:'Viikkovapa',category:'weekly_rest',quantity:10,amount:250}],
+      fingerprints:['multi-rest-row-'+i],fieldMeta:{},corrections:{},notices:[],
+      parser:{version:'qa',confidence:1,documentType:'payslip',sourceProfile:'qa'}
+    }));
+    return JSON.stringify(m.makeBackup(rows,{incomeSources:[{id:'job',name:'Lähde A'}]}));
+  });
+  await page.getByRole('button',{name:'Asetukset'}).click();
+  await page.locator('#backupInput').setInputFiles({name:'multi-rest.json',mimeType:'application/json',buffer:Buffer.from(payload)});
+  await expect(page.locator('#backupStatus')).toContainText('Palautus valmis');
+  await page.getByRole('button',{name:'Analyysi'}).click();
+  await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toContainText('Viikkolepo mainittu 4 palkkarivillä');
+  await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toContainText('3 palkkalaskelmassa');
+  await expect(page.locator('#betaWeekendDone')).toHaveText('–');
+});
+
 test('Useita tulolähteitä ei yhdistetä ehdotukseksi',async({page})=>{
   await page.clock.install({time:new Date('2026-10-01T12:00:00+03:00')});
   await page.goto('/index.html');
