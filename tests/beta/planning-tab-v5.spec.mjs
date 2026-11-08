@@ -28,6 +28,8 @@ test('Five compact tabs remain navigable at 320 / 360 / 412 px',async({page})=>{
     await page.getByRole('button',{name:'Laskuri'}).click();
     await expect(page.getByRole('heading',{name:'Vuosisuunnittelu'})).toBeVisible();
     await expect(page.locator('#plannerFrame')).toBeVisible();
+    // Inputs are completed top-to-bottom: do not add an unnecessary section jump control.
+    await expect(page.getByRole('combobox',{name:'Siirry laskurin osaan'})).toHaveCount(0);
     await expect(page.locator('[data-view="analysis"]')).toBeHidden();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
     await expect(page.locator('#pdfInput')).toBeEnabled();

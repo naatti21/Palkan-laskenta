@@ -32,6 +32,10 @@ test("Beta dashboard remains dense without decorative icons at narrow mobile wid
     await page.reload();
     await expect(page.locator("#dashboard .metric")).toHaveCount(2);
     await expect(page.locator("#dashboard")).toContainText("1 988");
+    await expect(page.locator("#dashboard")).toBeHidden();
+    await expect(page.locator(".compact-amount")).toContainText("1 988");
+    await page.locator("#dashboardMore > summary").click();
+    await expect(page.locator("#dashboard")).toBeVisible();
     const state = await page.locator(".beta-primary-metrics .metric").evaluateAll(cards =>
       cards.map(el => {
         const rect = el.getBoundingClientRect();

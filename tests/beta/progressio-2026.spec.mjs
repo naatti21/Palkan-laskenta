@@ -15,7 +15,8 @@ test('2026 progress chart follows annual income and overtime without extra field
   await expect(frame.locator('#betaProgressSummary')).toContainText('Laskurin A-vaihtoehdossa');
   await expect(frame.locator('#betaABGross')).toHaveText('52 000 €');
   await frame.locator('#weekendGross').fill('1000');
-  await frame.locator('#weekends').fill('3');
+  await frame.locator('#betaWeekendsA').fill('3');
+  await frame.locator('#betaWeekendsB').fill('3');
   await expect(frame.locator('#betaABGross')).toHaveText('55 000 €');
   await expect(frame.locator('#betaProgressSummary')).toContainText('31,1 %');
   await expect(frame.locator('#betaProgressSummary')).toContainText('Ilman valittuja työviikonloppuja: 52 000 €');
@@ -44,6 +45,7 @@ test('Tax progression visualization fits narrow phone widths',async({page})=>{
     await page.goto('/index.html');
     await page.getByRole('button',{name:'Laskuri'}).click();
     const frame=page.frameLocator('#plannerFrame');
+    await frame.locator('#plannerAdvanced > summary').click();
     await frame.locator('#baseGross').fill('52000');
     await expect(frame.locator('#betaProgressChart svg')).toHaveCount(1);
     const size=await frame.locator('#betaAnnualABSummary').evaluate(el=>({

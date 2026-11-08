@@ -5,7 +5,8 @@ test("beta branding, exact origin and offline analytics shell", async ({ page })
   await expect(page.locator("#beta-tag")).toHaveText("BETA");
   await expect(page.locator("#beta-banner")).toHaveCount(0);
   await expect(page.locator("#beta-tag")).toBeVisible();
-  await expect(page.locator(".beta-pdf-slot")).toBeVisible();
+  await expect(page.locator("#betaImportOpen")).toBeVisible();
+  await expect(page.locator("#betaImportWorkspace")).toBeHidden();
   await expect(page.locator(".beta-pdf-note")).toContainText("PDF luetaan paikallisesti");
   await expect(page.locator("#pdfInput")).toBeEnabled();
   await expect(page.locator(".beta-pdf-note")).toContainText("epäselvät tiedot tarkistetaan");
@@ -98,6 +99,7 @@ test("synthetic production-format JSON backup restores locally into beta analysi
 
 test("compact dashboard shows two distinct key metrics, card gauge and other values one tap away", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
+  await page.clock.install({time:new Date("2026-10-01T12:00:00+03:00")});
   await page.goto("/index.html");
   const backup = await page.evaluate(async () => {
     const m = await import("/model.js");
@@ -119,6 +121,9 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#dashboardDetails .metric")).toHaveCount(2);
   await expect(page.locator("#dashboardMore")).toBeVisible();
   await expect(page.locator("#dashboardMore")).not.toHaveAttribute("open","");
+  await expect(page.locator("#dashboard")).toBeHidden();
+  await expect(page.locator("#dashboardMore #dashboard")).toHaveCount(1);
+  await expect(page.locator(".compact-amount")).toContainText("2 100");
   await expect(page.locator("#dashboard")).toContainText("Viimeisin netto");
   await expect(page.locator("#dashboard")).not.toContainText("Kortin marginaali");
   await expect(page.locator("#dashboard")).not.toContainText("8 000");
@@ -129,9 +134,10 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   await expect(page.locator("#taxCardRemaining")).toContainText("8 000");
   await expect(page.locator("#taxCardEstimate")).toContainText("lisää saman verokortin");
   await expect(page.locator("#taxCardContext")).toContainText("viimeisimmästä palkkalaskelmasta");
-  await expect(page.locator(".beta-compact-dashboard #yearProgressPanel")).toHaveCount(1);
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
   await expect(page.locator("#dashboardDetails")).toBeHidden();
   await page.locator("#dashboardMore > summary").click();
+  await expect(page.locator("#dashboard")).toBeVisible();
   await expect(page.locator("#dashboard")).toContainText("Veronalainen kertymä");
   await expect(page.locator("#dashboardDetails")).toContainText("Viimeisin bruttopalkka");
   await expect(page.locator("#dashboardDetails")).not.toContainText("Kortin kertymä");
@@ -142,43 +148,32 @@ test("compact dashboard shows two distinct key metrics, card gauge and other val
   expect(width).toBeLessThanOrEqual(1);
   await page.reload();
   await expect(page.locator("#dashboard .metric")).toHaveCount(2);
-  await expect(page.locator(".beta-pdf-slot")).toBeVisible();
+  await expect(page.locator("#betaImportOpen")).toBeVisible();
+  await expect(page.locator(".beta-pdf-slot")).toBeHidden();
 });
-test("year-end goal is local, compares certified YTD separately from manual annual forecast", async({page})=>{
- await page.setViewportSize({width:360,height:780});
- await page.goto("/index.html");
- await expect(page.locator("#yearProgressPanel")).toBeVisible();
- await expect(page.locator("#yearProgressHeadline")).toContainText("Aseta oma");
- await page.locator("#yearProgressPanel > summary").click();
- await expect(page.locator("#yearProgressStatus")).toContainText("Ei luotettavaa");
- await page.locator("#yearGrossGoal").fill("80000");
- await page.locator("#yearGrossGoal").press("Tab");
- await page.locator("#yearGrossForecast").fill("79000");
- await page.locator("#yearGrossForecast").press("Tab");
- await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
- const backup=await page.evaluate(async()=>{
-  const m=await import("/model.js");
-  const row=m.migrateLegacyRecord({recordSchemaVersion:3,incomeSourceId:"goal-job",id:"goal-synthetic-1",kind:"payslip",
-   values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
-     grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000},
-   payLines:[],fingerprints:["goal-synthetic-1"],fieldMeta:{},corrections:{},notices:[],
-   parser:{version:"test",confidence:1,documentType:"payslip",sourceProfile:"synthetic"}});
-  return JSON.stringify(m.makeBackup([row],{incomeSources:[{id:"goal-job",name:"Työ"}]}));
- });
- await page.getByRole("button",{name:"Asetukset"}).click();
- await page.locator("#backupInput").setInputFiles({name:"synthetic-progress.json",mimeType:"application/json",buffer:Buffer.from(backup)});
- await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
- await page.getByRole("button",{name:"Seuranta"}).click();
- await expect(page.locator("#yearProgressHeadline")).toContainText("71 500");
- await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
- await expect(page.locator("#yearProgressCompare")).toContainText("1 000");
- await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
- await page.reload();
- await expect(page.locator("#yearGrossGoal")).toHaveValue("80000");
- await expect(page.locator("#yearGrossForecast")).toHaveValue("79000");
- await expect(page.locator("#yearProgressStatus")).toContainText("8 500");
- expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+test("obsolete personal annual plan is absent while old settings and taxcard gauge stay intact", async ({ page }) => {
+  await page.setViewportSize({width:360,height:780});
+  await page.goto("/index.html");
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
+  await expect(page.locator("#yearGrossGoal")).toHaveCount(0);
+  await expect(page.locator("#yearGrossForecast")).toHaveCount(0);
+  await page.evaluate(async() => {
+    const storage = await import("/storage.js");
+    await storage.setSetting("beta:year-progress:v1:2026:goal","80000");
+    await storage.upsertRecord({id:"annual-synthetic",recordSchemaVersion:3,kind:"payslip",
+      values:{payDate:"2026-10-09",payPeriodStart:"2026-09-21",payPeriodEnd:"2026-10-04",
+        grossPay:3200,netPay:1850,ytdTaxableIncome:71500,taxCardAccumulatedIncome:72000,taxLimit:85000}});
+  });
+  await page.reload();
+  await expect(page.locator(".compact-lead").nth(1)).toContainText("Vuoden 2026 koonti");
+  await expect(page.locator(".compact-lead").nth(1)).toContainText("1 850");
+  await expect(page.locator(".compact-lead").nth(1)).toContainText("3 200");
+  await expect(page.locator("#taxCardProgress")).toBeVisible();
+  await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
+  expect(await page.evaluate(async() => (await import("/storage.js"))
+    .getSetting("beta:year-progress:v1:2026:goal"))).toBe("80000");
 });
+
 test("updated tax card data never gets mistaken for a full calendar-year threshold", async({page})=>{
  await page.setViewportSize({width:360,height:780});
  await page.goto("/index.html");
@@ -214,7 +209,7 @@ test("updated tax card data never gets mistaken for a full calendar-year thresho
  await expect(page.locator("#dashboardDetails")).not.toContainText("100 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin tuloraja tai prosentti");
  await expect(page.locator("#taxCardContext")).toContainText("vanhoja rajoja ei lasketa yhteen");
- await expect(page.locator("#yearProgressPanel")).toBeVisible();
+ await expect(page.locator("#yearProgressPanel")).toHaveCount(0);
  await page.reload();
  await expect(page.locator("#taxCardRemaining")).toContainText("6 000");
  await expect(page.locator("#taxCardContext")).toContainText("eri verokortin");
@@ -303,7 +298,7 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await page.locator(".analysis-collection").first().locator(":scope > summary").click();
   await expect(page.locator("#monthlyDetails .month-expand")).toHaveCount(1);
   await expect(page.locator(".beta-compact-months")).not.toHaveAttribute("open", "");
-  await page.locator(".beta-compact-months > summary").click();
+  await expect(page.locator(".beta-compact-months > h3")).toHaveText("Kuukausien erittely");
   await page.locator("#monthlyDetails .month-expand summary").click();
   await expect(page.locator("#monthlyDetails")).toContainText("1 846,70");
   await page.locator(".analysis-collection").last().locator(":scope > summary").click();
@@ -366,6 +361,7 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(planner.locator("#rulesConfirmed")).not.toBeChecked();
  await expect(planner.locator("#wageModelNote")).toContainText("Tuntipalkkainen");
  await expect(planner.locator("#weekendGross")).toHaveValue("0");
+ await planner.locator("#weekendPayDetails > summary").click();
  await planner.locator("#weekendMethod").selectOption("paylines");
  await expect(planner.locator("#validation")).toContainText("Vahvista ensin");
  await planner.locator("#rulesConfirmed").check();
@@ -397,6 +393,7 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(page.locator("#plannerFrame")).toBeVisible();
  const planner=page.frameLocator("#plannerFrame");
+  await planner.locator("#plannerAdvanced > summary").click();
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
  await expect(planner.locator("#netDifferenceSummary")).toContainText("ei ole eroa");
  await expect(planner.locator("#decemberTaxNote")).toContainText("Joulukuussa");
@@ -408,7 +405,7 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await planner.locator("#rateA").fill("30");
  await planner.locator("#rateB").fill("34");
  await planner.locator("#raise").fill("0");
- await planner.locator("#weekends").fill("13");
+ await planner.locator('#betaWeekendsA').fill("13");
  await expect(planner.locator("#netDifferenceChart svg")).toBeVisible();
  await expect(planner.locator("#rateUncertainty")).toHaveValue("1");
  await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(3);
@@ -439,6 +436,7 @@ test("inverse net target solves A and B minimum weekends and does not bypass cap
  await page.getByRole("button",{name:"Laskuri"}).click();
  await expect(page.locator("#plannerFrame")).toBeVisible();
  const p=page.frameLocator("#plannerFrame");
+  await p.locator("#plannerAdvanced > summary").click();
  await expect(p.locator("#inverseGoalPanel")).toBeVisible();
  await p.locator("#inverseGoalPanel > summary").click();
  await expect(p.locator("#inverseGoalResults")).toContainText("Anna nettotavoite");

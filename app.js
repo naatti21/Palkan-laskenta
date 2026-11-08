@@ -1,5 +1,5 @@
 import { extractPdfText } from "./pdf-reader.js";
-import { buildYearAnalysis } from "./analytics.js";
+import { buildYearAnalysis, buildIncomeSourceDiagnostics } from "./analytics.js";
 import { forecastTaxCardLimit } from "./taxcard-forecast.js";
 import { initInsightsUi, renderInsightsUi } from "./insights-ui.js";
 import {initScenarioUi,renderScenarioUi} from "./scenario-ui.js";
@@ -23,12 +23,14 @@ import {
   parseBackup,
   parseBackupLearnedProfiles,
   paymentState,
+  paycycleOverlapEvidence,
   findRecordConflict
 } from "./model.js";
 import {
   clearAllRecords,
   getIncomeSources,
   createIncomeSource,
+  assignMissingIncomeSources,
   getAllRecords,
   mergeManyRecords,
   migrateLegacyLocalStorage,
@@ -44,6 +46,9 @@ let currentRawText = "";
 let currentFingerprint = "";
 let currentIncomeSourceId = null;
 let incomeSources = [];
+let batchQueue = null;
+let appReadyPromise = null;
+const selectedMissingSources = new Set();
 function sourceName(id) {
   if (!id) return "Lähde määrittämättä";
   const source = incomeSources.find(source => source.id === id);
@@ -55,6 +60,7 @@ async function populateIncomeSources() {
   select.replaceChildren(new Option("Lähde määrittämättä", ""));
   for (const source of incomeSources) select.add(new Option(sourceName(source.id), source.id));
   select.value = selected;
+  batchQueue?.refreshSources();
 }
 let currentRecord = null;
 let deferredInstallPrompt = null;
@@ -403,6 +409,7 @@ function renderSuccess(record, mergedDuplicate = false) {
 }
 
 function renderUnknown() {
+  batchQueue?.openWorkspace();
   el("resultSection").classList.add("hidden");
   el("reviewSection").classList.add("hidden");
   el("conflictSection")?.classList.add("hidden");
@@ -418,6 +425,7 @@ function currentInputValue(key, parsed) {
 }
 
 function renderReview(parsed, keys = null, manual = false) {
+  batchQueue?.openWorkspace();
   el("resultSection").classList.add("hidden");
   el("unknownSection").classList.add("hidden");
   el("conflictSection")?.classList.add("hidden");
@@ -663,6 +671,68 @@ function initBetaYearProgress() {
   }
 }
 
+
+function renderIncomeSourceDiagnostics(records) {
+  // This is evidence, not a cross-payer YTD calculation.
+  const card = document.getElementById("taxCardProgress");
+  if (!card) return;
+  let details = document.getElementById("incomeSourceDiagnostics");
+  if (!details) {
+    details = document.createElement("details");
+    details.id = "incomeSourceDiagnostics";
+    details.className = "beta-source-diagnostics";
+    const summary = document.createElement("summary");
+    summary.textContent = "Kertymän tietolähteet ja tarkistettavat kohdat";
+    details.append(summary, document.createElement("div"));
+    card.append(details);
+  }
+  const host = details.querySelector("div");
+  host.replaceChildren();
+  const evidence = buildIncomeSourceDiagnostics(records, selectedYear);
+  const status = document.createElement("p");
+  status.textContent = evidence.recordCount
+    ? evidence.conflictCount + " ristiriitaista · " + evidence.unspecifiedCount +
+      " ilman tulolähdettä. Näytetyt kertymät ovat yksittäisten laskelmien havaintoja."
+    : "Valitulta vuodelta ei ole vielä palkkalaskelmia.";
+  host.append(status);
+  if (evidence.multipleSources) {
+    const warning = document.createElement("p");
+    warning.className = "source-diagnostics-warning";
+    warning.textContent = "Usean työnantajan YTD- tai korttikertymiä ei voi laskea yhteen koko verokortin käytöksi.";
+    host.append(warning);
+  }
+  for (const source of evidence.sources) {
+    const section = document.createElement("section");
+    section.className = "source-diagnostics-row";
+    const label = document.createElement("strong");
+    label.textContent = sourceName(source.incomeSourceId) +
+      " · " + source.confirmedCount + " vahvistettua / " + source.recordCount + " laskelmaa";
+    section.append(label);
+    if (source.lastPayDate) {
+      const observation = document.createElement("p");
+      const values = [
+        "Viimeisin vahvistettu " + fmtDate(source.lastPayDate),
+        "Palkkalaskelman YTD-havainto " + fmtMoney(source.ytdObservation),
+        "Kortin kertymähavainto " + fmtMoney(source.cardObservation),
+        "Tulorajahavainto " + fmtMoney(source.taxLimitObservation)
+      ];
+      observation.textContent = values.join(" · ");
+      section.append(observation);
+    }
+    if (source.issues.length) {
+      const warning = document.createElement("p");
+      warning.className = "source-diagnostics-warning";
+      warning.textContent = "Tarkistettava: " + source.issues.join("; ") + ".";
+      section.append(warning);
+    } else {
+      const note = document.createElement("p");
+      note.textContent = "Yksittäisen maksajan havainto, ei vahvistus koko vuoden verokorttitilanteesta.";
+      section.append(note);
+    }
+    host.append(section);
+  }
+}
+
 async function renderAll() {
   const records = await getAllRecords();
   await populateIncomeSources();
@@ -672,6 +742,7 @@ async function renderAll() {
   await loadYearProgressValues();
   yearProgressRecords = records;
   renderDashboard(records);
+  renderIncomeSourceDiagnostics(records);
   if (document.getElementById("ledgerOpening")) document.dispatchEvent(new CustomEvent("compact-payments", { detail: { records, year: selectedYear, sourceName } }));
   renderBetaYearProgress(records);
   renderAnalysis(records);
@@ -804,7 +875,8 @@ function renderDashboard(records) {
 
   const lastDate = valueOf(latest, "payDate");
   const onLastDate = yearRecords.filter(row => valueOf(row, "payDate") === lastDate);
-  const paidOnLastDate = key => unresolved || onLastDate.some(row => !Number.isFinite(valueOf(row, key))) ? null :
+  // An unrelated earlier conflict must not hide the most recent unambiguous payment.
+  const paidOnLastDate = key => onLastDate.some(row => !Number.isFinite(valueOf(row, key))) ? null :
     onLastDate.reduce((sum, row) => sum + Math.round(valueOf(row, key) * 100), 0) / 100;
   const multipleSources = incomeScope(yearRecords).multiple;
   const ambiguous = multipleSources || unresolved || onLastDate.length > 1;
@@ -813,7 +885,9 @@ function renderDashboard(records) {
   const cardKnown = !ambiguous && typeof limit === "number" && Number.isFinite(limit) && limit > 0 &&
     typeof accumulated === "number" && Number.isFinite(accumulated) && accumulated >= 0;
   renderTaxCardProgress(records, latest, ambiguous);
-  const status = multipleSources && !unresolved ? {light:"neutral",text:"Tulolähteiden kertymät näkyvät Historiassa"} : ambiguous ? {light:"neutral",text:"Saman palkkakauden ristiriita"}
+  const status = unresolved ? {light:"neutral",text:"Historiassa on ratkaisemattomia palkkatapahtumia"}
+    : multipleSources ? {light:"neutral",text:"Tulolähteiden kertymät näkyvät Historiassa"}
+    : onLastDate.length > 1 ? {light:"neutral",text:"Samana päivänä useita vahvistettuja maksuja"}
     : taxStatus(latest);
   overall.className = `light ${status.light}`;
   overall.textContent = status.light === "neutral" ? "–" : "●";
@@ -869,7 +943,7 @@ function renderDashboard(records) {
     box.className = "metric";
     const name = document.createElement("span");
     name.textContent = secondaryDash
-      ? ({Netto:onLastDate.length > 1 ? "Maksupäivän netto yhteensä" : "Viimeisin nettopalkka", "Veronalainen YTD":"Veronalainen kertymä",
+      ? ({Netto:onLastDate.length > 1 ? "Vahvistetut maksut yhteensä" : unresolved ? "Viimeisin vahvistettu nettopalkka" : "Viimeisin nettopalkka", "Veronalainen YTD":"Veronalainen kertymä",
           Brutto:onLastDate.length > 1 ? "Maksupäivän brutto yhteensä" : "Viimeisin bruttopalkka", "OT viime jaksolla":"Ylityöt viime jaksolla"})[label] || label
       : label;
     const amount = document.createElement("strong");
@@ -892,7 +966,7 @@ function renderDashboard(records) {
   const state = paymentState(latest);
   const stateText = state === "confirmed_future" ? " Viimeisin laskelma on vahvistettu tuleva palkka." : "";
   el("dashboardNote").textContent = secondaryDash
-    ? `${status.text} (viimeisin palkkalaskelma).${stateText}`
+    ? (unresolved ? `${status.text}. Viimeisin vahvistettu maksu näkyy, mutta verokortin kertymää ei arvioida.${stateText}` : `${status.text} (viimeisin palkkalaskelma).${stateText}`)
     : `${status.text}. Tulorajaa verrataan vain verokortin omaan kertymään.${stateText}`;
   // The green tax-card status is already communicated by the percentage and
   // remaining amount. Keep non-green warnings and future-payment provenance.
@@ -938,6 +1012,32 @@ function renderAnalysis(records) {
       ? `${fmtNumber(overtime.knownHours)} h ${overtime.complete ? "" : "(osittainen)"}`
       : "Ei tietoa");
   }
+  // Latest evidenced payroll deduction share, matching the four codes used
+  // by the planner's history suggestions. Not a personal tax rate or annual
+  // average; never infer it from gross-minus-net or missing codes.
+  const deduction = info.deductions;
+  metric("Muut palkkavähennykset · havaittu",
+    deduction.latestRate === null ? "–" :
+      deduction.latestRate.toLocaleString("fi-FI", {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      }) + " %");
+  const deductionNote = document.createElement("p");
+  deductionNote.className = "muted analysis-deductions-note";
+  if (deduction.blockedByConflicts) {
+    deductionNote.textContent = "Vähennysosuutta ei näytetä ristiriitaisesta palkkahistoriasta.";
+  } else if (deduction.latestRate === null) {
+    deductionNote.textContent = "Ei täydellistä neljän vähennyskoodin erittelyä valitun vuoden laskelmissa.";
+  } else {
+    const payDate = deduction.latestPayDate?.split("-").reverse().join(".") || "–";
+    const source = deduction.incomeSourceId
+      ? " · " + sourceName(deduction.incomeSourceId) : "";
+    deductionNote.textContent = "Viimeisin tunnistettu laskelma " + payDate + source +
+      ". Koodit 90100, 90200, 90400 ja 90920 yhteensä suhteessa bruttoon. " +
+      "Ei koko vuoden keskiarvo eikä veroprosentti. " +
+      "Havaintoja " + deduction.supportedPayslips + "/" + deduction.reviewedPayslips + ".";
+  }
+  metrics.append(deductionNote);
+
   const coverage = document.createElement("p");
   coverage.className = "muted analysis-coverage";
   coverage.textContent = `Ylityötietoa ${overtime.recordsWithHours}/${overtime.recordsTotal - overtime.excludedConflicts} yksiselitteisestä laskelmasta.`
@@ -995,6 +1095,100 @@ function renderHistory(records) {
     host.append(empty);
     if (calendar) updateCalendar();
     return;
+  }
+
+  // Source recovery is Beta-only: do not alter the published main/QA layout.
+  const missing = yearRecords.filter(row => projection.visible.includes(row) &&
+    row.kind !== "forecast" && !row.incomeSourceId);
+  const conflicts = yearRecords.filter(row => projection.unresolved.includes(row));
+  for (const id of [...selectedMissingSources]) if (!missing.some(row => row.id === id)) selectedMissingSources.delete(id);
+  let refreshSelectedCount = () => {};
+  if (document.getElementById("ledgerOpening") && (missing.length || conflicts.length)) {
+    const panel = document.createElement("section");
+    panel.className = "history-recovery";
+    panel.setAttribute("aria-label", "Palkkahistorian tarkistaminen");
+    const title = document.createElement("strong");
+    title.textContent = "Historian tarkistaminen";
+    const counts = document.createElement("p");
+    counts.textContent = conflicts.length + " ratkaisemattomaksi merkittyä · " +
+      missing.length + " ilman tulolähdettä";
+    const explanation = document.createElement("p");
+    explanation.textContent = "Puuttuva lähde ei yksin poista palkkaa laskennasta. Ristiriitaiset maksut eivät sisälly yhteissummiin ennen erillistä vahvistusta.";
+    panel.append(title, counts, explanation);
+    if (missing.length) {
+      const choices = document.createElement("div");
+      choices.className = "history-recovery-controls";
+      const label = document.createElement("label");
+      label.textContent = "Valituille laskelmille vahvistettava tulolähde";
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", "Historian tulolähde");
+      select.append(new Option("Valitse tulolähde", ""));
+      for (const source of incomeSources) select.add(new Option(source.name, source.id));
+      label.append(select);
+      const all = document.createElement("button");
+      all.type = "button"; all.textContent = "Valitse tämän vuoden lähteettömät";
+      all.onclick = () => {
+        missing.forEach(row => selectedMissingSources.add(row.id));
+        for (const check of host.querySelectorAll(".history-source-choice")) check.checked = true;
+        refreshSelectedCount();
+      };
+      const clear = document.createElement("button");
+      clear.type = "button"; clear.textContent = "Tyhjennä valinnat";
+      clear.onclick = () => {
+        selectedMissingSources.clear();
+        for (const check of host.querySelectorAll(".history-source-choice")) check.checked = false;
+        refreshSelectedCount();
+      };
+      const commit = document.createElement("button");
+      commit.type = "button"; commit.textContent = "Vahvista tulolähde valituille";
+      const selectedCount = document.createElement("span");
+      selectedCount.className = "history-recovery-count";
+      refreshSelectedCount = () => {
+        const count = missing.filter(row => selectedMissingSources.has(row.id)).length;
+        selectedCount.textContent = count + " laskelmaa valittu";
+        commit.disabled = count === 0 || !select.value;
+      };
+      select.onchange = refreshSelectedCount;
+      commit.onclick = async () => {
+        const chosen = missing.filter(row => selectedMissingSources.has(row.id));
+        if (!chosen.length || !select.value) return;
+        const labelName = sourceName(select.value);
+        const preview = chosen.slice(0, 8).map(row => fmtDate(row.values.payDate) +
+          " · " + fmtMoney(row.values.netPay)).join("\n");
+        if (!confirm("Vahvistetaanko tulolähde " + labelName + " " + chosen.length +
+          " laskelmalle?\n\n" + preview +
+          (chosen.length > 8 ? "\n... ja " + (chosen.length - 8) + " muuta." : "") +
+          "\n\nTämä EI ratkaise mahdollisia päällekkäisiä palkkatapahtumia. Muut lähteet pitää käsitellä erikseen.")) return;
+        commit.disabled = true;
+        try {
+          await assignMissingIncomeSources(chosen.map(row => row.id), select.value, chosen);
+          selectedMissingSources.clear();
+          await renderAll();
+          el("backupStatus").textContent = "Tulolähde tallennettiin " + chosen.length +
+            " aiempaan palkkalaskelmaan. Alkuperäiset versiot säilyvät historiassa.";
+        } catch (error) {
+          alert("Tulolähdettä ei muutettu: " + error.message);
+          await renderAll();
+        }
+      };
+      const create = document.createElement("button");
+      create.type = "button"; create.textContent = "Luo uusi tulolähde";
+      create.onclick = () => {
+        setView("tracking");
+        const details = document.querySelector(".beta-pdf-slot details");
+        if (details) details.open = true;
+        document.getElementById("incomeSourceName")?.focus();
+      };
+      choices.append(label, selectedCount, all, clear, commit, create);
+      const disclosure = document.createElement("details");
+      disclosure.className = "history-recovery-disclosure";
+      const summary = document.createElement("summary");
+      summary.textContent = "Määritä puuttuvat tulolähteet";
+      disclosure.append(summary, choices);
+      panel.append(disclosure);
+      refreshSelectedCount();
+    }
+    host.append(panel);
   }
 
   const appendField = (container, label, value) => {
@@ -1086,6 +1280,22 @@ function renderHistory(records) {
       appendField(fields, label, field === "overtimeHours" ? fmtNumber(value) + " h" : fmtFieldValue(field, value));
     }
     detail.append(fields);
+    if (document.getElementById("ledgerOpening") && missing.includes(record)) {
+      const sourceChoice = document.createElement("label");
+      sourceChoice.className = "history-recovery-choice";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "history-source-choice";
+      checkbox.value = record.id;
+      checkbox.checked = selectedMissingSources.has(record.id);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) selectedMissingSources.add(record.id);
+        else selectedMissingSources.delete(record.id);
+        refreshSelectedCount();
+      });
+      sourceChoice.append(checkbox, document.createTextNode(" Valitse tämän laskelman tulolähteen määrittämiseen"));
+      detail.prepend(sourceChoice);
+    }
     const lines = Array.isArray(record.payLines) ? record.payLines : [];
     if (lines.length) {
       const more = document.createElement("details");
@@ -1132,6 +1342,7 @@ async function renderLearnedProfileSummary() {
 }
 
 function renderConflict(record, conflict) {
+  batchQueue?.openWorkspace();
   currentPendingRecord = record;
   currentConflict = conflict;
   currentConflict.expected = conflict.candidates || [conflict.existing];
@@ -1141,53 +1352,122 @@ function renderConflict(record, conflict) {
   el("conflictSection").classList.remove("hidden");
 
   const host = el("conflictSummary");
-  host.innerHTML = "";
-
+  host.replaceChildren();
   const choices = conflict.candidates || [conflict.existing];
   const label = document.createElement("label");
-  label.textContent = "Korvattava aiempi laskelma";
+  label.className = "paycycle-target-label";
+  label.textContent = "Vertailtava aiempi laskelma";
   const select = document.createElement("select");
   select.id = "replacementTarget";
   for (const candidate of choices) {
-    const option = document.createElement("option"); option.value = candidate.id;
-    option.textContent = `${sourceName(candidate.incomeSourceId)} · ${fmtDate(candidate.values.payDate)} · ${fmtDate(candidate.values.payPeriodStart)}–${fmtDate(candidate.values.payPeriodEnd)} · netto ${fmtMoney(candidate.values.netPay)}`;
+    const option = document.createElement("option");
+    option.value = candidate.id;
+    option.textContent = sourceName(candidate.incomeSourceId) + " · " +
+      fmtDate(candidate.values.payDate) + " · netto " + fmtMoney(candidate.values.netPay);
     select.append(option);
   }
   select.value = conflict.existing.id;
   select.addEventListener("change", () => {
-    const existing = choices.find(r => r.id === select.value);
+    const existing = choices.find(row => row.id === select.value);
     renderConflict(record, { ...conflict, existing, differences: recordDifferences(existing, record) });
   });
-  label.append(select); host.append(label);
-  if (document.getElementById("ledgerOpening")) {
-    const oldNet = conflict.existing.values?.netPay, newNet = record.values?.netPay;
-    const preview = document.createElement("p");
-    preview.className = "compact-decision";
-    preview.textContent = Number.isFinite(oldNet) && Number.isFinite(newNet)
-      ? `Tämän parin netto: korvaa aiempi → ${fmtMoney(newNet)}; säilytä molemmat → ${fmtMoney((Math.round(oldNet*100)+Math.round(newNet*100))/100)}. Peruuta jättää historian ennalleen.`
-      : "Netto puuttuu. Valintojen euromääräistä vaikutusta ei voi vahvistaa.";
-    host.append(preview);
+  label.append(select);
+  host.append(label);
+
+  // Put the two real pay dates front and center, not a long field-by-field
+  // correction diff that silently frames the earlier payment as erroneous.
+  const payments = document.createElement("div");
+  payments.className = "paycycle-compare";
+  const paymentCard = (row, heading) => {
+    const card = document.createElement("div");
+    card.className = "paycycle-payment";
+    const tag = document.createElement("span");
+    tag.className = "paycycle-payment-label";
+    tag.textContent = heading;
+    const date = document.createElement("strong");
+    date.textContent = fmtDate(row.values?.payDate);
+    const net = document.createElement("strong");
+    net.className = "paycycle-payment-net";
+    net.textContent = fmtMoney(row.values?.netPay);
+    const period = document.createElement("small");
+    period.textContent = "Palkkakausi " + fmtDate(row.values?.payPeriodStart) +
+      "–" + fmtDate(row.values?.payPeriodEnd);
+    card.append(tag, date, net, period);
+    return card;
+  };
+  payments.append(paymentCard(conflict.existing, "AIEMPI LASKELMA"),
+    paymentCard(record, "TARKISTETTAVA LASKELMA"));
+  host.append(payments);
+
+  const evidence = paycycleOverlapEvidence(conflict.existing, record);
+  const hint = document.createElement("p");
+  hint.className = evidence.additiveYtdMatchesLaterGross
+    ? "paycycle-evidence paycycle-evidence-positive" : "paycycle-evidence";
+  if (evidence.additiveYtdMatchesLaterGross) {
+    hint.textContent = "Kertymät viittaavat kahteen erilliseen palkkaan: YTD kasvaa " +
+      fmtMoney(evidence.ytdIncrease) + ", täsmälleen myöhemmän laskelman veronalaisen bruton verran. " +
+      "Tämä ei yksin todista, että molemmat on maksettu.";
+  } else if (evidence.samePeriod && evidence.differentPayDates) {
+    hint.textContent = "Maksupäivät eroavat, vaikka palkkakausi on sama. " +
+      "Esimerkiksi palkanmaksurytmin muutos voi selittää tilanteen. " +
+      "Palkkakauden yhtäläisyys ei yksin tee laskelmasta virheellistä.";
+  } else {
+    hint.textContent = "Tiedot voivat tarkoittaa korjausta tai erillistä maksua. " +
+      "Sovellus ei yhdistä eikä laske niitä yhteen ennen päätöstä.";
   }
-  const identityRows = [
+  host.append(hint);
+
+  const actionGuide = document.createElement("p");
+  actionGuide.className = "paycycle-action-guide";
+  actionGuide.textContent = "Näkyvätkö molemmat nettopalkat oikeina, erillisinä tilitapahtumina? " +
+    "Valitse silloin Säilytä molemmat. Jos uusi laskelma korjaa ja korvaa aiemman, " +
+    "valitse Korvaa aiempi. Muussa tapauksessa Peruuta ja tarkista laskelmat.";
+  host.append(actionGuide);
+
+  const oldNet = conflict.existing.values?.netPay, newNet = record.values?.netPay;
+  const preview = document.createElement("p");
+  preview.className = "compact-decision paycycle-effect";
+  preview.textContent = Number.isFinite(oldNet) && Number.isFinite(newNet)
+    ? "Tämän parin vaikutus: korvaa aiempi → " + fmtMoney(newNet) +
+      "; säilytä molemmat → " + fmtMoney((Math.round(oldNet*100) + Math.round(newNet*100))/100) +
+      ". Peruuta ei muuta historiaa."
+    : "Netto puuttuu. Euromääräistä vaikutusta ei voi vahvistaa.";
+  host.append(preview);
+
+  const detail = document.createElement("details");
+  detail.className = "paycycle-technical-details";
+  const detailTitle = document.createElement("summary");
+  detailTitle.textContent = "Näytä kenttien tarkka vertailu";
+  detail.append(detailTitle);
+  for (const [fieldLabel, value] of [
     ["Maksupäivä", fmtFieldValue("payDate", record.values?.payDate)],
-    ["Palkkakausi", `${fmtFieldValue("payPeriodStart", record.values?.payPeriodStart)} – ${fmtFieldValue("payPeriodEnd", record.values?.payPeriodEnd)}`]
-  ];
-  for (const [label, value] of identityRows) {
+    ["Palkkakausi", fmtFieldValue("payPeriodStart", record.values?.payPeriodStart) +
+      " – " + fmtFieldValue("payPeriodEnd", record.values?.payPeriodEnd)]
+  ]) {
     const row = document.createElement("div");
     row.className = "summary-row";
-    row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
-    host.append(row);
+    const name = document.createElement("span");
+    name.textContent = fieldLabel;
+    const amount = document.createElement("strong");
+    amount.textContent = value;
+    row.append(name, amount);
+    detail.append(row);
   }
-
-  for (const difference of (conflict.differences || []).slice(0, 8)) {
+  for (const difference of (conflict.differences || []).slice(0, 12)) {
     const row = document.createElement("div");
     row.className = "summary-row";
-    const label = fieldLabels[difference.key] || difference.key;
-    row.innerHTML = `<span>${label}</span><strong>${fmtFieldValue(difference.key, difference.before)} → ${fmtFieldValue(difference.key, difference.after)}</strong>`;
-    host.append(row);
+    const name = document.createElement("span");
+    name.textContent = fieldLabels[difference.key] || difference.key;
+    const amount = document.createElement("strong");
+    amount.textContent = fmtFieldValue(difference.key, difference.before) + " → " +
+      fmtFieldValue(difference.key, difference.after);
+    row.append(name, amount);
+    detail.append(row);
   }
+  host.append(detail);
 
-  el("status").textContent = "Laskelma saattaa liittyä aiempaan maksuun. Mitään ei yhdistetty automaattisesti. Valitse korvattava laskelma tai vahvista erillinen maksu.";
+  el("status").textContent = "Mitään ei yhdistetty automaattisesti. " +
+    "Tarkista, onko kyse kahdesta maksetusta palkasta vai korjauslaskelmasta.";
 }
 
 async function conflictForRecord(record, ignoreRecordId = null) {
@@ -1234,10 +1514,10 @@ async function processPdf(file) {
       renderReview(currentParsed, problemKeys(currentParsed), true);
       el("reviewTitle").textContent = "Tunnistan rakenteen – tarkista puuttuvat tiedot";
       el("status").textContent = "Tämä rakenne on vahvistettu aiemmin palkkalaskelmaksi tällä laitteella.";
-      return;
+      return { state: "review" };
     }
     renderUnknown();
-    return;
+    return { state: "unknown" };
   }
 
   if (canAutoAccept(currentParsed)) {
@@ -1246,7 +1526,7 @@ async function processPdf(file) {
     if (conflict) {
       currentPendingWasAutoParsed = true;
       renderConflict(record, conflict);
-      return;
+      return { state: "conflict" };
     }
 
     const result = await upsertRecord(record);
@@ -1256,11 +1536,12 @@ async function processPdf(file) {
     el("status").textContent = result.mergedDuplicate
       ? "Sama palkka löytyi historiasta. Tiedot yhdistettiin ilman tuplaa."
       : "Palkkalaskelma tunnistettiin varmasti ja tallennettiin automaattisesti.";
-    return;
+    return { state: result.mergedDuplicate ? "duplicate" : "saved" };
   }
 
   renderReview(currentParsed, problemKeys(currentParsed));
   el("status").textContent = "Palkkalaskelma tunnistettiin, mutta yksi tai useampi ydinkohta tarvitsee tarkistuksen.";
+  return { state: "review" };
 }
 
 let payrollBusy = false;
@@ -1282,15 +1563,349 @@ function payrollAction(action) {
   };
 }
 
+
+function installPdfBatchQueue() {
+  // Only enabled in the isolated Beta. File objects are kept in memory and are
+  // never written to IndexedDB, backups, service workers or analytics.
+  const upload = document.querySelector(".beta-pdf-slot");
+  if (!upload) return null;
+  const group = document.createElement("details");
+  group.id = "betaBatchQueue";
+  group.className = "beta-batch-queue";
+  const title = document.createElement("summary");
+  title.textContent = "Tuo useita palkkalaskelmia samalla kertaa";
+  const inner = document.createElement("div");
+  const pickerLabel = document.createElement("label");
+  pickerLabel.textContent = "Valitse useita PDF-tiedostoja";
+  const picker = document.createElement("input");
+  picker.id = "betaBatchInput";
+  picker.type = "file"; picker.accept = "application/pdf"; picker.multiple = true;
+  pickerLabel.append(picker);
+  const payerLabel = document.createElement("label");
+  payerLabel.textContent = "Vahvistettu tulolähde seuraavalle tiedostolle";
+  const payer = document.createElement("select");
+  payer.id = "betaBatchSource";
+  payer.setAttribute("aria-label", "Erätuonnin tulolähde");
+  payerLabel.append(payer);
+  const note = document.createElement("p");
+  note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Epäselvät tiedot pysäyttävät jonon.";
+  const autoLabel = document.createElement("label");
+  autoLabel.className = "beta-batch-auto";
+  const auto = document.createElement("input");
+  auto.id = "betaBatchAuto";
+  auto.type = "checkbox";
+  autoLabel.append(auto, document.createTextNode(" Käsittele selkeät PDF:t peräkkäin (pysähdy ristiriitaan)"));
+  const actions = document.createElement("div");
+  actions.className = "beta-batch-actions";
+  const next = document.createElement("button");
+  next.type = "button"; next.id = "betaBatchNext";
+  next.textContent = "Käsittele seuraava";
+  const skip = document.createElement("button");
+  skip.type = "button"; skip.id = "betaBatchSkip";
+  skip.textContent = "Ohita epäselvä tiedosto";
+  skip.className = "secondary";
+  const clear = document.createElement("button");
+  clear.type = "button"; clear.id = "betaBatchClear";
+  clear.textContent = "Tyhjennä jono";
+  clear.className = "secondary";
+  actions.append(next, skip, clear);
+  const status = document.createElement("p");
+  status.id = "betaBatchStatus";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  const list = document.createElement("ol");
+  list.id = "betaBatchFiles";
+  const disclaimer = document.createElement("p");
+  disclaimer.textContent = "Jono säilyy vain tällä avoimella sivulla. Jos suljet sovelluksen, valitse tiedostot uudelleen: jo tallennetut tunnistetaan tiivisteellä eikä samaa PDF:ää kirjata kahdesti.";
+  inner.append(pickerLabel, payerLabel, note, autoLabel, actions, status, list, disclaimer);
+  group.append(title, inner);
+  upload.after(group);
+  const mainPicker = document.getElementById("pdfInput");
+  // The primary upload control must accept multiple files too; don't make the
+  // user discover a second, collapsed picker just to import a year's payslips.
+  if (mainPicker) mainPicker.multiple = true;
+  const mainPickerCaption = upload.querySelector(".file-button span");
+  if (mainPickerCaption) mainPickerCaption.textContent = "Lisää PDF:t (yksi tai monta)";
+
+  let entries = [];
+  let cursor = 0;
+  let awaiting = -1;
+  let running = false;
+  const finished = new Set(["saved", "duplicate", "skipped", "error"]);
+  const labels = {
+    pending:"Odottaa", processing:"Luetaan", saved:"Tallennettu",
+    duplicate:"Jo tallennettu", review:"Tarkistettava",
+    conflict:"Ristiriita — päätös tarvitaan", unknown:"Ei tunnistettu",
+    skipped:"Ohitettu", error:"Virhe — tarkista Historiasta"
+  };
+  function refreshSources() {
+    const previous = payer.value;
+    payer.replaceChildren(new Option("Valitse tulolähde", ""));
+    for (const source of incomeSources) payer.add(new Option(source.name, source.id));
+    if (incomeSources.some(source => source.id === previous)) payer.value = previous;
+  }
+  function refresh() {
+    const counts = entries.reduce((out, entry) => {
+      out[entry.state] = (out[entry.state] || 0) + 1; return out;
+    }, {});
+    status.textContent = entries.length
+      ? entries.length + " tiedostoa · tallennettu " + (counts.saved || 0) +
+        " · jo olemassa " + (counts.duplicate || 0) +
+        " · tarkistettava " + ((counts.review || 0)+(counts.conflict || 0)+(counts.unknown || 0)) +
+        " · ohitettu " + ((counts.skipped || 0)+(counts.error || 0)) +
+        (awaiting >= 0 ? " · Käsittele avoin tarkistus ennen jatkamista." : "")
+      : "Valitse PDF:t aloittaaksesi. Mitään ei lähetetä palvelimelle.";
+    next.disabled = running || awaiting >= 0 || cursor >= entries.length || !payer.value;
+    picker.disabled = running;
+    payer.disabled = running;
+    auto.disabled = running;
+    skip.disabled = running || awaiting < 0;
+    clear.disabled = running || !entries.length;
+    list.replaceChildren();
+    entries.forEach((entry,i)=>{
+      const item = document.createElement("li");
+      item.className = "beta-batch-entry";
+      const name = document.createElement("span");
+      // File name is shown locally only, never persisted or logged.
+      name.textContent = (i+1) + ". " + entry.name;
+      const state = document.createElement("small");
+      state.textContent = labels[entry.state] || entry.state;
+      item.append(name, state);
+      list.append(item);
+    });
+  }
+  function releaseEntry(entry,state) {
+    entry.state=state; entry.file=null;
+  }
+  function complete(state) {
+    if (awaiting < 0) return;
+    releaseEntry(entries[awaiting],state);
+    awaiting=-1;
+    refresh();
+  }
+  function skipCurrent() {
+    if (awaiting < 0) return;
+    releaseEntry(entries[awaiting],"skipped");
+    awaiting=-1;
+    for (const id of ["reviewSection","unknownSection","conflictSection"])
+      document.getElementById(id)?.classList.add("hidden");
+    currentParsed=null; currentPendingRecord=null; currentConflict=null;
+    currentRawText="";
+    document.getElementById("rawText").textContent="";
+    el("status").textContent="Tiedosto ohitettu. Mitään ei tallennettu.";
+    refresh();
+  }
+  function enqueueFiles(files, fromPrimary = false) {
+    if (running || awaiting >= 0) {
+      group.open = true;
+      status.textContent = "Käsittele avoin PDF-tarkistus ennen uusien PDF:ien valintaa.";
+      return false;
+    }
+    const selected = Array.from(files || []);
+    const valid=selected.filter(file => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
+    if (!valid.length || valid.length > 80) {
+      group.open = true;
+      status.textContent = "Valitse 1–80 PDF-tiedostoa yhdellä kertaa.";
+      return false;
+    }
+    if (entries.some(entry=>!finished.has(entry.state))) {
+      group.open = true;
+      status.textContent = "Käsittele tai tyhjennä nykyinen PDF-jono ennen uuden avaamista.";
+      return false;
+    }
+    entries = valid.map(file => ({file,name:file.name,state:"pending"}));
+    cursor = 0; awaiting = -1;
+    if (fromPrimary && !payer.value) {
+      const chosen = el("incomeSourceSelect")?.value || "";
+      if (incomeSources.some(source => source.id === chosen)) payer.value = chosen;
+    }
+    group.open = true;
+    refresh();
+    if (selected.length !== valid.length) status.textContent += " Muut kuin PDF-tiedostot ohitettiin.";
+    return true;
+  }
+  picker.addEventListener("change", () => {
+    const chosen = Array.from(picker.files || []);
+    picker.value = "";
+    enqueueFiles(chosen);
+  });
+  payer.addEventListener("change",refresh);
+  skip.addEventListener("click",skipCurrent);
+  clear.addEventListener("click",()=>{
+    if (running) return;
+    if (!confirm("Tyhjennetäänkö vain käsittelemättömien PDF-tiedostojen jono? Jo tallennetut palkat säilyvät.")) return;
+    if (awaiting>=0) skipCurrent();
+    entries=[]; cursor=0; awaiting=-1; refresh();
+  });
+  next.addEventListener("click",payrollAction(async()=>{
+    if (running || awaiting>=0 || !payer.value || cursor>=entries.length) return;
+    if (auto.checked && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
+    const processingSource = payer.value; // Locked for this run, even if the UI changes elsewhere.
+    running=true;
+    try {
+      while(cursor<entries.length) {
+        if(!payer.value) break;
+        const index=cursor++;
+        const entry=entries[index];
+        entry.state="processing";
+        refresh();
+        try {
+          el("incomeSourceSelect").value=processingSource;
+          const result=await processPdf(entry.file);
+          if (result?.state === "saved" || result?.state === "duplicate") {
+            showBatchOutcome();
+            releaseEntry(entry,result.state);
+            refresh();
+            if (!auto.checked) break;
+            continue;
+          }
+          entry.state=result?.state || "review";
+          awaiting=index;
+          refresh();
+          break;
+        } catch(error) {
+          releaseEntry(entry,"error");
+          el("status").textContent="PDF:n käsittely keskeytyi: "+error.message+" Tarkista Historiasta, tallentuiko laskelma.";
+          refresh();
+          break;
+        }
+      }
+    } finally {
+      running=false; refresh();
+    }
+  }));
+
+  // One entry point on Seuranta; all import work lives in a focused sheet.
+  // Existing parser, source, revision and conflict contracts remain untouched.
+  const entry = document.createElement("div");
+  entry.className = "beta-import-entry";
+  entry.id = "betaImportEntry";
+  const openButton = document.createElement("button");
+  openButton.id = "betaImportOpen";
+  openButton.type = "button";
+  openButton.textContent = "Tuo palkkalaskelmat";
+  entry.append(openButton);
+  upload.before(entry);
+
+  const workspace = document.createElement("section");
+  workspace.id = "betaImportWorkspace";
+  workspace.className = "beta-import-workspace";
+  workspace.hidden = true;
+  workspace.setAttribute("aria-label", "Palkkalaskelmien tuonti");
+  workspace.setAttribute("role", "dialog");
+  workspace.setAttribute("aria-modal", "true");
+  const header = document.createElement("header");
+  header.className = "beta-import-header";
+  const back = document.createElement("button");
+  back.id = "betaImportBack";
+  back.type = "button";
+  back.textContent = "← Seurantaan";
+  const heading = document.createElement("div");
+  const headingTitle = document.createElement("h2");
+  headingTitle.textContent = "Palkkalaskelmien tuonti";
+  const headingSubtitle = document.createElement("p");
+  headingSubtitle.textContent = "Valitse PDF:t, tulolähde ja vahvista. Epäselvät maksut tarkistetaan erikseen.";
+  heading.append(headingTitle, headingSubtitle);
+  header.append(back, heading);
+
+  const fileLog = document.createElement("details");
+  fileLog.className = "beta-import-file-details";
+  const fileLogTitle = document.createElement("summary");
+  fileLogTitle.textContent = "Näytä tiedostot";
+  list.before(fileLog);
+  fileLog.append(fileLogTitle, list, disclaimer, clear);
+  // Keep the one-file legacy input in the DOM for older import integrations,
+  // but users see only the multi-capable picker in this sheet.
+  workspace.append(header, group, upload);
+  for (const id of ["resultSection","unknownSection","reviewSection","conflictSection"]) {
+    const section = document.getElementById(id);
+    if (section) workspace.append(section);
+  }
+  entry.after(workspace);
+
+  title.textContent = "PDF-tuontijono";
+  pickerLabel.firstChild.textContent = "Valitse PDF-tiedostot";
+  auto.checked = false; // Legacy single-step tests remain available; the visible action enables bulk flow.
+  autoLabel.classList.add("beta-import-legacy-control");
+  next.textContent = "Tallenna selkeät palkkalaskelmat";
+  note.textContent = "Kaikki käsitellään vain tällä laitteella. Erilliset työnantajat tarkistetaan omana eränään.";
+  disclaimer.textContent = "Alkuperäiset PDF:t eivät tallennu sovellukseen. Kesken jääneen jonon voit valita uudelleen; jo tallennettu laskelma tunnistetaan.";
+  function openWorkspace() {
+    workspace.hidden = false;
+    document.body.classList.add("beta-import-active");
+    group.open = true;
+    workspace.scrollTop = 0;
+    refresh();
+  }
+  function closeWorkspace() {
+    if (running) return;
+    workspace.hidden = true;
+    document.body.classList.remove("beta-import-active");
+    openButton.focus();
+  }
+  openButton.addEventListener("click", () => {
+    auto.checked = true;
+    openWorkspace();
+    picker.focus();
+  });
+  back.addEventListener("click", closeWorkspace);
+  workspace.addEventListener("keydown", event => {
+    if (event.key === "Escape") { event.preventDefault(); closeWorkspace(); }
+  });
+  picker.addEventListener("change", openWorkspace);
+  // Hide file-by-file result detail during bulk import; status row is sufficient.
+  function showBatchOutcome() {
+    if (!workspace.hidden && entries.length) {
+      document.getElementById("resultSection")?.classList.add("hidden");
+    }
+  }
+
+  refreshSources();
+  refresh();
+  return { refreshSources, complete, skipCurrent, enqueueFiles, openWorkspace, closeWorkspace,
+    isAwaiting() { return awaiting >= 0; },
+    hasPending() { return awaiting >= 0 || entries.some(entry => !finished.has(entry.state)); },
+    chooseSource(id) {
+      if(incomeSources.some(source=>source.id===id)) payer.value=id;
+      refresh();
+    }
+  };
+}
+
 el("createIncomeSource").addEventListener("click", payrollAction(async () => {
   const source = await createIncomeSource(el("incomeSourceName").value);
   el("incomeSourceName").value = "";
   await populateIncomeSources();
   el("incomeSourceSelect").value = source.id;
+  batchQueue?.chooseSource(source.id);
 }));
 el("pdfInput").addEventListener("change", payrollAction(async event => {
-  const file = event.target.files?.[0];
-  if (!file) return;
+  // File selection can race with async database initialization after page load.
+  // The focused import sheet must exist before any result/review is rendered.
+  if (appReadyPromise) await appReadyPromise;
+  if (batchQueue?.isAwaiting()) {
+    el("status").textContent = "Tarkista tai ohita keskeneräinen erätuonnin PDF ennen yksittäistä tuontia.";
+    event.target.value = "";
+    return;
+  }
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  batchQueue?.openWorkspace();
+  if (files.length > 1) {
+    // The original single-file handler must never silently discard all but
+    // the first chosen file. Route bulk selection into the reviewed queue.
+    const queued = batchQueue?.enqueueFiles(files, true);
+    event.target.value = "";
+    if (!queued) el("status").textContent = "Usean PDF:n valinta vaatii avoimen tuontijonon. Tarkista jonon tila.";
+    else el("status").textContent = files.length + " PDF:ää valittu. Valitse tulolähde ja käsittele jono alla.";
+    return;
+  }
+  if (batchQueue?.hasPending()) {
+    el("status").textContent = "Käsittele tai tyhjennä avoin PDF-jono ennen erillistä tuontia.";
+    event.target.value = "";
+    return;
+  }
+  const file = files[0];
   try {
     await processPdf(file);
   } catch (err) {
@@ -1336,6 +1951,7 @@ el("saveButton").addEventListener("click", payrollAction(async () => {
     : [];
   const learned = await rememberCurrentStructure({ confirmed, autoParsed: false, mappingUpdates });
   renderSuccess(result.record, result.mergedDuplicate);
+  batchQueue?.complete(result.mergedDuplicate ? "duplicate" : "saved");
   await renderAll();
   el("status").textContent = learned
     ? "Korjaus tallennettu. Palkkalaskelman rakennehavainto päivitettiin paikallisesti."
@@ -1352,6 +1968,7 @@ el("replaceConflictButton")?.addEventListener("click", payrollAction(async () =>
   try { replacement = await replaceRecord(currentConflict.existing.id, currentPendingRecord, currentConflict.expected); } catch (error) { el("status").textContent = error.message; await renderAll(); return; }
   await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed, mappingUpdates });
   renderSuccess(replacement, false);
+  batchQueue?.complete("saved");
   el("resultBadge").textContent = "Korvattu";
   el("resultTitle").textContent = "Aiempi laskelma korvattu";
   el("resultSubtitle").textContent = "Samalle palkka-ajalle ollut aiempi versio korvattiin tällä laskelmalla.";
@@ -1369,6 +1986,7 @@ el("keepBothConflictButton")?.addEventListener("click", payrollAction(async () =
   try { separate = await saveRecordSeparately(currentPendingRecord, currentConflict.expected); } catch (error) { el("status").textContent = error.message; await renderAll(); return; }
   await rememberCurrentStructure({ confirmed, autoParsed: currentPendingWasAutoParsed, mappingUpdates });
   renderSuccess(separate, false);
+  batchQueue?.complete("saved");
   el("resultBadge").textContent = "Molemmat";
   el("resultTitle").textContent = "Molemmat laskelmat säilytettiin";
   el("resultSubtitle").textContent = "Molemmat vahvistetut maksut huomioidaan laskennassa kerran.";
@@ -1381,6 +1999,7 @@ el("cancelConflictButton")?.addEventListener("click", () => {
   currentConflict = null;
   currentPendingWasAutoParsed = false;
   el("conflictSection")?.classList.add("hidden");
+  batchQueue?.skipCurrent();
   el("status").textContent = "Tallennus peruttiin. Historiadataa ei muutettu.";
 });
 
@@ -1494,6 +2113,7 @@ async function init() {
     const migration = await migrateLegacyLocalStorage();
     if (migration.migrated) el("status").textContent = `Vanha paikallinen historia siirrettiin uuteen tietokantaan (${migration.migrated} laskelmaa).`;
     await renderAll();
+    batchQueue = installPdfBatchQueue();
   } catch (err) {
     console.error(err);
     el("status").textContent = `Paikallisen tietokannan avaaminen epäonnistui: ${err.message}`;
@@ -1502,4 +2122,4 @@ async function init() {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
 }
 
-init();
+appReadyPromise = init();
