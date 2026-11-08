@@ -158,6 +158,19 @@ function mount() {
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
     <h2 id="betaABHeading">Vuosiansio · A / B / C</h2>
     <p class="beta-ab-description">A ja B: omat verokorttiarviot. C: lisätyön hyöty ja tarvittava työmäärä vuoden 2026 veroviitteellä.</p>
+    <div id="betaWeekendCountHint" class="beta-weekend-count-hint" hidden>
+      <div class="beta-weekend-hint-line">
+        <span>Viikkolepokorvauksista laskettu ehdotus</span>
+        <strong id="betaWeekendCountValue">–</strong>
+      </div>
+      <div class="beta-weekend-hint-controls">
+        <label for="betaRestHoursPerWeekend">Korvaustunteja / viikonloppu
+          <input id="betaRestHoursPerWeekend" type="number" inputmode="decimal" min="1" max="24" step="0.5" value="8">
+        </label>
+        <button type="button" class="chip" id="betaApplyWeekendCount" disabled>Käytä A:ssa ja B:ssä</button>
+      </div>
+      <p id="betaWeekendCountEvidence" class="hint"></p>
+    </div>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
         <label class="beta-ab-workload-a">A · työviikonloppuja / vuosi
@@ -263,13 +276,53 @@ function mount() {
   caution.textContent='Miten arviot on laskettu?';
   caveats.append(caution,...section.querySelectorAll('.beta-ab-caveat'));
   section.append(caveats);
+  // One explanation area rather than multiple nested dropdown menus.
+  const extraMetrics=document.createElement('div');
+  extraMetrics.className='beta-extra-metrics';
+  for(const [id,prefix] of [['betaABPeriodA','A'],['betaABPeriodB','B'],
+    ['betaCGross','C'],['betaCNet','C'],['betaCPeriod','C']]){
+    const metric=document.getElementById(id)?.closest('div');
+    if(metric){
+      const label=metric.querySelector('span');
+      if(label)label.textContent=prefix+' · '+label.textContent;
+      extraMetrics.append(metric);
+    }
+  }
+  caveats.append(extraMetrics);
+  for(const id of ['betaABBreakdown','betaCFormula','betaCLimit']){
+    const node=document.getElementById(id);
+    if(node)caveats.append(node);
+  }
+  const cDetails=section.querySelector('.beta-ab-c > details');
+  if(cDetails){
+    for(const note of [...cDetails.children].filter(node=>node.tagName!=='SUMMARY'))
+      caveats.append(note);
+    cDetails.remove();
+  }
   const progress=section.querySelector('.beta-progress');
-  const extra=document.createElement('details');
-  extra.className='scenario-explain beta-ab-progress-details';
-  const extraTitle=document.createElement('summary');
-  extraTitle.textContent='Veroprogressio 2026 · lisäkuva';
-  extra.append(extraTitle,progress);
+  const extra=document.createElement('section');
+  extra.className='beta-ab-progress-details';
+  extra.append(progress);
   oldComparison.insertAdjacentElement('afterend',extra);
+  // Deep figures stay mounted, but a single deliberate expansion reveals them.
+  const results=document.getElementById('results-title')?.closest('section.card');
+  const curves=document.getElementById('curves-title')?.closest('section.card');
+  if(!results||!curves)throw new Error('Missing detailed planner sections');
+  const advanced=document.createElement('details');
+  advanced.id='plannerAdvanced';
+  advanced.className='scenario-explain planner-advanced';
+  const advancedTitle=document.createElement('summary');
+  advancedTitle.textContent='Tarkempi analyysi · käyrät, taulukot ja laskentaperusteet';
+  advanced.append(advancedTitle);
+  results.before(advanced);
+  advanced.append(results,curves,oldComparison,extra);
+  const inverse=document.getElementById('inverseGoalPanel');
+  if(inverse){inverse.hidden=true;inverse.style.display='none';}
+  const december=document.getElementById('decemberTaxNote');
+  if(december)advanced.append(december);
+  const limits=[...oldComparison.querySelectorAll('details')].find(node=>
+    node.querySelector('summary')?.textContent.includes('Mitä tässä mallissa'));
+  if(limits){const p=limits.querySelector('p');if(p){p.classList.add('hint');limits.replaceWith(p);}}
   // Keep C in the same comparison group as A/B. On narrow phones it spans
   // both columns rather than compressing three numeric cards into tiny widths.
 
