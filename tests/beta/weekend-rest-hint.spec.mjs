@@ -4,7 +4,7 @@ async function importHistory(page,{rest=[8,8,8,8],mixed=false}={}){
   const payload=await page.evaluate(({rest,mixed})=>{
     const promise=import('/model.js').then(m=>{
       const records=rest.map((hours,i)=>m.migrateLegacyRecord({
-        recordSchemaVersion:1,id:'rest-synthetic-'+i,kind:'payslip',
+        recordSchemaVersion:3,id:'rest-synthetic-'+i,kind:'payslip',
         incomeSourceId:mixed&&i===1?'job2':'job',
         values:{payDate:'2026-'+String(i+1).padStart(2,'0')+'-15',
           payPeriodStart:'2026-'+String(i+1).padStart(2,'0')+'-01',
