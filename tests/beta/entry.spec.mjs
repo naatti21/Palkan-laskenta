@@ -99,6 +99,7 @@ test("synthetic production-format JSON backup restores locally into beta analysi
 
 test("compact dashboard shows two distinct key metrics, card gauge and other values one tap away", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
+  await page.clock.install({time:new Date("2026-10-01T12:00:00+03:00")});
   await page.goto("/index.html");
   const backup = await page.evaluate(async () => {
     const m = await import("/model.js");
@@ -297,7 +298,7 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await page.locator(".analysis-collection").first().locator(":scope > summary").click();
   await expect(page.locator("#monthlyDetails .month-expand")).toHaveCount(1);
   await expect(page.locator(".beta-compact-months")).not.toHaveAttribute("open", "");
-  await page.locator(".beta-compact-months > summary").click();
+  await expect(page.locator(".beta-compact-months > h3")).toHaveText("Kuukausien erittely");
   await page.locator("#monthlyDetails .month-expand summary").click();
   await expect(page.locator("#monthlyDetails")).toContainText("1 846,70");
   await page.locator(".analysis-collection").last().locator(":scope > summary").click();
@@ -360,6 +361,7 @@ test("embedded annual planner uses local Palkka history, preserves manual edits 
  await expect(planner.locator("#rulesConfirmed")).not.toBeChecked();
  await expect(planner.locator("#wageModelNote")).toContainText("Tuntipalkkainen");
  await expect(planner.locator("#weekendGross")).toHaveValue("0");
+ await planner.locator("#weekendPayDetails > summary").click();
  await planner.locator("#weekendMethod").selectOption("paylines");
  await expect(planner.locator("#validation")).toContainText("Vahvista ensin");
  await planner.locator("#rulesConfirmed").check();
