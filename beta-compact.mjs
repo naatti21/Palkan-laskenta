@@ -17,6 +17,18 @@ function sum(rows,key) {
 
 export function installCompact() {
   installWeekendTracker();
+  // One focused deep-dive instead of many full-height analysis cards.
+  const analysis=document.querySelector('[data-view="analysis"]');
+  if(analysis&&!analysis.querySelector('#betaAnalysisDeepDive')){
+    const sections=[...analysis.children].filter(n=>n.matches?.('section.card'));
+    if(sections.length>2){
+      const more=node('details','','compact-analysis-deep');
+      more.id='betaAnalysisDeepDive';
+      more.append(node('summary','Tarkemmat palkka- ja työaikatiedot'));
+      sections[2].before(more);
+      for(const section of sections.slice(2))more.append(section);
+    }
+  }
   const settings = document.querySelector('[data-view="data"]');
   settings.prepend(node("h2","Asetukset","compact-title"));
   for (const section of settings.querySelectorAll("[data-settings-disclosure]")) {
