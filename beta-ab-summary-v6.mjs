@@ -158,6 +158,19 @@ function mount() {
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
     <h2 id="betaABHeading">Vuosiansio · A / B / C</h2>
     <p class="beta-ab-description">A ja B: omat verokorttiarviot. C: lisätyön hyöty ja tarvittava työmäärä vuoden 2026 veroviitteellä.</p>
+    <div id="betaWeekendCountHint" class="beta-weekend-count-hint" hidden>
+      <div class="beta-weekend-hint-line">
+        <span>Viikkolepokorvauksista laskettu ehdotus</span>
+        <strong id="betaWeekendCountValue">–</strong>
+      </div>
+      <div class="beta-weekend-hint-controls">
+        <label for="betaRestHoursPerWeekend">Korvaustunteja / viikonloppu
+          <input id="betaRestHoursPerWeekend" type="number" inputmode="decimal" min="1" max="24" step="0.5" value="8">
+        </label>
+        <button type="button" class="chip" id="betaApplyWeekendCount" disabled>Käytä A:ssa ja B:ssä</button>
+      </div>
+      <p id="betaWeekendCountEvidence" class="hint"></p>
+    </div>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
         <label class="beta-ab-workload-a">A · työviikonloppuja / vuosi
@@ -263,13 +276,53 @@ function mount() {
   caution.textContent='Miten arviot on laskettu?';
   caveats.append(caution,...section.querySelectorAll('.beta-ab-caveat'));
   section.append(caveats);
+  // One explanation area rather than multiple nested dropdown menus.
+  const extraMetrics=document.createElement('div');
+  extraMetrics.className='beta-extra-metrics';
+  for(const [id,prefix] of [['betaABPeriodA','A'],['betaABPeriodB','B'],
+    ['betaCGross','C'],['betaCNet','C'],['betaCPeriod','C']]){
+    const metric=document.getElementById(id)?.closest('div');
+    if(metric){
+      const label=metric.querySelector('span');
+      if(label)label.textContent=prefix+' · '+label.textContent;
+      extraMetrics.append(metric);
+    }
+  }
+  caveats.append(extraMetrics);
+  for(const id of ['betaABBreakdown','betaCFormula','betaCLimit']){
+    const node=document.getElementById(id);
+    if(node)caveats.append(node);
+  }
+  const cDetails=section.querySelector('.beta-ab-c > details');
+  if(cDetails){
+    for(const note of [...cDetails.children].filter(node=>node.tagName!=='SUMMARY'))
+      caveats.append(note);
+    cDetails.remove();
+  }
   const progress=section.querySelector('.beta-progress');
-  const extra=document.createElement('details');
-  extra.className='scenario-explain beta-ab-progress-details';
-  const extraTitle=document.createElement('summary');
-  extraTitle.textContent='Veroprogressio 2026 · lisäkuva';
-  extra.append(extraTitle,progress);
+  const extra=document.createElement('section');
+  extra.className='beta-ab-progress-details';
+  extra.append(progress);
   oldComparison.insertAdjacentElement('afterend',extra);
+  // Deep figures stay mounted, but a single deliberate expansion reveals them.
+  const results=document.getElementById('results-title')?.closest('section.card');
+  const curves=document.getElementById('curves-title')?.closest('section.card');
+  if(!results||!curves)throw new Error('Missing detailed planner sections');
+  const advanced=document.createElement('details');
+  advanced.id='plannerAdvanced';
+  advanced.className='scenario-explain planner-advanced';
+  const advancedTitle=document.createElement('summary');
+  advancedTitle.textContent='Tarkempi analyysi · käyrät, taulukot ja laskentaperusteet';
+  advanced.append(advancedTitle);
+  results.before(advanced);
+  advanced.append(results,curves,oldComparison,extra);
+  const inverse=document.getElementById('inverseGoalPanel');
+  // Preserve the original inverse-goal tool inside the advanced panel for expert users.
+  const december=document.getElementById('decemberTaxNote');
+  if(december)advanced.append(december);
+  const limits=[...oldComparison.querySelectorAll('details')].find(node=>
+    node.querySelector('summary')?.textContent.includes('Mitä tässä mallissa'));
+  if(limits){const p=limits.querySelector('p');if(p){p.classList.add('hint');limits.replaceWith(p);}}
   // Keep C in the same comparison group as A/B. On narrow phones it spans
   // both columns rather than compressing three numeric cards into tiny widths.
 
@@ -329,6 +382,39 @@ function mount() {
     .beta-ab-option>.beta-ab-card-gross{display:block;font-size:.98rem;color:#edf6ff;margin:4px 0 10px;white-space:nowrap;}
     .beta-ab-breakdown{font-size:.75rem;color:#c2d7e9;line-height:1.55;margin:9px 0;}
     @media(max-width:345px){.beta-ab-option{padding:10px 7px}.beta-ab-option>strong{font-size:1.04rem}.beta-ab-option b{font-size:.81rem}}
+
+     .beta-ab-cards{margin:6px 0;gap:6px;}
+     .beta-ab-option{padding:9px 9px;}
+     .beta-ab-option h3{margin-bottom:4px;}
+     .beta-ab-option>strong{margin:3px 0 6px;}
+     .beta-ab-option>div{padding-top:5px;margin-top:4px;}
+     .beta-ab-option>label{margin:5px 0 7px;}
+     .beta-ab-description{margin:2px 0 7px;line-height:1.38;}
+     .beta-ab-explanation{font-size:.78rem;}
+     .beta-extra-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+     .beta-extra-metrics>div{display:grid;gap:2px;border-top:1px solid #374c57;padding-top:6px;}
+     .beta-extra-metrics span{font-size:.73rem;}
+     .beta-weekend-count-hint{padding:9px;border:1px solid #455b50;border-radius:9px;margin:8px 0;background:#152a23;}
+     .beta-weekend-count-hint[hidden]{display:none!important;}
+     .beta-weekend-hint-line{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.77rem;}
+     .beta-weekend-hint-line strong{white-space:nowrap;color:#aaf3c8;}
+     .beta-weekend-hint-controls{display:flex;gap:8px;align-items:end;justify-content:space-between;margin-top:7px;}
+     .beta-weekend-hint-controls label{display:grid;gap:3px;min-width:0;font-size:.72rem;color:#d5e9dc;}
+     .beta-weekend-hint-controls input{max-width:74px;min-height:36px;border-radius:6px;background:#0c1814;color:white;border:1px solid #648576;padding:6px;}
+     .beta-weekend-hint-controls button{min-height:36px;font-size:.72rem;white-space:normal;text-align:center;}
+     .beta-weekend-count-hint p{font-size:.7rem;line-height:1.42;margin:7px 0 0;}
+     .planner-advanced{margin-top:12px;padding:11px!important;border:1px solid #354d58;}
+     .planner-advanced>summary{font-weight:700;font-size:.88rem;}
+     .planner-advanced>section.card{padding:11px 7px;margin:11px 0;}
+     .planner-advanced .beta-ab-progress-details{margin-top:14px;}
+     html.beta-integrated .shell>.eyebrow,
+     html.beta-integrated .shell>h1,
+     html.beta-integrated .shell>.lead,
+     html.beta-integrated .shell>.status[role="note"]{display:none;}
+     html.beta-integrated .history-evidence{margin:7px 0;}
+     html.beta-integrated .history-preview>.chips{margin-top:7px;}
+     html.beta-integrated .history-preview>.hint{font-size:.72rem;}
+     @media(max-width:345px){.beta-ab-option{padding:8px 6px}.beta-ab-option>strong{font-size:1.04rem}.beta-ab-option b{font-size:.81rem}.beta-weekend-hint-controls{flex-wrap:wrap}}
   `;
   document.head.append(css);
   const put=(id,value)=>{document.getElementById(id).textContent=value;};

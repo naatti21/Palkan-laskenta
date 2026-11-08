@@ -37,6 +37,7 @@ html.beta-integrated .card{margin-top:8px;box-shadow:none;}
     <details><summary>Tarkista normaali viikkotyöaika</summary><div class="field" style="margin-top:9px"><label for="regularHours">Säännölliset tunnit viikossa, ilman ylityötä (esimerkki 40 h)</label><input id="regularHours" type="number" min="1" max="60" step="0.5" value="40"></div><p class="hint">Tuntiarvio olettaa 52 palkallista kalenteriviikkoa eikä huomioi kaikkia lomapalkan, poissaolojen tai vuorolisien vaikutuksia.</p></details>
     <div id="historyStatus" class="status" role="status" aria-live="polite">Historiatietoja ei vielä ole. Varmuuskopion lukeminen voi ehdottaa perusansiota, lomarahaa ja muita eriä. Nolla tarkoittaa puuttuvaa arviota, ei todellista nollapalkkaa.</div>
     <div id="historyPreview" class="history-preview" hidden>
+      <details class="history-evidence"><summary>Palkkahistorian erittely ja havaintojen tarkkuus</summary>
       <div class="grid two">
         <div class="fact"><small id="historyBaseLabel">Perusansion karkea vuosiarvio</small><strong id="histBase">–</strong><span id="histBaseMeta"></span></div>
         <div class="fact"><small>Havaitut lomarahat</small><strong id="histHoliday">–</strong><span id="histHolidayMeta"></span></div>
@@ -45,6 +46,7 @@ html.beta-integrated .card{margin-top:8px;box-shadow:none;}
       </div>
       <p id="wageModelNote" class="status" role="status">Palkkamalli tarkistetaan varmuuskopiosta.</p>
       <p id="historyCoverage" class="hint" style="margin-top:10px"></p>
+      </details>
       <div class="chips">
         <button type="button" class="chip" id="applyHistory" disabled>Käytä varmistettavia ehdotuksia</button>
         <button type="button" class="chip" id="applyHistoryBonus" disabled>Lisää havaittu bonus</button>
@@ -217,6 +219,20 @@ function historySuggestions(backup,weeklyHours=40){
   if(conflicted || projection.unresolved.some(r=>!r.values?.payDate)) throw new Error('Ratkaise historian ristiriidat ennen vuosilaskurin ehdotuksia.');
   if(!rows.length)throw new Error('Viimeisimmän vuoden tiedot ovat ristiriitaisia.');
   const comparable = Boolean(rows[0].incomeSourceId) && rows.every(row => row.incomeSourceId === rows[0].incomeSourceId);
+  // Compensated weekly-rest hours are evidence, NOT verified calendar weekends.
+  const restRows=comparable?rows.map(row=>{
+    const lines=(row.payLines||[]).filter(line=>line.category==='weekly_rest'||String(line.code)==='20120');
+    const fromLines=lines.length&&lines.every(line=>validNumber(line.quantity)&&line.quantity>=0)
+      ?lines.reduce((total,line)=>total+line.quantity,0):null;
+    const fallback=row.values?.weeklyRestHours;
+    const hours=fromLines!==null?fromLines:(validNumber(fallback)&&fallback>=0?fallback:null);
+    return hours!==null&&hours>0?hours:null;
+  }).filter(x=>x!==null):[];
+  const restHours=restRows.reduce((n,h)=>n+h,0);
+  const restCountEvidence=restRows.length>=2&&rows.length>=3&&restHours>0
+    ?{hours:Math.round(restHours*100)/100,documents:restRows.length,
+       observedMonths:new Set(rows.map(r=>r.values.payDate.slice(0,7))).size,year}
+    :null;
   const importedGross = rows.every(row => validNumber(row.values.grossPay)) ?
     rows.reduce((sum,row) => sum + Math.round(row.values.grossPay * 100), 0) / 100 : null;
   let holiday=0,bonus=0,other=0;
@@ -282,7 +298,7 @@ function historySuggestions(backup,weeklyHours=40){
     holiday:holidayItems?Math.round(holiday*100)/100:null,
     bonus:bonusItems?Math.round(bonus*100)/100:null,
     other:other?Math.round(other*100)/100:null,
-    baseEstimate,avgHourlyRate:avgRate,monthlyRate,wageModel,ktaRate,
+    baseEstimate,avgHourlyRate:avgRate,monthlyRate,wageModel,ktaRate,restCountEvidence,
     rateSamples:recentHourly.length,ktaSamples:comparable?recentKta.length:0,
     monthlySamples:recentMonthly.length,weeklyHours,
     deductionsRate:latestDeductions?Math.round(latestDeductions.rate*100)/100:null,
@@ -556,10 +572,50 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
   const historyInput=el('historyInput');
   let lastHistory=null, lastPayload=null;
   let weekendHistoryProposal=null;
+  // Compensation-based hint; only clicking it changes the A/B workload inputs.
+  function showRestWeekendSuggestion(){
+    const box=el('betaWeekendCountHint'),value=el('betaWeekendCountValue');
+    const evidence=el('betaWeekendCountEvidence'),apply=el('betaApplyWeekendCount');
+    const hoursField=el('betaRestHoursPerWeekend');
+    if(!box||!value||!evidence||!apply||!hoursField)return;
+    const data=lastHistory?.restCountEvidence;
+    box.hidden=!data;apply.disabled=true;
+    if(!data){value.textContent='–';evidence.textContent='';return;}
+    const unit=Number(hoursField.value);
+    const count=Number.isFinite(unit)&&unit>=1&&unit<=24?Math.round(data.hours/unit):null;
+    const usable=count!==null&&count>=1&&count<=52;
+    value.textContent=usable?count+' viikonloppua':'–';
+    apply.disabled=!usable;
+    evidence.textContent='Kirjattu '+data.hours.toLocaleString('fi-FI')+
+      ' viikkolepokorvaustuntia '+data.documents+' palkkalaskelmassa vuonna '+data.year+
+      '. Oletuksella '+(Number.isFinite(unit)?unit.toLocaleString('fi-FI'):'–')+
+      ' h/viikonloppu saadaan arvio, ei todettua työviikonloppumäärää. '+
+      (data.observedMonths<10?'Aineisto kattaa '+data.observedMonths+
+        ' palkkakuukautta; lukua ei ole skaalattu koko vuodeksi.':
+        'Aineiston kattavuus: '+data.observedMonths+' palkkakuukautta.')+
+      ' Tarkista viikkolevon korvaustapa, työaikapankki ja mahdolliset muut työpäivät.';
+  }
+  document.addEventListener('input',event=>{
+    if(event.target?.id==='betaRestHoursPerWeekend')showRestWeekendSuggestion();
+  });
+  document.addEventListener('click',event=>{
+    if(event.target?.id!=='betaApplyWeekendCount'||!lastHistory?.restCountEvidence)return;
+    const unit=Number(el('betaRestHoursPerWeekend')?.value);
+    const count=Math.round(lastHistory.restCountEvidence.hours/unit);
+    if(!Number.isFinite(unit)||unit<1||unit>24||count<1||count>52)return;
+    const a=el('betaWeekendsA'),b=el('betaWeekendsB');
+    if(!a||!b)return;
+    for(const field of [a,b]){
+      field.value=String(count);
+      field.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    el('betaWeekendCountEvidence').textContent+=' Ehdotus asetettu A:han ja B:hen. Määriä voi muuttaa erikseen.';
+  });
   const suggestedFields = new Set();
   // Estimate only from one comparable salary source with >=3 hourly examples
   // and explicit KTA evidence. Never infer an actual weekend from a payslip.
   function showWeekendHistoryProposal(){
+    showRestWeekendSuggestion();
     const info=el('weekendDataExplanation'),use=el('weekendUseHistoryGross');
     weekendHistoryProposal=null;
     use.disabled=true;
@@ -674,7 +730,7 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       weekendSuggested=true;
       el('weekendMethod').value='manual';
       el('rulesConfirmed').checked=false;
-      el('weekendPayDetails').open=true;
+      /* Tarkat säännöt käyttäjä avaa itse. */
     }
     showWeekendHistoryProposal();
     render();

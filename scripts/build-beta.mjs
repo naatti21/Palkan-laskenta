@@ -162,10 +162,10 @@ const monthPanel = `      <section class="card">
         <div id="monthlyDetails" class="insight-rows"></div>
       </section>`;
 if (!html.includes(monthPanel)) throw new Error('Month detail block changed');
-html = html.replace(monthPanel,`      <details class="card beta-compact-months">
-        <summary>Kuukausien erittely · avaa tarvittaessa</summary>
+html = html.replace(monthPanel,`      <section class="card beta-compact-months">
+        <h3>Kuukausien erittely</h3>
         <div id="monthlyDetails" class="insight-rows"></div>
-      </details>`);
+      </section>`);
 const budgetLabel = '<label class="insight-label">Valitse maksettu kuukausi';
 if (!html.includes(budgetLabel)) throw new Error('Budget section changed');
 html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
