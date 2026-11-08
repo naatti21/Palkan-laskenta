@@ -67,7 +67,7 @@ export function installWeekendTracker(){
   panel.append(top,values,proposal,edit,status);
   note.after(panel);
 
-  let activeYear=null,current={done:null,goal:null},generation=0,proposed=null;
+  let activeYear=null,current={done:null,goal:null},generation=0,proposed=null,lastRecords=[];
   const estimate=(records,year)=>{
     if(!Array.isArray(records))return null;
     const projection=projectPayroll(records);
@@ -104,7 +104,7 @@ export function installWeekendTracker(){
     if(!Number.isInteger(year)||year<2020||year>2100)return;
     const requested=++generation;
     activeYear=year;
-    proposed=null;
+    proposed=estimate(lastRecords,year);
     try{
       const row=saved(await getSetting(key(year)));
       if(requested!==generation)return;
@@ -142,6 +142,7 @@ export function installWeekendTracker(){
   yearField.addEventListener('change',()=>void load(Number(yearField.value)));
   document.addEventListener('compact-payments',event=>{
     const year=Number(event.detail?.year);
+    if(Array.isArray(event.detail?.records))lastRecords=event.detail.records;
     if(Number.isInteger(year)&&year!==activeYear)void load(year);
     if(year===activeYear){
       proposed=estimate(event.detail?.records,year);
