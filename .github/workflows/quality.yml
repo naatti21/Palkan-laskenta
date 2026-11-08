@@ -33,7 +33,8 @@ jobs:
         run: node --test tests/*.test.mjs
 
   browser-tests:
-    runs-on: ubuntu-latest
+    # Playwright 1.57 supports Ubuntu 24.04; ubuntu-latest moved to 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
       - name: Checkout
