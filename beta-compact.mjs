@@ -77,7 +77,8 @@ export function installCompact() {
     document.querySelector('[data-view-target="history"]')?.click();
   });
 
-  const sources = node("details","","compact-sources");
+  const sources = node("section","","compact-sources");
+  sources.style.cssText="margin-top:8px;padding:7px 0;border-top:1px solid #34464b";
   byId("analysisNote").after(sources);
   document.addEventListener("compact-payments",({detail:{records,year,sourceName}})=>{
     const projection = projectPayroll(records);
@@ -113,7 +114,7 @@ export function installCompact() {
       annualNote.textContent += " Osasta maksuja puuttuu summa: sitä ei arvioida.";
     }
 
-    sources.replaceChildren(node("summary","Toteutuneet netot tulolähteittäin"));
+    sources.replaceChildren(node("h3","Toteutuneet netot tulolähteittäin"));
     const groups = new Map();
     for (const row of yearRows) {
       const id = row.incomeSourceId;
@@ -125,7 +126,7 @@ export function installCompact() {
       entry.append(node("span",sourceName(id)),node("strong",sum(rows,"netPay")));
       sources.append(entry);
     }
-    sources.hidden = !groups.size;
+    sources.hidden = groups.size < 2;
   });
   const paths = {
     tracking:"M3 11 12 3l9 8 M5 10v11h5v-7h4v7h5V10",
