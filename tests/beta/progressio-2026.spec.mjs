@@ -45,6 +45,7 @@ test('Tax progression visualization fits narrow phone widths',async({page})=>{
     await page.goto('/index.html');
     await page.getByRole('button',{name:'Laskuri'}).click();
     const frame=page.frameLocator('#plannerFrame');
+    await frame.locator('#plannerAdvanced > summary').click();
     await frame.locator('#baseGross').fill('52000');
     await expect(frame.locator('#betaProgressChart svg')).toHaveCount(1);
     const size=await frame.locator('#betaAnnualABSummary').evaluate(el=>({
