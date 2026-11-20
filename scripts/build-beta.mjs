@@ -410,7 +410,7 @@ const betaNavigationCss = `
   font-size:.69rem;line-height:1.15;white-space:nowrap;}
 .tabs .tab svg{display:block;width:19px;height:19px;flex:none;stroke:currentColor;stroke-width:1.8;fill:none;}
 .tabs .beta-tab-label{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tabs .tab.active{background:#315447;color:#f2fff8;}
+.tabs .tab.active{background:#111a21;color:#9ae8c0;}
 .tabs .tab:focus-visible,.beta-analysis-tab:focus-visible,.beta-planner-jump button:focus-visible{
   outline:2px solid #93e4c4;outline-offset:2px;}
 @media(max-width:355px){.tabs .tab{font-size:.64rem;padding:6px 0}.tabs{width:calc(100% - 10px);padding:4px}}
