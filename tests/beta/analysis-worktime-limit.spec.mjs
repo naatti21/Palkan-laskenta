@@ -58,7 +58,13 @@ test('Avattava työaikaosio pysyy 320–412 px mobiilileveydellä ja suuremmalla
     const size=await page.evaluate(()=>({
       viewport:innerWidth,
       doc:document.documentElement.scrollWidth,
-      panel:document.getElementById('betaWorkTimeLaw').getBoundingClientRect().right
+      panel:document.getElementById('betaWorkTimeLaw').getBoundingClientRect().right,
+      overflowElements:[...document.querySelectorAll('*')]
+        .filter(el=>{const r=el.getBoundingClientRect();return r.right>innerWidth+1||r.left< -1;})
+        .slice(0,16).map(el=>{const r=el.getBoundingClientRect();return {
+          tag:el.tagName,id:el.id,className:String(el.className),
+          left:Math.round(r.left),right:Math.round(r.right),scrollWidth:el.scrollWidth
+        };})
     }));
     expect(size.doc,JSON.stringify(size)).toBeLessThanOrEqual(size.viewport+1);
     expect(size.panel,JSON.stringify(size)).toBeLessThanOrEqual(size.viewport+1);
