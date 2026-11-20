@@ -10,7 +10,8 @@ test("Beta dashboard remains compact and import stays gated", async ({ page }) =
   await expect(page.locator(".beta-taxcard-progress")).toBeVisible();
   await expect(page.locator('[data-view="planning"]')).toHaveCount(1);
   await expect(page.locator(".planner-fold")).toHaveCount(0);
-  await expect(page.locator(".analysis-collection")).toHaveCount(2);
+  await expect(page.locator(".analysis-collection")).toHaveCount(0);
+  await expect(page.locator("#betaAnalysisNav .beta-analysis-tab")).toHaveCount(3);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
   expect(overflow).toBe(false);
 });
@@ -60,13 +61,20 @@ test("History opens a single stored payslip and nested source lines without HTML
   await expect(item).not.toHaveAttribute("open", "");
 });
 
-test("Calculator is on its own tab and Analysis remains independently expandable", async ({ page }) => {
+test("Calculator is separate and Analysis topics are directly navigable", async ({ page }) => {
   await page.goto("/index.html");
   await page.locator('[data-view-target="analysis"]').click();
   await expect(page.locator("#plannerFrame")).toBeHidden();
-  await expect(page.locator(".analysis-collection")).toHaveCount(2);
-  await page.locator(".analysis-collection").first().locator("summary").first().click();
-  await expect(page.locator(".analysis-collection").first()).toHaveAttribute("open", "");
+  await expect(page.locator("#betaAnalysisNav .beta-analysis-tab")).toHaveCount(3);
+  await expect(page.locator("#betaAnalysisPanel-work")).toBeVisible();
+  await page.getByRole("tab", {name:"Palkat"}).click();
+  await expect(page.locator("#betaAnalysisPanel-pay")).toBeVisible();
+  await expect(page.locator("#monthlyChart")).toBeVisible();
+  await expect(page.locator("#betaWeekendTracker")).toBeHidden();
+  await page.getByRole("tab", {name:"Tarkemmat"}).click();
+  await expect(page.locator("#budgetSummary")).toBeVisible();
+  await page.getByRole("tab", {name:"Ylityöt"}).click();
+  await expect(page.locator("#betaWeekendTracker")).toBeVisible();
   await page.locator('[data-view-target="planning"]').click();
   await expect(page.getByRole("heading",{name:"Vuosisuunnittelu"})).toBeVisible();
   await expect(page.locator("#plannerFrame")).toBeVisible();

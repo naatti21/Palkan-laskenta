@@ -18,18 +18,7 @@ function sum(rows,key) {
 
 export function installCompact() {
   installWeekendTracker();
-  // One focused deep-dive instead of many full-height analysis cards.
-  const analysis=document.querySelector('[data-view="analysis"]');
-  if(analysis&&!analysis.querySelector('#betaAnalysisDeepDive')){
-    const sections=[...analysis.children].filter(n=>n.matches?.('section.card'));
-    if(sections.length>2){
-      const more=node('details','','compact-analysis-deep');
-      more.id='betaAnalysisDeepDive';
-      more.append(node('summary','Tarkemmat palkka- ja työaikatiedot'));
-      sections[2].before(more);
-      for(const section of sections.slice(2))more.append(section);
-    }
-  }
+  // Analysis is divided into discoverable subviews below, not nested disclosure menus.
   // Beta-only, information-first legal view: payslips contain pay-period
   // overtime observations but cannot establish a 48 h weekly average or
   // remaining legal capacity without actual work-time records.
@@ -197,6 +186,125 @@ export function installCompact() {
     }
     sources.hidden = groups.size < 2;
   });
+  // The original Beta builder groups most analysis cards under collapsed
+  // <details>. Unwrap them without recreating inputs or losing attached listeners.
+  // Every real card remains mounted; switching subviews only changes visibility.
+  const analysis = document.querySelector('[data-view="analysis"]');
+  if (analysis && !byId("betaAnalysisNav")) {
+    for (const group of [...analysis.querySelectorAll("details.analysis-collection, details.compact-analysis-deep")]) {
+      const content = group.querySelector(".analysis-collection-body") || group;
+      const children = [...content.children].filter(el => el.tagName !== "SUMMARY");
+      group.replaceWith(...children);
+    }
+    const overview = byId("analysisMetrics")?.closest("section.card");
+    if (overview) {
+      const navigation = node("nav", "", "beta-analysis-nav");
+      navigation.id = "betaAnalysisNav";
+      navigation.setAttribute("role", "tablist");
+      navigation.setAttribute("aria-label", "Analyysin aihealue");
+      const labels = [
+        ["pay", "Palkat", "Palkkakehitys ja kuukausierittely"],
+        ["work", "Ylityöt", "Työviikonloput ja ylityöhavainnot"],
+        ["details", "Tarkemmat", "Muut erittelyt ja laskelmat"]
+      ];
+      const panels = new Map();
+      const buttons = new Map();
+      const host = node("div", "", "beta-analysis-panels");
+      for (const [id, label, description] of labels) {
+        const button = node("button", label, "beta-analysis-tab");
+        button.type = "button";
+        button.id = "betaAnalysisTab-" + id;
+        button.setAttribute("role", "tab");
+        button.setAttribute("aria-controls", "betaAnalysisPanel-" + id);
+        navigation.append(button);
+        buttons.set(id, button);
+
+        const panel = node("section", "", "beta-analysis-panel");
+        panel.id = "betaAnalysisPanel-" + id;
+        panel.setAttribute("role", "tabpanel");
+        panel.setAttribute("aria-labelledby", button.id);
+        panel.append(node("h3", label), node("p", description, "muted"));
+        host.append(panel);
+        panels.set(id, panel);
+      }
+      overview.after(navigation, host);
+      const moveCard = (id, to) => {
+        const card = byId(id)?.closest("section.card");
+        if (card && card !== overview && analysis.contains(card)) panels.get(to).append(card);
+      };
+      // Keep the year selector and evidence coverage visible above every topic.
+      // Move the live weekend tracker and law explainer from the overview to Work.
+      for (const id of ["betaWeekendTracker", "betaWorkTimeLaw"]) {
+        const item = byId(id);
+        if (item) panels.get("work").append(item);
+      }
+      for (const id of ["monthlyChart", "incomeBreakdown", "monthlyDetails", "periodSummary"]) moveCard(id, "pay");
+      for (const id of ["overtimeBreakdown", "bankSummary"]) moveCard(id, "work");
+      for (const id of ["budgetSummary", "netGoalResult"]) moveCard(id, "details");
+      // Any other existing cards (including intentionally hidden legacy
+      // experiments) stay in the accessible detailed area, never on a long tail.
+      for (const card of [...analysis.querySelectorAll("section.card")]) {
+        if (card !== overview && !host.contains(card) && !card.closest(".beta-analysis-panel")) {
+          panels.get("details").append(card);
+        }
+      }
+      const activate = id => {
+        for (const [key, button] of buttons) {
+          const active = key === id;
+          button.setAttribute("aria-selected", String(active));
+          button.tabIndex = active ? 0 : -1;
+          panels.get(key).hidden = !active;
+        }
+      };
+      for (const [id, button] of buttons) {
+        button.addEventListener("click", () => activate(id));
+        button.addEventListener("keydown", event => {
+          const keys = labels.map(row => row[0]);
+          const at = keys.indexOf(id);
+          let next = null;
+          if (event.key === "ArrowRight") next = keys[(at + 1) % keys.length];
+          if (event.key === "ArrowLeft") next = keys[(at - 1 + keys.length) % keys.length];
+          if (event.key === "Home") next = keys[0];
+          if (event.key === "End") next = keys[keys.length - 1];
+          if (!next) return;
+          event.preventDefault();
+          activate(next);
+          buttons.get(next).focus();
+        });
+      }
+      activate("work");
+    }
+  }
+
+  // Planner lives in an auto-height, same-origin iframe. Jump to a specific
+  // section by scrolling the OUTER document, not the iframe's inner viewport.
+  // This prevents the repeated top/bottom scrolling between inputs and results.
+  const plannerNavigation = byId("betaPlannerJump");
+  const plannerFrame = byId("plannerFrame");
+  if (plannerNavigation && plannerFrame) {
+    const jump = id => {
+      let target = null;
+      try { target = plannerFrame.contentDocument?.getElementById(id); } catch { /* origin guard */ }
+      if (!target) return;
+      const frameTop = plannerFrame.getBoundingClientRect().top + window.scrollY;
+      const innerTop = target.getBoundingClientRect().top + (plannerFrame.contentWindow?.scrollY || 0);
+      const targetTop = Math.max(0, frameTop + innerTop - plannerNavigation.getBoundingClientRect().height - 18);
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
+    };
+    plannerNavigation.addEventListener("click", event => {
+      const button = event.target.closest("button[data-planner-jump]");
+      if (button && plannerNavigation.contains(button)) jump(button.dataset.plannerJump);
+    });
+  }
+  // Main navigation remains reachable at the bottom on long pages.
+  // Switching sections always opens at the beginning of the target view.
+  for (const button of document.querySelectorAll(".tabs .tab[data-view-target]")) {
+    button.setAttribute("aria-label", button.textContent.trim());
+    button.addEventListener("click", () => {
+      if (button.classList.contains("active")) return;
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    });
+  }
   const paths = {
     tracking:"M3 11 12 3l9 8 M5 10v11h5v-7h4v7h5V10",
     history:"M4 5h16 M4 12h16 M4 19h16",
@@ -208,6 +316,8 @@ export function installCompact() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
     svg.setAttribute("viewBox","0 0 24 24"); svg.setAttribute("aria-hidden","true");
     const path = document.createElementNS(svg.namespaceURI,"path");
-    path.setAttribute("d",paths[tab.dataset.viewTarget]); svg.append(path); tab.prepend(svg);
+    path.setAttribute("d",paths[tab.dataset.viewTarget]); svg.append(path);
+    const caption = node("span", tab.textContent.trim(), "beta-tab-label");
+    tab.replaceChildren(svg, caption);
   }
 }

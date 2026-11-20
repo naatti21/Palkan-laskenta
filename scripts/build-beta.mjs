@@ -137,6 +137,13 @@ const plannerView = `
         <h2 id="plannerHeading">Vuosisuunnittelu</h2>
         <p class="muted">Vertaile perusansiota, käteen jäävää rahaa ja työviikonloppujen vaikutusta. Valitse laskurista suunnitteluvuosi.</p>
       </header>
+      <nav id="betaPlannerJump" class="beta-planner-jump" aria-label="Laskurin nopea siirtyminen">
+        <button type="button" data-planner-jump="weekends-title">Viikonloput</button>
+        <button type="button" data-planner-jump="income-title">Ansiot</button>
+        <button type="button" data-planner-jump="tax-title">Verokortit</button>
+        <button type="button" data-planner-jump="results-title">Tulokset</button>
+        <button type="button" data-planner-jump="curves-title">Käyrät</button>
+      </nav>
       <section class="card beta-planning-card">
         <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
         <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html"
@@ -377,8 +384,65 @@ const betaImportCss = `
 .beta-pdf-slot #status { display:block; flex-basis:100%; margin:0; font-size:.73rem; line-height:1.45; }
 .beta-pdf-slot .privacy { display:none; }
 `;
+const betaNavigationCss = `
+/* Beta only. Reach every main view from a thumb-friendly, fixed bottom bar. */
+.shell{padding-bottom:calc(105px + env(safe-area-inset-bottom, 0px));}
+.tabs{
+  position:fixed;top:auto;bottom:calc(7px + env(safe-area-inset-bottom, 0px));
+  left:50%;transform:translateX(-50%);z-index:100;
+  width:min(calc(100% - 16px),620px);
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:3px;margin:0;padding:6px;
+  border:1px solid #476057;border-radius:19px;
+  background:rgba(20,29,29,.97);box-shadow:0 12px 35px rgba(0,0,0,.58);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+}
+/* Override the stronger .shell .tabs/inset rule from beta-black-v5.css.
+   Otherwise transform shifts the bar half a viewport OUTSIDE the screen. */
+.shell .tabs{
+  position:fixed;inset:auto 0 calc(7px + env(safe-area-inset-bottom, 0px)) 0;
+  transform:none;width:min(calc(100% - 16px),620px);max-width:620px;
+  margin:0 auto;padding:6px;border-radius:19px;
+  background:rgba(20,29,29,.97);z-index:100;
+}
+.tabs .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  min-width:0;min-height:51px;padding:6px 2px;border-radius:13px;
+  font-size:.69rem;line-height:1.15;white-space:nowrap;}
+.tabs .tab svg{display:block;width:19px;height:19px;flex:none;stroke:currentColor;stroke-width:1.8;fill:none;}
+.tabs .beta-tab-label{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tabs .tab.active{background:#111a21;color:#9ae8c0;}
+.tabs .tab:focus-visible,.beta-analysis-tab:focus-visible,.beta-planner-jump button:focus-visible{
+  outline:2px solid #93e4c4;outline-offset:2px;}
+@media(max-width:355px){.tabs .tab{font-size:.64rem;padding:6px 0}.tabs{width:calc(100% - 10px);padding:4px}}
+/* Topic tabs replace the long nested disclosure stacks in Analysis. */
+.beta-analysis-nav{position:sticky;top:4px;z-index:16;display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:13px 0 8px;
+  padding:5px;background:#182322;border:1px solid #425550;border-radius:14px;
+  box-shadow:0 5px 18px rgba(0,0,0,.25);}
+.beta-analysis-tab{min-width:0;min-height:43px;padding:8px 5px;border-radius:10px;
+  color:#bed3cb;background:transparent;border:1px solid transparent;font-size:.87rem;font-weight:700;
+  white-space:normal;overflow-wrap:anywhere;}
+.beta-analysis-tab[aria-selected="true"]{background:#315447;border-color:#527f6b;color:#f2fff7;}
+.beta-analysis-panel[hidden]{display:none!important;}
+.beta-analysis-panel{min-width:0;}
+.beta-analysis-panel>h3{font-size:1.03rem;margin:15px 3px 0;}
+.beta-analysis-panel>.muted{font-size:.76rem;margin:3px 3px 10px;}
+.beta-analysis-panel>.card{margin:9px 0;}
+.beta-analysis-panel #betaWeekendTracker{margin:8px 0;}
+.beta-analysis-panel #betaWorkTimeLaw{margin:7px 0;}
+/* Always-visible shortcuts in the annual planner, not a second nested scroller. */
+.beta-planner-jump{position:sticky;top:4px;z-index:17;display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;margin:8px 0;
+  padding:5px;background:rgba(24,35,34,.97);border:1px solid #405a51;border-radius:13px;
+  box-shadow:0 5px 17px rgba(0,0,0,.3);}
+.beta-planner-jump button{min-width:0;min-height:43px;padding:8px 1px;
+  font-size:.73rem;line-height:1.15;background:transparent;color:#d2e5dc;border-radius:9px;
+  white-space:normal;overflow-wrap:anywhere;}
+.beta-planner-jump button:active{background:#325344;}
+@media(max-width:390px){.beta-planner-jump button{font-size:.66rem;letter-spacing:-.015em;padding:8px 0}}
+`;
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss + '\n' + betaNavigationCss);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');
