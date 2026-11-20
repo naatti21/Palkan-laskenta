@@ -46,14 +46,14 @@ export function installCompact() {
   const statute=node("p","Työaikalain 18 §:n mukaan kokonaistyöaika ylityöt mukaan lukien saa olla keskimäärin enintään 48 h viikossa neljän kuukauden tarkastelujaksolla. Tämä ei ole 8 tunnin viikoittainen ylityökiintiö, eikä yksittäisen viikon 48 tunnin ehdoton katto.");
   const agreement=node("p","Teknologiateollisuuden työntekijöiden TES 2025–2027, kohta 20.3: enimmäistyöajan tarkastelujakso on lähtökohtaisesti kalenterivuosi; paikallisesti voidaan sopia muun vuoden pituisen jakson käyttämisestä. Sovella vain, jos juuri tämä TES koskee työsuhdetta.");
   const scope=node("p","Lisätuntien arviointi edellyttää työnantajan työaikakirjanpidon kaikkia toteutuneita työtunteja, oikeaa tarkastelujaksoa sekä suunniteltuja työvuoroja ja lepoaikoja. Pelkkä ylityörivien määrä tai maksupäivä ei riitä.");
-  const sources=node("div","","beta-worktime-links");
+  const lawSources=node("div","","beta-worktime-links");
   const addLawSource=(label,url)=>{
     const a=node("a",label);
-    a.href=url;a.target="_blank";a.rel="noopener noreferrer";sources.append(a);
+    a.href=url;a.target="_blank";a.rel="noopener noreferrer";lawSources.append(a);
   };
   addLawSource("Työaikalaki 18 § · Finlex","https://www.finlex.fi/fi/lainsaadanto/2019/872");
   addLawSource("Teknologiateollisuuden TES 20.3 · Teollisuusliitto","https://www.teollisuusliitto.fi/wp-content/uploads/2025/04/Teknologiateollisuuden-tyontekijoiden-tyoehtosopimus-2025-2027.pdf");
-  lawBody.append(overtimeObservation,dataCoverage,capacity,statute,agreement,scope,sources);
+  lawBody.append(overtimeObservation,dataCoverage,capacity,statute,agreement,scope,lawSources);
   workTimeLaw.append(lawTitle,lawBody);
   (byId("betaWeekendTracker")||byId("analysisMetrics"))?.after(workTimeLaw);
   const lawStyle=document.createElement("style");
