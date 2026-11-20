@@ -1,4 +1,5 @@
 import { paymentState, projectPayroll } from "./model.js";
+import { buildYearAnalysis } from "./analytics.js";
 import { installWeekendTracker } from "./beta-weekend-tracker.mjs";
 
 const money = new Intl.NumberFormat("fi-FI",{style:"currency",currency:"EUR"});
@@ -29,6 +30,62 @@ export function installCompact() {
       for(const section of sections.slice(2))more.append(section);
     }
   }
+  // Beta-only, information-first legal view: payslips contain pay-period
+  // overtime observations but cannot establish a 48 h weekly average or
+  // remaining legal capacity without actual work-time records.
+  const workTimeLaw=node("details","","beta-worktime-law");
+  workTimeLaw.id="betaWorkTimeLaw";
+  const lawTitle=node("summary","Ylityöt ja työajan enimmäismäärä");
+  const lawBody=node("div","","beta-worktime-law-body");
+  const overtimeObservation=node("p","Ei ylityötietoja valitulta vuodelta.");
+  overtimeObservation.id="betaWorkTimeObserved";
+  const dataCoverage=node("p","","beta-worktime-caution");
+  dataCoverage.id="betaWorkTimeCoverage";
+  const capacity=node("p","Voiko ylityötä tehdä lisää? Ei pääteltävissä pelkistä palkkalaskelmista.","beta-worktime-decision");
+  capacity.id="betaWorkTimeCapacity";
+  const statute=node("p","Työaikalain 18 §:n mukaan kokonaistyöaika ylityöt mukaan lukien saa olla keskimäärin enintään 48 h viikossa neljän kuukauden tarkastelujaksolla. Tämä ei ole 8 tunnin viikoittainen ylityökiintiö, eikä yksittäisen viikon 48 tunnin ehdoton katto.");
+  const agreement=node("p","Teknologiateollisuuden työntekijöiden TES 2025–2027, kohta 20.3: enimmäistyöajan tarkastelujakso on lähtökohtaisesti kalenterivuosi; paikallisesti voidaan sopia muun vuoden pituisen jakson käyttämisestä. Sovella vain, jos juuri tämä TES koskee työsuhdetta.");
+  const scope=node("p","Lisätuntien arviointi edellyttää työnantajan työaikakirjanpidon kaikkia toteutuneita työtunteja, oikeaa tarkastelujaksoa sekä suunniteltuja työvuoroja ja lepoaikoja. Pelkkä ylityörivien määrä tai maksupäivä ei riitä.");
+  const sources=node("div","","beta-worktime-links");
+  const addLawSource=(label,url)=>{
+    const a=node("a",label);
+    a.href=url;a.target="_blank";a.rel="noopener noreferrer";sources.append(a);
+  };
+  addLawSource("Työaikalaki 18 § · Finlex","https://www.finlex.fi/fi/lainsaadanto/2019/872");
+  addLawSource("Teknologiateollisuuden TES 20.3 · Teollisuusliitto","https://www.teollisuusliitto.fi/wp-content/uploads/2025/04/Teknologiateollisuuden-tyontekijoiden-tyoehtosopimus-2025-2027.pdf");
+  lawBody.append(overtimeObservation,dataCoverage,capacity,statute,agreement,scope,sources);
+  workTimeLaw.append(lawTitle,lawBody);
+  (byId("betaWeekendTracker")||byId("analysisMetrics"))?.after(workTimeLaw);
+  const lawStyle=document.createElement("style");
+  lawStyle.textContent=`
+    .beta-worktime-law{margin:8px 0 2px;border:1px solid #36505c;border-radius:9px;background:#111d26;min-width:0;max-width:100%;box-sizing:border-box;padding:8px 10px}
+    .beta-worktime-law>summary{cursor:pointer;font-weight:700;font-size:.87rem;line-height:1.4}
+    .beta-worktime-law-body{margin-top:8px;border-top:1px solid #314450;padding-top:7px}
+    .beta-worktime-law-body p{margin:5px 0 9px;font-size:.76rem;line-height:1.48;overflow-wrap:anywhere}
+    .beta-worktime-law-body .beta-worktime-decision{font-weight:650;color:#f4d2a3;border-left:2px solid #dcaf7c;padding-left:8px}
+    .beta-worktime-law-body .beta-worktime-caution{font-size:.72rem;color:#b9cad5}
+    .beta-worktime-links{display:flex;flex-wrap:wrap;gap:7px 14px;margin-top:9px}
+    .beta-worktime-links a{font-size:.72rem;color:#9bdaff;overflow-wrap:anywhere}
+  `;
+  document.head.append(lawStyle);
+  document.addEventListener("compact-payments",({detail})=>{
+    const year=Number(detail?.year);
+    if(!Number.isInteger(year)||year<1900||year>2200)return;
+    const overtime=buildYearAnalysis(detail?.records||[],year).overtime;
+    const known=overtime.recordsWithHours;
+    const total=overtime.recordsTotal;
+    overtimeObservation.textContent=known
+      ? "Palkkalaskelmien ylityötuntihavainnot maksuvuodelta "+year+": "+
+        new Intl.NumberFormat("fi-FI",{maximumFractionDigits:2}).format(overtime.knownHours)+" h"+
+        (overtime.complete?"":" (osittainen tieto)")
+      : "Ei luotettavia ylityötuntihavaintoja maksuvuodelta "+year+".";
+    dataCoverage.textContent="Tuntitieto "+known+"/"+total+" yksiselitteisestä palkkalaskelmasta."+
+      (overtime.excludedConflicts
+        ? " Lisäksi "+overtime.excludedConflicts+" ristiriitaista tai ajoittamatonta tietuetta jätetty pois."
+        : "")+
+      " Maksuvuosi ei kerro, minä päivinä työ tehtiin; puuttuvat laskelmat eivät tarkoita nollatunteja.";
+    capacity.textContent="Voiko ylityötä tehdä vielä lisää? Ei laskettavissa näistä palkkalaskelmista.";
+  });
   const settings = document.querySelector('[data-view="data"]');
   settings.prepend(node("h2","Asetukset","compact-title"));
   for (const section of settings.querySelectorAll("[data-settings-disclosure]")) {
