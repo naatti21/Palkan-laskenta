@@ -1,6 +1,7 @@
 import { paymentState, projectPayroll } from "./model.js";
 import { buildYearAnalysis } from "./analytics.js";
 import { installWeekendTracker } from "./beta-weekend-tracker.mjs";
+import { installWorktimeJournal } from "./beta-worktime-tracker.mjs";
 
 const money = new Intl.NumberFormat("fi-FI",{style:"currency",currency:"EUR"});
 const months = new Intl.DateTimeFormat("fi-FI",{month:"long",timeZone:"UTC"});
@@ -54,6 +55,7 @@ export function installCompact() {
   addLawSource("Työaikalaki 18 § · Finlex","https://www.finlex.fi/fi/lainsaadanto/2019/872");
   addLawSource("Teknologiateollisuuden TES 20.3 · Teollisuusliitto","https://www.teollisuusliitto.fi/wp-content/uploads/2025/04/Teknologiateollisuuden-tyontekijoiden-tyoehtosopimus-2025-2027.pdf");
   lawBody.append(overtimeObservation,dataCoverage,capacity,statute,agreement,scope,lawSources);
+  installWorktimeJournal(lawBody);
   workTimeLaw.append(lawTitle,lawBody);
   (byId("betaWeekendTracker")||byId("analysisMetrics"))?.after(workTimeLaw);
   const lawStyle=document.createElement("style");
@@ -84,7 +86,7 @@ export function installCompact() {
         ? " Lisäksi "+overtime.excludedConflicts+" ristiriitaista tai ajoittamatonta tietuetta jätetty pois."
         : "")+
       " Maksuvuosi ei kerro, minä päivinä työ tehtiin; puuttuvat laskelmat eivät tarkoita nollatunteja.";
-    capacity.textContent="Voiko ylityötä tehdä vielä lisää? Ei laskettavissa näistä palkkalaskelmista.";
+    capacity.textContent="Voiko ylityötä tehdä lisää? Ei laskettavissa oikeudellisesti pelkkien viikkokirjausten tai palkkalaskelmien perusteella. Tarkista työvuorot, lepoajat ja täsmällinen tasaamisjakso.";
   });
   const settings = document.querySelector('[data-view="data"]');
   settings.prepend(node("h2","Asetukset","compact-title"));
