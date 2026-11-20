@@ -397,6 +397,14 @@ const betaNavigationCss = `
   background:rgba(20,29,29,.97);box-shadow:0 12px 35px rgba(0,0,0,.58);
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
 }
+/* Override the stronger .shell .tabs/inset rule from beta-black-v5.css.
+   Otherwise transform shifts the bar half a viewport OUTSIDE the screen. */
+.shell .tabs{
+  position:fixed;inset:auto 0 calc(7px + env(safe-area-inset-bottom, 0px)) 0;
+  transform:none;width:min(calc(100% - 16px),620px);max-width:620px;
+  margin:0 auto;padding:6px;border-radius:19px;
+  background:rgba(20,29,29,.97);z-index:100;
+}
 .tabs .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   min-width:0;min-height:51px;padding:6px 2px;border-radius:13px;
   font-size:.69rem;line-height:1.15;white-space:nowrap;}
