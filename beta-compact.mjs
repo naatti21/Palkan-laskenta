@@ -316,6 +316,8 @@ export function installCompact() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
     svg.setAttribute("viewBox","0 0 24 24"); svg.setAttribute("aria-hidden","true");
     const path = document.createElementNS(svg.namespaceURI,"path");
-    path.setAttribute("d",paths[tab.dataset.viewTarget]); svg.append(path); tab.prepend(svg);
+    path.setAttribute("d",paths[tab.dataset.viewTarget]); svg.append(path);
+    const caption = node("span", tab.textContent.trim(), "beta-tab-label");
+    tab.replaceChildren(svg, caption);
   }
 }
