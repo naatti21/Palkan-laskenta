@@ -45,9 +45,12 @@ test('Analysis presents three accessible subtopics with weekend tracking immedia
 test('Planner shortcut jumps between model inputs and results on the outer page', async ({page}) => {
   await page.setViewportSize({width:360,height:750});
   await page.goto('/index.html');
+  // Wait until app.js has completed wiring the navigation and planner bridge.
+  await expect(page.locator('#plannerSyncStatus')).toContainText('Historiaa ei vielä ole');
   await page.getByRole('button', {name:'Laskuri'}).click();
+  await expect(page.locator('#plannerFrame')).toBeVisible();
   const frame=page.frameLocator('#plannerFrame');
-  await expect(frame.locator('#results-title')).toBeVisible();
+  await expect(frame.locator('#results-title')).toHaveCount(1);
   await expect(page.locator('#betaPlannerJump button')).toHaveCount(5);
   await page.locator('[data-planner-jump="results-title"]').click();
   const position = () => page.evaluate(() => {
