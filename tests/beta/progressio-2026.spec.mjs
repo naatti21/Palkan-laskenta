@@ -96,13 +96,13 @@ test('beta calculator has no hidden disclosure menus, preserving all core contro
   await page.getByRole('button',{name:'Laskuri'}).click();
   const frame=page.frameLocator('#plannerFrame');
   await expect(frame.locator('.shell details')).toHaveCount(0);
+  await frame.locator('#baseGross').fill('35000');
+  await frame.locator('#weekendGross').fill('1000');
   for(const id of ['#regularHours','#historyStatus','#weekendPayDetails',
     '#weekendMethod','#rulesConfirmed','#inverseNetGoal','#rateUncertainty',
     '#allComparisons','#betaProgressChart','#betaCGoalSection']){
     await expect(frame.locator(id)).toBeVisible();
   }
-  await frame.locator('#baseGross').fill('35000');
-  await frame.locator('#weekendGross').fill('1000');
   await expect(frame.locator('#allSamples tr')).toHaveCount(53);
   const overflow=await frame.locator('.shell').evaluate(el=>({
     viewport:innerWidth,actual:document.documentElement.scrollWidth
