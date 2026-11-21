@@ -103,7 +103,7 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
     const cTax=referenceNet2026(gross);
     if(cTax){
       svg.append(progressSvg('circle',{cx:x(gross),cy:y(cTax.effectiveAllInPercent),
-        r:7,fill:'#de95e3',stroke:'#101820','stroke-width':2,
+        r:7,fill:'#f4d98f',stroke:'#101820','stroke-width':2,
         'data-series':'C'}));
       svg.append(progressSvg('title',{},'C: '+cReference.selection.n+' viikonloppua, '+
         money(gross)+' vuosibrutto, yleinen 2026 vero- ja maksutaso '+
@@ -230,12 +230,18 @@ function mount() {
     <div class="beta-progress" aria-labelledby="betaProgressTitle">
       <h3 id="betaProgressTitle">Veroprogressio 2026 · vertailukuva</h3>
       <p class="beta-progress-desc">Vuoden 2026 viitekäyrä ja A/B-vaihtoehtojen omat vuositulot. Verokortin pidätyksen ja lopullisen veron ero säilyy.</p>
-      <div class="beta-progress-legend">
-        <span class="p-ref">Kokonaisveroaste</span>
-        <span class="p-marg">Marginaalivero</span>
-        <span class="p-a">Laskuri A</span>
-        <span class="p-b">Laskuri B</span>
-        <span class="p-c">C · 2026-viite</span>
+      <div class="beta-progress-legend" aria-label="Veroprogressiokuvaajan selite">
+        <div class="beta-progress-legend-group" aria-label="Käyrät">
+          <strong>Käyrät</strong>
+          <span class="p-ref">Kokonaisveroaste</span>
+          <span class="p-marg">Marginaalivero</span>
+        </div>
+        <div class="beta-progress-legend-group" aria-label="Vertailupisteet">
+          <strong>Vertailupisteet</strong>
+          <span class="p-a">Laskuri A</span>
+          <span class="p-b">Laskuri B</span>
+          <span class="p-c">C · 2026-viite</span>
+        </div>
       </div>
       <div id="betaProgressChart" class="beta-progress-chart"></div>
       <p id="betaProgressSummary" class="beta-progress-summary" role="status">Käyrä näkyy laskurin lukujen valmistuttua.</p>
@@ -404,9 +410,17 @@ function mount() {
     .beta-progress{border-top:1px solid #3e4e60;margin-top:18px;padding-top:14px;}
     .beta-progress h3{font-size:1.02rem;color:#f2f8ff;margin:0 0 7px;}
     .beta-progress-desc,.beta-progress-caveat{font-size:.75rem;line-height:1.55;color:#c2d2df;margin:7px 0;}
-    .beta-progress-legend{display:flex;flex-wrap:wrap;gap:7px 13px;margin:11px 0 3px;font-size:.7rem;color:#d4e0ec;}
-    .beta-progress-legend span::before{content:'';display:inline-block;width:12px;height:4px;border-radius:3px;margin-right:5px;vertical-align:middle;}
-    .p-ref::before{background:#70dea9}.p-marg::before{background:#f4bb67}.p-a::before{background:#81caff}.p-b::before{background:#bb9afb}.p-c::before{background:#f4d98f}
+    .beta-progress-legend{display:grid;gap:10px;margin:11px 0 8px;font-size:.73rem;color:#d4e0ec;}
+    .beta-progress-legend-group{display:flex;flex-wrap:wrap;align-items:center;gap:7px 13px;}
+    .beta-progress-legend-group>strong{width:100%;font-size:.73rem;color:#ecf3fa;letter-spacing:.01em;}
+    .beta-progress-legend span{display:inline-flex;align-items:center;gap:6px;}
+    .beta-progress-legend span::before{content:'';display:inline-block;flex:0 0 auto;width:16px;height:0;border-top:3px solid transparent;border-radius:3px;}
+    .beta-progress-legend .p-ref::before{border-top-color:#70dea9}
+    .beta-progress-legend .p-marg::before{border-top:3px dashed #f4bb67}
+    .beta-progress-legend :is(.p-a,.p-b,.p-c)::before{width:9px;height:9px;border:2px solid #101820;border-radius:50%;box-sizing:content-box;}
+    .beta-progress-legend .p-a::before{background:#81caff}
+    .beta-progress-legend .p-b::before{background:#bb9afb}
+    .beta-progress-legend .p-c::before{background:#f4d98f}
     .beta-progress-chart{width:100%;overflow:hidden;}
     .beta-progress-chart svg{display:block;width:100%;height:auto;max-height:320px;}
     .beta-progress-summary{font-size:.78rem;line-height:1.58;color:#e5eff9;background:#192432;border-left:3px solid #70dea9;padding:10px 11px;border-radius:6px;}
@@ -449,6 +463,10 @@ function mount() {
      .planner-advanced{margin-top:12px;}
      .planner-advanced>section.card{padding:11px 7px;margin:11px 0;}
      .planner-advanced .beta-ab-progress-details{margin-top:14px;}
+     .planner-visible-panel{margin:12px 0;padding:10px 11px;border:1px solid #344956;border-radius:10px;min-width:0;}
+     .planner-visible-panel>.planner-visible-heading{margin:0 0 9px;font-size:.91rem;line-height:1.38;color:#ecf4ff;}
+     .planner-visible-panel>.comparison-table-wrap{max-width:100%;}
+     .planner-visible-panel.planner-visible-plain{border:0;padding:0;margin:9px 0;}
      html.beta-integrated .shell>.eyebrow,
      html.beta-integrated .shell>h1,
      html.beta-integrated .shell>.lead,
@@ -888,6 +906,25 @@ function mount() {
   document.getElementById('planYear')?.addEventListener('input',update);
   document.getElementById('weekends')?.addEventListener('input',update);
   update();
+  // Beta planner: never make the reader hunt through disclosures.
+  // Move existing nodes, preserving their IDs, values and event listeners.
+  if(document.documentElement.classList.contains('beta-integrated')){
+    for(const disclosure of [...document.querySelectorAll('.shell details')]){
+      const panel=document.createElement('section');
+      panel.className=(disclosure.className||'')+' planner-visible-panel';
+      if(disclosure.id)panel.id=disclosure.id;
+      const heading=disclosure.querySelector(':scope > summary');
+      if(heading){
+        const title=document.createElement('h3');
+        title.className='planner-visible-heading';
+        title.append(...heading.childNodes);
+        panel.append(title);
+        heading.remove();
+      }
+      panel.append(...disclosure.childNodes);
+      disclosure.replaceWith(panel);
+    }
+  }
 }
 if(typeof document!=='undefined'){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});
