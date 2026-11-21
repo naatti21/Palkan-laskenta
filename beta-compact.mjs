@@ -241,7 +241,7 @@ export function installCompact() {
     });
     // The generated Beta wraps most analysis cards in details. Remove only
     // navigation wrappers, keeping the actual cards and all their event wiring.
-    for(const wrapper of [...analysisView.querySelectorAll("details.analysis-collection, details.compact-analysis-deep")]){
+    for(const wrapper of [...analysisView.querySelectorAll("details.analysis-collection, details.compact-analysis-deep")].filter(w=>!w.parentElement?.closest("details.analysis-collection, details.compact-analysis-deep"))){
       const cards=[...wrapper.querySelectorAll("section.card")];
       for(const card of cards) wrapper.before(card);
       wrapper.remove();
