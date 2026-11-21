@@ -18,6 +18,22 @@ function sum(rows,key) {
 
 export function installCompact() {
   installWeekendTracker();
+  const planner = byId("plannerFrame");
+  const bindPlannerLinks = () => {
+    const doc = planner.contentDocument;
+    doc?.addEventListener("click", event => {
+      const link = event.target.closest('a[href^="#"]');
+      const target = link && doc.getElementById(link.hash.slice(1));
+      if (!target) return;
+      event.preventDefault();
+      target.tabIndex = -1;
+      target.focus({preventScroll:true});
+      const top = planner.getBoundingClientRect().top + window.scrollY + target.getBoundingClientRect().top;
+      window.scrollTo({top:top-12,behavior:"instant"});
+    });
+  };
+  if (planner.contentDocument?.readyState === "complete") bindPlannerLinks();
+  planner.addEventListener("load", bindPlannerLinks);
   // Beta-only, information-first legal view: payslips contain pay-period
   // overtime observations but cannot establish a 48 h weekly average or
   // remaining legal capacity without actual work-time records.
