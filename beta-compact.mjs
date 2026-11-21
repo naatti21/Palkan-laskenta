@@ -18,18 +18,6 @@ function sum(rows,key) {
 
 export function installCompact() {
   installWeekendTracker();
-  // One focused deep-dive instead of many full-height analysis cards.
-  const analysis=document.querySelector('[data-view="analysis"]');
-  if(analysis&&!analysis.querySelector('#betaAnalysisDeepDive')){
-    const sections=[...analysis.children].filter(n=>n.matches?.('section.card'));
-    if(sections.length>2){
-      const more=node('details','','compact-analysis-deep');
-      more.id='betaAnalysisDeepDive';
-      more.append(node('summary','Tarkemmat palkka- ja työaikatiedot'));
-      sections[2].before(more);
-      for(const section of sections.slice(2))more.append(section);
-    }
-  }
   // Beta-only, information-first legal view: payslips contain pay-period
   // overtime observations but cannot establish a 48 h weekly average or
   // remaining legal capacity without actual work-time records.
@@ -239,37 +227,24 @@ export function installCompact() {
       // Changing topics should not strand the reader halfway down a long page.
       nav.scrollIntoView({block:"start",behavior:"instant"});
     });
-    // The generated Beta wraps most analysis cards in details. Remove only
-    // navigation wrappers, keeping the actual cards and all their event wiring.
-    for(const wrapper of [...analysisView.querySelectorAll("details.analysis-collection, details.compact-analysis-deep")].filter(w=>!w.parentElement?.closest("details.analysis-collection, details.compact-analysis-deep"))){
-      const cards=[...wrapper.querySelectorAll("section.card")];
-      for(const card of cards) wrapper.before(card);
-      wrapper.remove();
+    const topicByContent = {
+      analysisMetrics:"pay", monthlyChart:"pay", incomeBreakdown:"pay",
+      overtimeBreakdown:"hours", bankSummary:"hours", periodSummary:"hours",
+      monthlyDetails:"detail", budgetSummary:"tools", netGoalResult:"tools"
+    };
+    for (const card of analysisView.querySelectorAll(":scope > section.card:not(.beta-replaced)")) {
+      const content = Object.keys(topicByContent).find(id => card.contains(byId(id)));
+      panes.get(topicByContent[content] ?? "detail").append(card);
     }
-    const cards=[...analysisView.querySelectorAll(":scope > section.card")];
-    const byHeading = card => card.querySelector("h2")?.textContent?.trim() || "";
-    const hoursHeadings=new Set(["Ylityöerittely","Ylityöt ja lisät","Palkkalajien ylityöerittely","Työaikapankki","Palkkakauden ja maksupäivän ero"]);
-    const toolsHeadings=new Set(["Mitä nettopalkasta voisi tehdä?","Nettoansiotavoitteen arvio"]);
-    for(const card of cards){
-      if(card.classList.contains("beta-replaced")||card.classList.contains("hidden"))continue;
-      const heading=byHeading(card);
-      const label=card.textContent||"";
-      let topic="detail";
-      if(card.querySelector("#analysisMetrics")||card.querySelector("#monthlyChart")||
-         card.querySelector("#incomeBreakdown"))topic="pay";
-      else if(card.querySelector("#overtimeBreakdown")||card.querySelector("#bankSummary")||
-              card.querySelector("#periodSummary")||hoursHeadings.has(heading))topic="hours";
-      else if(card.querySelector("#budgetSummary")||card.querySelector("#netGoalResult")||
-              toolsHeadings.has(heading))topic="tools";
-      else if(card.querySelector("#monthlyDetails"))topic="detail";
-      panes.get(topic).append(card);
-    }
+    // Keep the year selector and overview heading available across all topics.
+    const overview = byId("analysisMetrics").closest("section");
+    analysisView.prepend(overview.querySelector(".section-heading"));
     const tracker=byId("betaWeekendTracker");
     if(tracker)panes.get("hours").prepend(tracker);
     const law=byId("betaWorkTimeLaw");
     if(law)panes.get("hours").append(law);
     // Insert before all analysis content, then group cards into their topics.
-    analysisView.prepend(nav);
+    analysisView.querySelector(".section-heading").after(nav);
     for(const topic of topics)analysisView.append(panes.get(topic.id));
     choose("pay");
     // Leave any hidden legacy experiment nodes in place for existing JS bindings.
@@ -277,7 +252,8 @@ export function installCompact() {
     css.textContent=`
       .tabs{position:fixed!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(880px,calc(100% - 16px));z-index:90;margin:0!important;padding:5px!important;box-shadow:0 8px 28px #000b}
       .shell{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))!important}
-      .tabs .tab{min-width:0;padding:9px 2px!important;font-size:clamp(.66rem,2.6vw,.85rem)!important;display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap}
+      html{scroll-padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
+      .tabs .tab{min-width:0;padding:9px 2px!important;font-size:clamp(.66rem,2.6vw,.85rem)!important;display:flex;flex-direction:column;align-items:center;gap:3px;white-space:normal;overflow-wrap:anywhere}
       .tabs .tab svg{width:19px;height:19px;flex:none}
       .beta-topic-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:5px;background:#17252b;border:1px solid #34464b;border-radius:12px;position:sticky;top:6px;z-index:30;margin:8px 0 12px;scroll-margin-top:8px}
       .beta-topic-button{min-width:0;padding:11px 2px!important;border-radius:8px;background:transparent!important;color:#bac9d1!important;font-size:clamp(.69rem,2.8vw,.86rem)!important}

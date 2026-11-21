@@ -4,6 +4,7 @@ test('Analyysissä on vain avattaessa näkyvä 48 h työaikasääntö ja oikea T
   await page.setViewportSize({width:360,height:820});
   await page.goto('/index.html');
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   const law=page.locator('#betaWorkTimeLaw');
   await expect(law).toHaveCount(1);
   await expect(law).not.toHaveAttribute('open','');
@@ -38,6 +39,7 @@ test('Ylityöhavaintoja ei tulkita sallituiksi lisätunneiksi tai täydelliseksi
   });
   await page.reload();
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   const law=page.locator('#betaWorkTimeLaw');
   await law.locator('summary').click();
   await expect(law.locator('#betaWorkTimeObserved')).toContainText('12,5 h');
@@ -53,6 +55,7 @@ test('Avattava työaikaosio pysyy 320–412 px mobiilileveydellä ja suuremmalla
     await page.setViewportSize({width,height:820});
     await page.goto('/index.html');
     await page.getByRole('button',{name:'Analyysi'}).click();
+    await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
     await page.locator('#betaWorkTimeLaw summary').click();
     await page.evaluate(()=>document.documentElement.style.fontSize='200%');
     const size=await page.evaluate(()=>({

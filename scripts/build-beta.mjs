@@ -176,30 +176,11 @@ html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
           </select>
         </label>
         ` + budgetLabel);
-// Keep primary analysis and monthly chart visible; reveal supporting detail only by choice.
-const detailStart = '<section class="card">\n        <p class="eyebrow">TODELLINEN MAKSU · ERILLINEN TYÖAJASTA</p>';
-const detailEnd = '<section class="card hidden beta-replaced">\n        <p class="eyebrow">OMAT VALINNAT · EI VEROLASKURI</p>';
-if (!html.includes(detailStart) || !html.includes(detailEnd)) throw new Error('Analysis detail grouping markers changed.');
-html = html.replace(detailStart, `<details class="analysis-collection">
-        <summary><strong>Lisää palkka- ja työaikatietoja</strong><span>Brutto, netto, ylityöt, pankkikirjaukset ja kuukausierittely</span></summary>
-        <div class="analysis-collection-body">
-      ` + detailStart);
-html = html.replace(detailEnd, `        </div>
-      </details>
-      ` + detailEnd);
-const budgetStart = '<section class="card">\n        <p class="eyebrow">50 / 30 / 20 · SUUNNITTELUTYÖKALU</p>';
 const historyBoundary = '    </section>\n\n    <section data-view="history" class="hidden">';
-if (!html.includes(budgetStart) || !html.includes(historyBoundary)) throw new Error('Analysis budget grouping markers changed.');
-html = html.replace(budgetStart, `<details class="analysis-collection">
-        <summary><strong>Budjetti ja tavoitteet</strong><span>Vapaaehtoiset laskelmat ja omat tavoitteet</span></summary>
-        <div class="analysis-collection-body">
-      ` + budgetStart);
-html = html.replace(historyBoundary, `        </div>
-      </details>
-    </section>
+html = replaceUnique(html, historyBoundary, `    </section>
 ${plannerView}
 
-    <section data-view="history" class="hidden">`);
+    <section data-view="history" class="hidden">`, 'planner tab placement');
 // Only the isolated generated Beta CSS gets compact mobile-first styling.
 const betaCss = `
 /* Compact Beta dashboard. Shared production stylesheet is never overwritten. */
@@ -329,19 +310,9 @@ body{background:linear-gradient(180deg,#171c1f,#111719 49%,#171d1e);color:#f3f6f
 .planner-toggle::after{content:"Avaa laskuri ↓";color:#8ce0b7;font-size:.77rem;}
 .planner-fold[open] .planner-toggle::after{content:"Sulje laskuri ↑";}
 .planner-fold-content{padding:1px 10px 12px;}
-.analysis-collection{margin:12px 0;border:1px solid #364443;border-radius:15px;background:#252f30;}
-.analysis-collection>summary{cursor:pointer;list-style:none;display:grid;gap:5px;padding:16px;}
-.analysis-collection>summary::-webkit-details-marker{display:none;}
-.analysis-collection>summary strong{font-size:1.02rem;}
-.analysis-collection>summary span{color:#b7c3c0;font-size:.77rem;line-height:1.5;}
-.analysis-collection>summary::after{content:"Näytä ↓";font-size:.78rem;color:#8ce0b7;}
-.analysis-collection[open]>summary::after{content:"Sulje ↑";}
-.analysis-collection-body{padding:0 9px 8px;}
-.analysis-collection-body>.card{box-shadow:none;background:#2d3738;}
 summary:focus-visible{outline:2px solid #9de9c2;outline-offset:2px;}
 @media(max-width:620px){
  .shell{padding-left:11px;padding-right:11px;}
- .analysis-collection-body{padding:0 5px 5px;}
  .beta-primary-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 @media(max-width:350px){
@@ -387,7 +358,15 @@ if (!plannerHtml.includes('html.beta-integrated body')) {
 }
 const plannerV2Theme = await readFile('beta-planner-theme-v2.css', 'utf8');
 const plannerBlackV5 = await readFile('beta-planner-black-v5.css', 'utf8');
-const plannerWithTheme = replaceUnique(plannerHtml, '</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + '\n</style>', 'planner style');
+// Move the original year field before the history suggestions without remounting inputs.
+const yearField = plannerHtml.match(/<div class="field"><label for="planYear">[^<]+<\/label><input [^>]+><\/div>/)?.[0];
+if (!yearField) throw new Error('Missing planning year field');
+const plannerLayout = replaceUnique(plannerHtml.replace(yearField, ''), '<section class="card" aria-labelledby="history-title">', `<section class="card" aria-labelledby="history-title">
+    ${yearField}
+    <p><a href="#results-title">Siirry tuloksiin</a></p>`, 'planning history and year')
+  .replace('<h2 id="tax-title">3. Vertaile kahta verokorttia</h2>', '<h2 id="tax-title">3. Vertaile kahta verokorttia</h2><a href="#results-title">Siirry tuloksiin</a>')
+  .replace('<h2 id="results-title">4. Mitä näistä jää?</h2>', '<h2 id="results-title">4. Mitä näistä jää?</h2><nav aria-label="Muokkaa suunnitelmaa"><a href="#income-title">Ansiot</a> · <a href="#weekends-title">Viikonloput</a> · <a href="#tax-title">Verokortit</a></nav>');
+const plannerWithTheme = replaceUnique(plannerLayout, '</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + '\n</style>', 'planner style');
 await writeFile(plannerPath, replaceUnique(plannerWithTheme, '</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>', 'planner scripts'));
 html = replaceUnique(html, '<div id="history"></div>', `<div class="ledger-switch" role="group" aria-label="Historian näkymä">

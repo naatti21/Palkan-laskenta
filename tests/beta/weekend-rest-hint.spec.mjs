@@ -28,6 +28,7 @@ async function importHistory(page,{rest=[8,8,8,8],mixed=false}={}){
   });
   await expect(page.locator('#backupStatus')).toContainText('Palautus valmis');
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
 }
 
 test('Viikkolepokorvausrivien määrä näkyy Analyysissä ilman tuntijakoa tai automaattista hyväksyntää',async({page})=>{
@@ -51,6 +52,7 @@ test('Viikkolepokorvausrivien määrä näkyy Analyysissä ilman tuntijakoa tai 
   await expect(page.locator('#betaWeekendDone')).toHaveText('7');
   await page.reload();
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   await expect(page.locator('#betaWeekendDone')).toHaveText('7');
   await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toBeVisible();
   await page.getByRole('button',{name:'Laskuri'}).click();
@@ -93,6 +95,7 @@ test('Kaksi viikkolepokorvausriviä samassa laskelmassa lasketaan kahdeksi esiin
   await page.locator('#backupInput').setInputFiles({name:'multi-rest.json',mimeType:'application/json',buffer:Buffer.from(payload)});
   await expect(page.locator('#backupStatus')).toContainText('Palautus valmis');
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toContainText('Viikkolepo mainittu 4 palkkarivillä');
   await expect(page.locator('#betaWeekendTracker .weekend-proposal')).toContainText('3 palkkalaskelmassa');
   await expect(page.locator('#betaWeekendDone')).toHaveText('–');
@@ -118,6 +121,7 @@ test('Tiivis Analyysi ja laskuri eivät ylitä puhelimen leveyttä',async({page}
     await page.setViewportSize({width,height:820});
     await page.goto('/index.html');
     await page.getByRole('button',{name:'Analyysi'}).click();
+    await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
     await expect(page.locator('#betaWeekendTracker')).toBeVisible();
     const analysisWidth=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     expect(analysisWidth).toBeLessThanOrEqual(1);

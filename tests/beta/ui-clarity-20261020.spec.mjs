@@ -10,7 +10,7 @@ test("Beta dashboard remains compact and import stays gated", async ({ page }) =
   await expect(page.locator(".beta-taxcard-progress")).toBeVisible();
   await expect(page.locator('[data-view="planning"]')).toHaveCount(1);
   await expect(page.locator(".planner-fold")).toHaveCount(0);
-  await expect(page.locator(".analysis-collection")).toHaveCount(2);
+  await expect(page.locator("#betaAnalysisTopics button")).toHaveCount(4);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
   expect(overflow).toBe(false);
 });
@@ -64,10 +64,36 @@ test("Calculator is on its own tab and Analysis remains independently expandable
   await page.goto("/index.html");
   await page.locator('[data-view-target="analysis"]').click();
   await expect(page.locator("#plannerFrame")).toBeHidden();
-  await expect(page.locator(".analysis-collection")).toHaveCount(2);
-  await page.locator(".analysis-collection").first().locator("summary").first().click();
-  await expect(page.locator(".analysis-collection").first()).toHaveAttribute("open", "");
+  await expect(page.locator("#betaAnalysisTopics button")).toHaveCount(4);
+  await page.getByRole("button",{name:"Ylityöt",exact:true}).click();
+  await expect(page.locator("#betaWeekendTracker")).toBeVisible();
+  await expect(page.locator("#analysisYear")).toBeVisible();
   await page.locator('[data-view-target="planning"]').click();
   await expect(page.getByRole("heading",{name:"Vuosisuunnittelu"})).toBeVisible();
   await expect(page.locator("#plannerFrame")).toBeVisible();
+});
+
+test("narrow navigation keeps tool inputs and calculator edits across views", async ({ page }) => {
+  for (const width of [320,390]) {
+    await page.setViewportSize({width,height:760});
+    await page.goto("/");
+    await page.locator('[data-view-target="analysis"]').click();
+    for (const [topic, selector] of [["Palkat","#monthlyChart"],["Ylityöt","#betaWeekendTracker"],["Erittelyt","#monthlyDetails"],["Työkalut","#netGoal"]]) {
+      await page.getByRole("button",{name:topic,exact:true}).click();
+      await expect(page.locator(selector)).toBeVisible();
+      await expect(page.locator("#analysisYear")).toBeVisible();
+    }
+    await page.locator("#netGoal").fill("2600");
+    await page.locator('[data-view-target="planning"]').click();
+    const planner=page.frameLocator("#plannerFrame");
+    await planner.locator("#baseGross").fill("52000");
+    await planner.getByRole("link",{name:"Siirry tuloksiin"}).first().click();
+    await expect(planner.getByRole("navigation",{name:"Muokkaa suunnitelmaa"})).toBeInViewport();
+    await expect(page.locator(".tabs")).toBeInViewport();
+    await page.locator('[data-view-target="analysis"]').click();
+    await expect(page.locator("#netGoal")).toHaveValue("2600");
+    await page.locator('[data-view-target="planning"]').click();
+    await expect(planner.locator("#baseGross")).toHaveValue("52000");
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  }
 });
