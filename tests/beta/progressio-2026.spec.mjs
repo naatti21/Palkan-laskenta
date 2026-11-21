@@ -72,11 +72,11 @@ test('chart legend distinguishes lines from circles and the C marker matches yel
   await frame.locator('#betaCTarget').fill('3000');
   await expect(frame.locator('#betaCCount')).toContainText('17 viikonloppua');
   const chart=frame.locator('#betaProgressChart');
-  await expect(chart.locator('circle[data-series="C"]')).toHaveAttribute('fill','#f4d98f');
+  await expect(chart.locator('circle[data-series="C"]')).toHaveAttribute('fill','#ffe047');
   const legend=await frame.locator('.beta-progress-legend').evaluate(el=>{
     const kind=selector=>{
       const node=el.querySelector(selector),style=getComputedStyle(node,'::before');
-      return {shape:style.borderRadius,border:style.borderTopStyle,color:style.backgroundColor};
+      return {shape:style.borderRadius,border:style.borderTopStyle,lineColor:style.borderTopColor,color:style.backgroundColor};
     };
     return {groups:[...el.querySelectorAll('.beta-progress-legend-group > strong')].map(e=>e.textContent),
       total:el.querySelectorAll('span').length,
@@ -87,7 +87,19 @@ test('chart legend distinguishes lines from circles and the C marker matches yel
   expect(legend.ref.border).toBe('solid');
   expect(legend.marg.border).toBe('dashed');
   for(const point of [legend.a,legend.b,legend.c])expect(point.shape).toBe('50%');
-  expect(legend.c.color).toBe('rgb(244, 217, 143)');
+  expect(legend.c.color).toBe('rgb(255, 224, 71)');
+  const lines=chart.locator('polyline');
+  await expect(lines).toHaveCount(2);
+  await expect(lines.nth(0)).toHaveCSS('stroke',legend.ref.lineColor);
+  await expect(lines.nth(0)).toHaveCSS('stroke-dasharray','none');
+  await expect(lines.nth(1)).toHaveCSS('stroke',legend.marg.lineColor);
+  await expect(lines.nth(1)).toHaveAttribute('stroke-dasharray','7 5');
+  for(const series of ['A','B','C']){
+    const marker=chart.locator('circle[data-series="'+series+'"]');
+    await expect(marker).toHaveCSS('fill',legend[series.toLowerCase()].color);
+    await expect(marker.locator('title')).toContainText(series+':');
+  }
+  await expect(chart.locator('svg > :last-child')).toHaveAttribute('data-series','C');
 });
 
 test('beta calculator has no hidden disclosure menus, preserving all core controls',async({page})=>{
@@ -103,6 +115,7 @@ test('beta calculator has no hidden disclosure menus, preserving all core contro
     '#allComparisons','#betaProgressChart','#betaCGoalSection']){
     await expect(frame.locator(id)).toBeVisible();
   }
+  await expect(frame.getByRole('heading',{name:'Mitä tässä mallissa ei vielä ole?'})).toBeVisible();
   await expect(frame.locator('#allSamples tr')).toHaveCount(53);
   const toggle=frame.locator('#allComparisonsToggle');
   await expect(toggle).toBeVisible();
