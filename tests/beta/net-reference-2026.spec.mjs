@@ -32,7 +32,7 @@ test('Overtime extra and 2027 warning remain separate from unverified tax card s
   await expect(frame.locator('#netref26YearWarning')).toContainText('EI ennusta vuoden 2027 verotusta');
   await expect(frame.locator('#netref26Monthly')).toHaveText('3 030 €');
   await frame.locator('#weekendGross').fill('1000');
-  await frame.locator('#weekends').fill('3');
+  await frame.locator('#betaWeekendsA').fill('3');
   await expect(frame.locator('#netref26Overtime')).toBeVisible();
   await expect(frame.locator('#netref26OvertimeTitle')).toContainText('3 kpl');
   await expect(frame.locator('#netref26OvertimeText')).toContainText('Lisäbrutto 3 000 €');
@@ -56,6 +56,6 @@ test('No invented estimates for out-of-range income or missing overtime gross',a
   await expect(frame.locator('#netref26NetAnnual')).toHaveText('–');
   await expect(frame.locator('#netref26Summary')).toContainText('alueen ulkopuolella');
   await frame.locator('#baseGross').fill('52000');
-  await frame.locator('#weekends').fill('4');
+  await frame.locator('#betaWeekendsA').fill('4');
   await expect(frame.locator('#netref26Overtime')).toBeHidden();
 });

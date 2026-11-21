@@ -11,6 +11,7 @@ assert.ok(historyJs&&planJs,"Embedded pure models exist");
 const context={payrollProjection:projectPayroll};vm.runInNewContext(historyJs,context);vm.runInNewContext(planJs,context);
 const suggest=context.PalkkaPlannerHistory.historySuggestions;
 const compute=context.PalkkaPlannerCore.computePlan;
+const weekendEstimate=context.PalkkaPlannerCore.weekendPaylineEstimate;
 const pay=(month,lines,day="09",kta=24)=>({
   incomeSourceId:"job",kind:"payslip",values:{payDate:"2026-"+String(month).padStart(2,"0")+"-"+day,
   payPeriodStart:"2026-"+String(month).padStart(2,"0")+"-01",
@@ -89,4 +90,46 @@ test("unknown or multiple payers retain imported gross without a fabricated annu
     assert.equal(result.baseEstimate,null);assert.equal(result.latestYtd,null);
     assert.equal(result.ktaRate,null);assert.equal(result.deductionsRate,null);
   }
+});
+
+
+test("same tested special-case model computes an optional 16h preview from comparable hourly and KTA data",()=>{
+  const history=suggest(backup(hourly));
+  assert.equal(history.comparable,true);
+  assert.equal(history.wageModel,"hourly");
+  assert.equal(history.rateSamples,3);
+  assert.equal(history.ktaSamples,3);
+  assert.equal(history.avgHourlyRate,25);
+  assert.equal(history.ktaRate,24);
+  const preview=weekendEstimate(8,8,history.avgHourlyRate,history.ktaRate);
+  assert.equal(preview.gross,1072);
+  assert.deepEqual(JSON.parse(JSON.stringify(preview.breakdown)),{
+    baseAmount:400,weekly50:96,weekly100:192,
+    daily100:0,sunday:192,rest:192
+  });
+  const existing=compute({...scene,weekends:0,sat:8,sun:8,
+    hourlyRate:25,ktaRate:24,weekendMethod:"paylines",rulesConfirmed:true});
+  assert.equal(existing.grossPerWeekend,preview.gross);
+  assert.equal(weekendEstimate(8,8,24.51,25.07).gross.toFixed(2),"1094.12");
+});
+
+test("a 16-hour data suggestion never grants permission to apply unfamiliar agreement rules",()=>{
+  const found=weekendEstimate(8,8,24.51,25.07);
+  assert.equal(found.gross.toFixed(2),"1094.12");
+  assert.throws(()=>compute({...scene,weekends:1,weekendMethod:"paylines",
+    hourlyRate:24.51,ktaRate:25.07,rulesConfirmed:false}),/Vahvista/);
+  assert.throws(()=>weekendEstimate(8,8,0,25.07),/positiiviset/);
+  assert.throws(()=>weekendEstimate(8,8,24.51,0),/positiiviset/);
+  assert.throws(()=>weekendEstimate(25,8,24.51,25.07),/Lauantain/);
+  const unknown=suggest(backup(hourly.slice(0,2)));
+  assert.equal(unknown.wageModel,"unknown");
+  assert.equal(unknown.rateSamples,2);
+  assert.equal(unknown.ktaSamples,2);
+  const mixed=backup(hourly.map((r,i)=>({...r,
+    incomeSourceId:i===2?'job-b':'job'})));
+  const unknownPayer=suggest(mixed);
+  assert.equal(unknownPayer.comparable,false);
+  assert.equal(unknownPayer.avgHourlyRate,null);
+  assert.equal(unknownPayer.ktaRate,null);
+  assert.equal(unknownPayer.ktaSamples,0);
 });
