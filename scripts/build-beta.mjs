@@ -363,9 +363,8 @@ const yearField = plannerHtml.match(/<div class="field"><label for="planYear">[^
 if (!yearField) throw new Error('Missing planning year field');
 const plannerLayout = replaceUnique(plannerHtml.replace(yearField, ''), '<section class="card" aria-labelledby="history-title">', `<section class="card" aria-labelledby="history-title">
     ${yearField}
-    <p><a href="#results-title">Siirry tuloksiin</a></p>`, 'planning history and year')
-  .replace('<h2 id="tax-title">3. Vertaile kahta verokorttia</h2>', '<h2 id="tax-title">3. Vertaile kahta verokorttia</h2><a href="#results-title">Siirry tuloksiin</a>')
-  .replace('<h2 id="results-title">4. Mitä näistä jää?</h2>', '<h2 id="results-title">4. Mitä näistä jää?</h2><nav aria-label="Muokkaa suunnitelmaa"><a href="#income-title">Ansiot</a> · <a href="#weekends-title">Viikonloput</a> · <a href="#tax-title">Verokortit</a></nav>');
+    <p><a href="#betaABHeading">Siirry tuloksiin</a></p>`, 'planning history and year')
+  .replace('<h2 id="tax-title">3. Vertaile kahta verokorttia</h2>', '<h2 id="tax-title">3. Vertaile kahta verokorttia</h2><a href="#betaABHeading">Siirry tuloksiin</a>');
 const plannerWithTheme = replaceUnique(plannerLayout, '</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + '\n</style>', 'planner style');
 await writeFile(plannerPath, replaceUnique(plannerWithTheme, '</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>', 'planner scripts'));

@@ -269,11 +269,11 @@ export function installCompact() {
       .shell{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))!important}
       html{scroll-padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
       .beta-topic-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:5px;background:#17252b;border:1px solid #34464b;border-radius:12px;position:sticky;top:6px;z-index:30;margin:8px 0 12px;scroll-margin-top:8px}
-      .beta-topic-button{min-width:0;padding:11px 2px!important;border-radius:8px;background:transparent!important;color:#bac9d1!important;font-size:clamp(.69rem,2.8vw,.86rem)!important}
+      .beta-topic-button{min-width:0;white-space:normal;overflow-wrap:anywhere;padding:11px 2px!important;border-radius:8px;background:transparent!important;color:#bac9d1!important;font-size:clamp(.69rem,2.8vw,.86rem)!important}
       .beta-topic-button.active{background:#34544c!important;color:#f2fff8!important}
       .beta-topic-pane[hidden]{display:none!important}
       .beta-topic-pane{min-width:0}
-      .beta-topic-pane .card{margin:9px 0}
+      .beta-topic-pane .card{margin:9px 0;min-width:0;overflow-wrap:anywhere}
       @media(max-width:370px){.beta-topic-button{font-size:.68rem!important}}
     `;
     document.head.append(css);
