@@ -342,7 +342,7 @@ function mount() {
   extra.className='beta-ab-progress-details';
   extra.append(progress);
   oldComparison.insertAdjacentElement('afterend',extra);
-  // Deep figures stay mounted, but a single deliberate expansion reveals them.
+  // Core result figures remain mounted and immediately visible; no hidden mega-panel.
   const results=document.getElementById('results-title')?.closest('section.card');
   const curves=document.getElementById('curves-title')?.closest('section.card');
   if(!results||!curves)throw new Error('Missing detailed planner sections');
@@ -363,8 +363,7 @@ function mount() {
   const limits=[...oldComparison.querySelectorAll('details')].find(node=>
     node.querySelector('summary')?.textContent.includes('Mitä tässä mallissa'));
   if(limits){const p=limits.querySelector('p');if(p){p.classList.add('hint');limits.replaceWith(p);}}
-  // Keep C in the same comparison group as A/B. On narrow phones it spans
-  // both columns rather than compressing three numeric cards into tiny widths.
+  // C is now its own goal-search section, never a third tax-card comparison.
 
   // Keep the verified shared-scenario calculation as an internal A-reference.
   // Its duplicate week-count selector and presets are unnecessary once the
@@ -754,6 +753,7 @@ function mount() {
   const markCoincidentSegments=(hostId,names)=>{
     const host=document.getElementById(hostId),svg=host?.querySelector('svg');
     if(!svg)return;
+    for(const old of svg.querySelectorAll('line[data-beta-shared]'))old.remove();
     const paths=[...svg.querySelectorAll('polyline.line')];
     const sets=paths.map(path=>String(path.getAttribute('points')||'').trim().split(/\s+/)
       .map(pair=>pair.split(',').map(Number)).filter(p=>p.length===2&&p.every(Number.isFinite)));
@@ -766,6 +766,7 @@ function mount() {
           if(Math.abs(p[0]-r[0])>.001||Math.abs(p[1]-r[1])>.001||
              Math.abs(q[0]-t[0])>.001||Math.abs(q[1]-t[1])>.001)continue;
           const shared=document.createElementNS('http://www.w3.org/2000/svg','line');
+          shared.setAttribute('data-beta-shared','true');
           for(const [key,val] of Object.entries({x1:p[0],y1:p[1],x2:q[0],y2:q[1],
             stroke:'#edf5ff','stroke-width':'4','stroke-linecap':'round'}))
             shared.setAttribute(key,String(val));
