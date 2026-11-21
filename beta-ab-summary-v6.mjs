@@ -755,7 +755,7 @@ function mount() {
     const host=document.getElementById(hostId),svg=host?.querySelector('svg');
     if(!svg)return;
     const paths=[...svg.querySelectorAll('polyline.line')];
-    const sets=paths.map(path=>String(path.getAttribute('points')||'').trim().split(/\\s+/)
+    const sets=paths.map(path=>String(path.getAttribute('points')||'').trim().split(/\s+/)
       .map(pair=>pair.split(',').map(Number)).filter(p=>p.length===2&&p.every(Number.isFinite)));
     const commonNames=new Set();
     for(let i=0;i<sets.length;i++)for(let j=i+1;j<sets.length;j++){
