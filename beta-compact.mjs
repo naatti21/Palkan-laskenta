@@ -197,6 +197,103 @@ export function installCompact() {
     }
     sources.hidden = groups.size < 2;
   });
+
+  // Beta navigation: visible topic switches, no nested analysis accordions.
+  // Move the existing live DOM nodes; never duplicate inputs, IDs or calculations.
+  const analysisView = document.querySelector('[data-view="analysis"]');
+  if (analysisView && !byId("betaAnalysisTopics")) {
+    const topics = [
+      {id:"pay",label:"Palkat"},
+      {id:"hours",label:"Ylityöt"},
+      {id:"detail",label:"Erittelyt"},
+      {id:"tools",label:"Työkalut"}
+    ];
+    const nav = node("nav","","beta-topic-nav");
+    nav.id="betaAnalysisTopics";
+    nav.setAttribute("aria-label","Analyysin aihe");
+    const panes = new Map();
+    for (const topic of topics) {
+      const button=node("button",topic.label,"beta-topic-button");
+      button.type="button";
+      button.dataset.topic=topic.id;
+      button.setAttribute("aria-controls","beta-topic-"+topic.id);
+      nav.append(button);
+      const pane=node("div","","beta-topic-pane");
+      pane.id="beta-topic-"+topic.id;
+      pane.setAttribute("role","region");
+      pane.setAttribute("aria-label",topic.label);
+      panes.set(topic.id,pane);
+    }
+    const choose = id => {
+      for(const button of nav.querySelectorAll("button")){
+        const selected=button.dataset.topic===id;
+        button.classList.toggle("active",selected);
+        button.setAttribute("aria-pressed",String(selected));
+      }
+      for(const [key,pane] of panes) pane.hidden=key!==id;
+    };
+    nav.addEventListener("click",event=>{
+      const button=event.target.closest("button[data-topic]");
+      if(!button)return;
+      choose(button.dataset.topic);
+      // Changing topics should not strand the reader halfway down a long page.
+      nav.scrollIntoView({block:"start",behavior:"instant"});
+    });
+    // The generated Beta wraps most analysis cards in details. Remove only
+    // navigation wrappers, keeping the actual cards and all their event wiring.
+    for(const wrapper of [...analysisView.querySelectorAll("details.analysis-collection, details.compact-analysis-deep")]){
+      const cards=[...wrapper.querySelectorAll("section.card")];
+      for(const card of cards) wrapper.before(card);
+      wrapper.remove();
+    }
+    const cards=[...analysisView.querySelectorAll(":scope > section.card")];
+    const byHeading = card => card.querySelector("h2")?.textContent?.trim() || "";
+    const hoursHeadings=new Set(["Ylityöerittely","Ylityöt ja lisät","Palkkalajien ylityöerittely","Työaikapankki","Palkkakauden ja maksupäivän ero"]);
+    const toolsHeadings=new Set(["Mitä nettopalkasta voisi tehdä?","Nettoansiotavoitteen arvio"]);
+    for(const card of cards){
+      if(card.classList.contains("beta-replaced")||card.classList.contains("hidden"))continue;
+      const heading=byHeading(card);
+      const label=card.textContent||"";
+      let topic="detail";
+      if(card.querySelector("#analysisMetrics")||card.querySelector("#monthlyChart")||
+         card.querySelector("#incomeBreakdown"))topic="pay";
+      else if(card.querySelector("#overtimeBreakdown")||card.querySelector("#bankSummary")||
+              card.querySelector("#periodSummary")||hoursHeadings.has(heading))topic="hours";
+      else if(card.querySelector("#budgetSummary")||card.querySelector("#netGoalResult")||
+              toolsHeadings.has(heading))topic="tools";
+      else if(card.querySelector("#monthlyDetails"))topic="detail";
+      panes.get(topic).append(card);
+    }
+    const tracker=byId("betaWeekendTracker");
+    if(tracker)panes.get("hours").prepend(tracker);
+    const law=byId("betaWorkTimeLaw");
+    if(law)panes.get("hours").append(law);
+    // Insert before all analysis content, then group cards into their topics.
+    analysisView.prepend(nav);
+    for(const topic of topics)analysisView.append(panes.get(topic.id));
+    choose("pay");
+    // Leave any hidden legacy experiment nodes in place for existing JS bindings.
+    const css=node("style","");
+    css.textContent=`
+      .tabs{position:fixed!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(880px,calc(100% - 16px));z-index:90;margin:0!important;padding:5px!important;box-shadow:0 8px 28px #000b}
+      .shell{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))!important}
+      .tabs .tab{min-width:0;padding:9px 2px!important;font-size:clamp(.66rem,2.6vw,.85rem)!important;display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap}
+      .tabs .tab svg{width:19px;height:19px;flex:none}
+      .beta-topic-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:5px;background:#17252b;border:1px solid #34464b;border-radius:12px;position:sticky;top:6px;z-index:30;margin:8px 0 12px;scroll-margin-top:8px}
+      .beta-topic-button{min-width:0;padding:11px 2px!important;border-radius:8px;background:transparent!important;color:#bac9d1!important;font-size:clamp(.69rem,2.8vw,.86rem)!important}
+      .beta-topic-button.active{background:#34544c!important;color:#f2fff8!important}
+      .beta-topic-pane[hidden]{display:none!important}
+      .beta-topic-pane{min-width:0}
+      .beta-topic-pane .card{margin:9px 0}
+      @media(max-width:370px){.tabs .tab svg{width:17px;height:17px}.beta-topic-button{font-size:.68rem!important}}
+    `;
+    document.head.append(css);
+  }
+  // Bottom navigation remains available from any scroll depth.
+  for(const button of document.querySelectorAll(".tabs .tab")){
+    button.addEventListener("click",()=>window.scrollTo({top:0,behavior:"instant"}));
+  }
+
   const paths = {
     tracking:"M3 11 12 3l9 8 M5 10v11h5v-7h4v7h5V10",
     history:"M4 5h16 M4 12h16 M4 19h16",
