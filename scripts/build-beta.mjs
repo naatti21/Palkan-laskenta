@@ -365,7 +365,10 @@ const plannerLayout = replaceUnique(plannerHtml.replace(yearField, ''), '<sectio
     ${yearField}
     <p><a href="#betaABHeading">Siirry tuloksiin</a></p>`, 'planning history and year')
   .replace('<h2 id="tax-title">3. Vertaile kahta verokorttia</h2>', '<h2 id="tax-title">3. Vertaile kahta verokorttia</h2><a href="#betaABHeading">Siirry tuloksiin</a>');
-const plannerWithTheme = replaceUnique(plannerLayout, '</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + '\n</style>', 'planner style');
+const plannerNavigationCss = `
+  html.beta-integrated a[href^="#"] { display:inline-flex;align-items:center;min-height:44px;color:var(--cyan) }
+`;
+const plannerWithTheme = replaceUnique(plannerLayout, '</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + plannerNavigationCss + '\n</style>', 'planner style');
 await writeFile(plannerPath, replaceUnique(plannerWithTheme, '</body>',
   '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>', 'planner scripts'));
 html = replaceUnique(html, '<div id="history"></div>', `<div class="ledger-switch" role="group" aria-label="Historian näkymä">
