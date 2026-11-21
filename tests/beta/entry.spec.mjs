@@ -410,7 +410,7 @@ test("cumulative net difference identifies maximum lead and shrinking phase",asy
  await expect(planner.locator("#rateUncertainty")).toHaveValue("1");
  await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(3);
  await expect(planner.locator("#sensitivitySummary")).toContainText("Ääriarvojen vaihteluväli");
- await planner.locator("#sensitivityPanel > summary").click();
+ await expect(planner.locator("#sensitivityPanel")).toBeVisible();
  await planner.locator("#rateUncertainty").selectOption("0");
  await expect(planner.locator("#netDifferenceChart svg polyline")).toHaveCount(1);
  await expect(planner.locator("#sensitivitySummary")).toContainText("Ei lisäepävarmuutta");
@@ -438,7 +438,7 @@ test("inverse net target solves A and B minimum weekends and does not bypass cap
  const p=page.frameLocator("#plannerFrame");
   await expect(p.locator("#plannerAdvanced")).toBeVisible();
  await expect(p.locator("#inverseGoalPanel")).toBeVisible();
- await p.locator("#inverseGoalPanel > summary").click();
+ await expect(p.locator("#inverseGoalPanel")).toBeVisible();
  await expect(p.locator("#inverseGoalResults")).toContainText("Anna nettotavoite");
  await p.locator("#baseGross").fill("50000");
  await p.locator("#weekendGross").fill("1000");
