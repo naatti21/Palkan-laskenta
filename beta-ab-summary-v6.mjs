@@ -466,6 +466,8 @@ function mount() {
      .planner-visible-panel{margin:12px 0;padding:10px 11px;border:1px solid #344956;border-radius:10px;min-width:0;}
      .planner-visible-panel>.planner-visible-heading{margin:0 0 9px;font-size:.91rem;line-height:1.38;color:#ecf4ff;}
      .planner-visible-panel>.comparison-table-wrap{max-width:100%;}
+     #allComparisonsTable[hidden]{display:none!important;}
+     .beta-all-comparisons-toggle{min-height:44px;max-width:100%;white-space:normal;text-align:left;}
      .planner-visible-panel.planner-visible-plain{border:0;padding:0;margin:9px 0;}
      html.beta-integrated .shell>.eyebrow,
      html.beta-integrated .shell>h1,
@@ -914,14 +916,40 @@ function mount() {
       panel.className=(disclosure.className||'')+' planner-visible-panel';
       if(disclosure.id)panel.id=disclosure.id;
       const heading=disclosure.querySelector(':scope > summary');
-      if(heading){
-        const title=document.createElement('h3');
-        title.className='planner-visible-heading';
-        title.append(...heading.childNodes);
-        panel.append(title);
-        heading.remove();
+      if(disclosure.id==='allComparisons'){
+        // The 53-row expert table is optional; keep its DOM mounted so the
+        // calculation and the C-column remain live while it is hidden.
+        if(heading)heading.remove();
+        panel.append(...disclosure.childNodes);
+        const table=panel.querySelector('.comparison-table-wrap');
+        if(table){
+          table.id='allComparisonsTable';
+          table.hidden=true;
+          const toggle=document.createElement('button');
+          toggle.id='allComparisonsToggle';
+          toggle.type='button';
+          toggle.className='chip beta-all-comparisons-toggle';
+          toggle.setAttribute('aria-controls',table.id);
+          toggle.setAttribute('aria-expanded','false');
+          toggle.textContent='Näytä kaikki 53 vertailuriviä';
+          toggle.addEventListener('click',()=>{
+            const opening=table.hidden;
+            table.hidden=!opening;
+            toggle.setAttribute('aria-expanded',String(opening));
+            toggle.textContent=opening?'Piilota 53 vertailuriviä':'Näytä kaikki 53 vertailuriviä';
+          });
+          panel.prepend(toggle);
+        }
+      } else {
+        if(heading){
+          const title=document.createElement('h3');
+          title.className='planner-visible-heading';
+          title.append(...heading.childNodes);
+          panel.append(title);
+          heading.remove();
+        }
+        panel.append(...disclosure.childNodes);
       }
-      panel.append(...disclosure.childNodes);
       disclosure.replaceWith(panel);
     }
   }
