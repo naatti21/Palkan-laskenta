@@ -74,9 +74,12 @@ test("Calculator is on its own tab and Analysis remains independently expandable
 });
 
 test("narrow navigation keeps tool inputs and calculator edits across views", async ({ page }) => {
+  const startupErrors = [];
+  page.on("pageerror", error => startupErrors.push(error.message));
   for (const width of [320,390]) {
     await page.setViewportSize({width,height:760});
     await page.goto("/");
+    expect(startupErrors).toEqual([]);
     await page.locator('[data-view-target="analysis"]').click();
     for (const [topic, selector] of [["Palkat","#monthlyChart"],["Ylityöt","#betaWeekendTracker"],["Erittelyt","#monthlyDetails"],["Työkalut","#netGoal"]]) {
       await page.getByRole("button",{name:topic,exact:true}).click();

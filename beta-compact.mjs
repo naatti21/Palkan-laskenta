@@ -232,13 +232,13 @@ export function installCompact() {
       overtimeBreakdown:"hours", bankSummary:"hours", periodSummary:"hours",
       monthlyDetails:"detail", budgetSummary:"tools", netGoalResult:"tools"
     };
+    // Keep the year selector and overview heading available across all topics.
+    const overview = byId("analysisMetrics").closest("section");
+    analysisView.prepend(overview.querySelector(".section-heading"));
     for (const card of analysisView.querySelectorAll(":scope > section.card:not(.beta-replaced)")) {
       const content = Object.keys(topicByContent).find(id => card.contains(byId(id)));
       panes.get(topicByContent[content] ?? "detail").append(card);
     }
-    // Keep the year selector and overview heading available across all topics.
-    const overview = byId("analysisMetrics").closest("section");
-    analysisView.prepend(overview.querySelector(".section-heading"));
     const tracker=byId("betaWeekendTracker");
     if(tracker)panes.get("hours").prepend(tracker);
     const law=byId("betaWorkTimeLaw");
