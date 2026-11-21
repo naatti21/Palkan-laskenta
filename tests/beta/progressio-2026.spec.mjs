@@ -104,6 +104,16 @@ test('beta calculator has no hidden disclosure menus, preserving all core contro
     await expect(frame.locator(id)).toBeVisible();
   }
   await expect(frame.locator('#allSamples tr')).toHaveCount(53);
+  const toggle=frame.locator('#allComparisonsToggle');
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
+  await expect(frame.locator('#allComparisonsTable')).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded','true');
+  await expect(frame.locator('#allComparisonsTable')).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
+  await expect(frame.locator('#allComparisonsTable')).toBeHidden();
   const overflow=await frame.locator('.shell').evaluate(el=>({
     viewport:innerWidth,actual:document.documentElement.scrollWidth
   }));
