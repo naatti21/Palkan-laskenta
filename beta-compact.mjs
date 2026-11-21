@@ -250,18 +250,15 @@ export function installCompact() {
     // Leave any hidden legacy experiment nodes in place for existing JS bindings.
     const css=node("style","");
     css.textContent=`
-      .tabs{position:fixed!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(880px,calc(100% - 16px));z-index:90;margin:0!important;padding:5px!important;box-shadow:0 8px 28px #000b}
       .shell{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))!important}
       html{scroll-padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
-      .tabs .tab{min-width:0;padding:9px 2px!important;font-size:clamp(.66rem,2.6vw,.85rem)!important;display:flex;flex-direction:column;align-items:center;gap:3px;white-space:normal;overflow-wrap:anywhere}
-      .tabs .tab svg{width:19px;height:19px;flex:none}
       .beta-topic-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:5px;background:#17252b;border:1px solid #34464b;border-radius:12px;position:sticky;top:6px;z-index:30;margin:8px 0 12px;scroll-margin-top:8px}
       .beta-topic-button{min-width:0;padding:11px 2px!important;border-radius:8px;background:transparent!important;color:#bac9d1!important;font-size:clamp(.69rem,2.8vw,.86rem)!important}
       .beta-topic-button.active{background:#34544c!important;color:#f2fff8!important}
       .beta-topic-pane[hidden]{display:none!important}
       .beta-topic-pane{min-width:0}
       .beta-topic-pane .card{margin:9px 0}
-      @media(max-width:370px){.tabs .tab svg{width:17px;height:17px}.beta-topic-button{font-size:.68rem!important}}
+      @media(max-width:370px){.beta-topic-button{font-size:.68rem!important}}
     `;
     document.head.append(css);
   }
