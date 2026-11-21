@@ -14,7 +14,10 @@ test('A and B choose independent weekend counts in the first cards and share tes
   await expect(frame.locator('#betaWeekendsReset')).toHaveCount(0);
   await expect(frame.locator('#weekends')).toBeHidden();
   const topOrder=await frame.locator('#betaAnnualABSummary').evaluate(el=>
-    !!(el.compareDocumentPosition(document.getElementById('weekends-title'))&
+    ['weekends-title','tax-title'].every(id=>
+      !!(el.compareDocumentPosition(document.getElementById(id))&
+        Node.DOCUMENT_POSITION_PRECEDING)) &&
+    !!(el.compareDocumentPosition(document.getElementById('betaCGoalSection'))&
       Node.DOCUMENT_POSITION_FOLLOWING));
   expect(topOrder).toBe(true);
 
@@ -90,7 +93,7 @@ test('A/B cards stay within 320 / 360 / 412 px mobile viewports',async({page})=>
 });
 
 
-test('C is a real optimizer alongside A/B: no arbitrary optimum, then minimum workload for a net goal',async({page})=>{
+test('C remains a distinct net-goal optimizer after A/B: no arbitrary optimum, then minimum workload',async({page})=>{
   await page.setViewportSize({width:360,height:800});
   await page.goto('/index.html');
   await page.getByRole('button',{name:'Laskuri'}).click();
@@ -103,7 +106,8 @@ test('C is a real optimizer alongside A/B: no arbitrary optimum, then minimum wo
     afterB:!!(document.querySelector('.beta-ab-b').compareDocumentPosition(el)&
       Node.DOCUMENT_POSITION_FOLLOWING)
   }));
-  expect(sameGroup).toEqual({insideAB:true,sameCards:true,afterB:true});
+  expect(sameGroup).toEqual({insideAB:false,sameCards:false,afterB:true});
+  await expect(p.locator('#betaCGoalSection')).toBeVisible();
   await p.locator('#planYear').fill('2026');
   await p.locator('#baseGross').fill('35000');
   await p.locator('#weekendGross').fill('1000');
