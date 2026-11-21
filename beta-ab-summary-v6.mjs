@@ -157,6 +157,7 @@ function mount() {
   section.innerHTML=`
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
     <h2 id="betaABHeading">Vuosiansio · A / B / C</h2>
+    <nav aria-label="Muokkaa suunnitelmaa"><a href="#income-title">Ansiot</a> · <a href="#weekends-title">Viikonloput</a> · <a href="#tax-title">Verokortit</a></nav>
     <p class="beta-ab-description">A ja B: omat verokorttiarviot. C: lisätyön hyöty ja tarvittava työmäärä vuoden 2026 veroviitteellä.</p>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
