@@ -295,13 +295,13 @@ test("expanded analytics shows cash date, cross-year period, OT evidence, budget
   await expect(page.locator("#overtimeBreakdown")).toContainText("11,13");
   await expect(page.locator("#bankSummary")).toContainText("−0,5");
   await expect(page.locator("#plannerFrame")).toBeHidden();
-  await page.locator(".analysis-collection").first().locator(":scope > summary").click();
+  await page.getByRole("button",{name:"Erittelyt",exact:true}).click();
   await expect(page.locator("#monthlyDetails .month-expand")).toHaveCount(1);
   await expect(page.locator(".beta-compact-months")).not.toHaveAttribute("open", "");
   await expect(page.locator(".beta-compact-months > h3")).toHaveText("Kuukausien erittely");
   await page.locator("#monthlyDetails .month-expand summary").click();
   await expect(page.locator("#monthlyDetails")).toContainText("1 846,70");
-  await page.locator(".analysis-collection").last().locator(":scope > summary").click();
+  await page.getByRole("button",{name:"Työkalut",exact:true}).click();
   await expect(page.locator("#budgetSource")).toHaveValue("typical");
   await expect(page.locator("#budgetSummary")).toContainText("2 082,69");
   await page.locator("#budgetSource").selectOption("month");

@@ -4,6 +4,7 @@ test('Analysis shows user-confirmed worked weekends, never guesses from overtime
   await page.setViewportSize({width:360,height:800});
   await page.goto('/index.html');
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   await expect(page.locator('#betaWeekendTracker')).toBeVisible();
   await expect(page.locator('#betaWeekendDone')).toHaveText('–');
   await expect(page.locator('#betaWeekendGoal')).toHaveText('–');
@@ -24,6 +25,7 @@ test('Analysis shows user-confirmed worked weekends, never guesses from overtime
   })).toEqual({done:4,goal:12});
   await page.reload();
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   await expect(page.locator('#betaWeekendDone')).toHaveText('4');
   await expect(page.locator('#betaWeekendGoal')).toHaveText('12');
 });
@@ -42,6 +44,7 @@ test('C target saves only for its planner work year, without rewriting actual co
   await p.locator('#betaCUseGoal').click();
   await expect(p.locator('#betaCStatus')).toContainText('Tavoite 17 viikonloppua tallennettu');
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   await expect(page.locator('#betaWeekendGoal')).toHaveText('17');
   await expect(page.locator('#betaWeekendDone')).toHaveText('–');
   await page.locator('#betaWeekendAdd').click();
@@ -54,6 +57,7 @@ test('C target saves only for its planner work year, without rewriting actual co
     return getSetting('beta:workweekends:v1:2027');
   })).toBeNull();
   await page.getByRole('button',{name:'Analyysi'}).click();
+  await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
   await expect(page.locator('#betaWeekendDone')).toHaveText('1');
   await expect(page.locator('#betaWeekendGoal')).toHaveText('17');
 });

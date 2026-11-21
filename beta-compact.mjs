@@ -18,18 +18,22 @@ function sum(rows,key) {
 
 export function installCompact() {
   installWeekendTracker();
-  // One focused deep-dive instead of many full-height analysis cards.
-  const analysis=document.querySelector('[data-view="analysis"]');
-  if(analysis&&!analysis.querySelector('#betaAnalysisDeepDive')){
-    const sections=[...analysis.children].filter(n=>n.matches?.('section.card'));
-    if(sections.length>2){
-      const more=node('details','','compact-analysis-deep');
-      more.id='betaAnalysisDeepDive';
-      more.append(node('summary','Tarkemmat palkka- ja työaikatiedot'));
-      sections[2].before(more);
-      for(const section of sections.slice(2))more.append(section);
-    }
-  }
+  const planner = byId("plannerFrame");
+  const bindPlannerLinks = () => {
+    const doc = planner.contentDocument;
+    doc?.addEventListener("click", event => {
+      const link = event.target.closest('a[href^="#"]');
+      const target = link && doc.getElementById(link.hash.slice(1));
+      if (!target) return;
+      event.preventDefault();
+      target.tabIndex = -1;
+      target.focus({preventScroll:true});
+      const top = planner.getBoundingClientRect().top + window.scrollY + target.getBoundingClientRect().top;
+      window.scrollTo({top:top-12,behavior:"instant"});
+    });
+  };
+  if (planner.contentDocument?.readyState === "complete") bindPlannerLinks();
+  planner.addEventListener("load", bindPlannerLinks);
   // Beta-only, information-first legal view: payslips contain pay-period
   // overtime observations but cannot establish a 48 h weekly average or
   // remaining legal capacity without actual work-time records.
@@ -197,6 +201,88 @@ export function installCompact() {
     }
     sources.hidden = groups.size < 2;
   });
+
+  // Beta navigation: visible topic switches, no nested analysis accordions.
+  // Move the existing live DOM nodes; never duplicate inputs, IDs or calculations.
+  const analysisView = document.querySelector('[data-view="analysis"]');
+  if (analysisView && !byId("betaAnalysisTopics")) {
+    const topics = [
+      {id:"pay",label:"Palkat"},
+      {id:"hours",label:"Ylityöt"},
+      {id:"detail",label:"Erittelyt"},
+      {id:"tools",label:"Työkalut"}
+    ];
+    const nav = node("nav","","beta-topic-nav");
+    nav.id="betaAnalysisTopics";
+    nav.setAttribute("aria-label","Analyysin aihe");
+    const panes = new Map();
+    for (const topic of topics) {
+      const button=node("button",topic.label,"beta-topic-button");
+      button.type="button";
+      button.dataset.topic=topic.id;
+      button.setAttribute("aria-controls","beta-topic-"+topic.id);
+      nav.append(button);
+      const pane=node("div","","beta-topic-pane");
+      pane.id="beta-topic-"+topic.id;
+      pane.setAttribute("role","region");
+      pane.setAttribute("aria-label",topic.label);
+      panes.set(topic.id,pane);
+    }
+    const choose = id => {
+      for(const button of nav.querySelectorAll("button")){
+        const selected=button.dataset.topic===id;
+        button.classList.toggle("active",selected);
+        button.setAttribute("aria-pressed",String(selected));
+      }
+      for(const [key,pane] of panes) pane.hidden=key!==id;
+    };
+    nav.addEventListener("click",event=>{
+      const button=event.target.closest("button[data-topic]");
+      if(!button)return;
+      choose(button.dataset.topic);
+      // Changing topics should not strand the reader halfway down a long page.
+      nav.scrollIntoView({block:"start",behavior:"instant"});
+    });
+    const topicByContent = {
+      analysisMetrics:"pay", monthlyChart:"pay", incomeBreakdown:"pay",
+      overtimeBreakdown:"hours", bankSummary:"hours", periodSummary:"hours",
+      monthlyDetails:"detail", budgetSummary:"tools", netGoalResult:"tools"
+    };
+    // Keep the year selector and overview heading available across all topics.
+    const overview = byId("analysisMetrics").closest("section");
+    analysisView.prepend(overview.querySelector(".section-heading"));
+    const tracker=byId("betaWeekendTracker");
+    if(tracker)panes.get("hours").prepend(tracker);
+    const law=byId("betaWorkTimeLaw");
+    if(law)panes.get("hours").append(law);
+    for (const card of analysisView.querySelectorAll(":scope > section.card:not(.beta-replaced)")) {
+      const content = Object.keys(topicByContent).find(id => card.contains(byId(id)));
+      panes.get(topicByContent[content] ?? "detail").append(card);
+    }
+    // Insert before all analysis content, then group cards into their topics.
+    analysisView.querySelector(".section-heading").after(nav);
+    for(const topic of topics)analysisView.append(panes.get(topic.id));
+    choose("pay");
+    // Leave any hidden legacy experiment nodes in place for existing JS bindings.
+    const css=node("style","");
+    css.textContent=`
+      .shell{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))!important}
+      html{scroll-padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
+      .beta-topic-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:5px;background:#17252b;border:1px solid #34464b;border-radius:12px;position:sticky;top:6px;z-index:30;margin:8px 0 12px;scroll-margin-top:8px}
+      .beta-topic-button{min-width:0;white-space:normal;overflow-wrap:anywhere;padding:11px 2px!important;border-radius:8px;background:transparent!important;color:#bac9d1!important;font-size:clamp(.69rem,2.8vw,.86rem)!important}
+      .beta-topic-button.active{background:#34544c!important;color:#f2fff8!important}
+      .beta-topic-pane[hidden]{display:none!important}
+      .beta-topic-pane{min-width:0}
+      .beta-topic-pane .card{margin:9px 0;min-width:0;overflow-wrap:anywhere}
+      @media(max-width:370px){.beta-topic-button{font-size:.68rem!important}}
+    `;
+    document.head.append(css);
+  }
+  // Bottom navigation remains available from any scroll depth.
+  for(const button of document.querySelectorAll(".tabs .tab")){
+    button.addEventListener("click",()=>window.scrollTo({top:0,behavior:"instant"}));
+  }
+
   const paths = {
     tracking:"M3 11 12 3l9 8 M5 10v11h5v-7h4v7h5V10",
     history:"M4 5h16 M4 12h16 M4 19h16",
