@@ -100,3 +100,32 @@ test("narrow navigation keeps tool inputs and calculator edits across views", as
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   }
 });
+
+test("visible C-goal workflow and shared chart segments do not hide outcomes",async({page})=>{
+  await page.setViewportSize({width:360,height:800});
+  await page.goto("/index.html");
+  await page.getByRole("button",{name:"Laskuri"}).click();
+  const frame=page.frameLocator("#plannerFrame");
+  for(const selector of ["#weekendPayDetails","#betaCGoalSection","#plannerAdvanced",
+    "#betaABYearA","#netChart","#netDifferenceChart"])
+    await expect(frame.locator(selector)).toBeVisible();
+  const order=await frame.locator("body").evaluate(()=>[
+    "weekendPayDetails","tax-title","betaAnnualABSummary","betaCGoalSection","plannerAdvanced"
+  ].map(id=>document.getElementById(id))
+   .map(el=>[el.id,el.getBoundingClientRect().top + window.scrollY])
+   .sort((a,b)=>a[1]-b[1]).map(a=>a[0]));
+  expect(order).toEqual(["weekendPayDetails","tax-title","betaAnnualABSummary",
+    "betaCGoalSection","plannerAdvanced"]);
+  await frame.locator("#baseGross").fill("52000");
+  await frame.locator("#weekendGross").fill("1000");
+  await frame.locator("#rateA").fill("30");
+  await frame.locator("#rateB").fill("30");
+  await frame.locator("#limitA").fill("77000");
+  await frame.locator("#limitB").fill("77000");
+  await expect(frame.locator("#netChartSharedNote")).toContainText("A = B");
+  await expect(frame.locator("#grossChartSharedNote")).toContainText("A:n tuloraja = B:n tuloraja");
+  await frame.locator("#betaCTarget").fill("3500");
+  await expect(frame.locator("#betaCReason")).not.toBeEmpty();
+  await expect(frame.locator("#betaCFreeWeekends")).not.toBeEmpty();
+  await expect(frame.locator("#betaABYearA")).toHaveText(await frame.locator("#betaABYearB").textContent());
+});

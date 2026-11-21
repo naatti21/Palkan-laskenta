@@ -246,7 +246,57 @@ function mount() {
   // second calculator bolted on after the charts.
   const weekendsPanel=document.getElementById('weekends-title')?.closest('section.card');
   if(!weekendsPanel)throw new Error('Missing planner weekend section');
-  weekendsPanel.before(section);
+  // The workflow goes from source figures and KTA confirmation to tax cards,
+  // then to the A/B result and only then to C's distinct net-goal tool.
+  const incomePanel=document.getElementById('income-title')?.closest('section.card');
+  const taxPanel=document.getElementById('tax-title')?.closest('section.card');
+  if(!incomePanel||!taxPanel)throw new Error('Missing calculator input sections');
+  const ktaDisclosure=document.getElementById('weekendPayDetails');
+  if(ktaDisclosure){
+    const ktaPanel=document.createElement('section');
+    ktaPanel.id='weekendPayDetails';
+    ktaPanel.className='beta-kta-panel';
+    ktaPanel.setAttribute('aria-labelledby','betaKtaHeading');
+    const ktaHeading=document.createElement('h3');
+    ktaHeading.id='betaKtaHeading';
+    ktaHeading.textContent='Tarkista KTA ja viikonlopun korvausarvio';
+    ktaPanel.append(ktaHeading);
+    for(const child of [...ktaDisclosure.children]){
+      if(child.tagName!=='SUMMARY')ktaPanel.append(child);
+    }
+    ktaDisclosure.replaceWith(ktaPanel);
+    const proposal=document.getElementById('weekendDataSuggestion');
+    const confirmation=ktaPanel.querySelector('label:has(#rulesConfirmed)');
+    if(proposal&&confirmation){
+      confirmation.after(proposal);
+      const apply=proposal.querySelector('#weekendUseHistoryGross');
+      if(apply)apply.textContent='Hyväksy ehdotus 16 h brutoksi';
+    }
+  }
+  taxPanel.insertAdjacentElement('afterend',section);
+  const cPanel=section.querySelector('.beta-ab-c');
+  if(!cPanel)throw new Error('Missing C goal card');
+  const goalSection=document.createElement('section');
+  goalSection.id='betaCGoalSection';
+  goalSection.className='card beta-c-goal';
+  goalSection.setAttribute('aria-labelledby','betaCGoalHeading');
+  const cHeading=document.createElement('h2');
+  cHeading.id='betaCGoalHeading';
+  cHeading.textContent='Nettotavoitehaku · C';
+  const cIntro=document.createElement('p');
+  cIntro.className='hint';
+  cIntro.textContent='Määritä haluamasi kuukausinetto. Näet vähimmäismäärän työviikonloppuja, jos tavoite on saavutettavissa. C käyttää vuoden 2026 yleistä veroviitettä, ei A/B-verokorttien prosentteja.';
+  goalSection.append(cHeading,cIntro,cPanel);
+  const duplicateCHeading=cPanel.querySelector('h3');
+  if(duplicateCHeading)duplicateCHeading.remove();
+  const cTarget=goalSection.querySelector('label[for="betaCTarget"]');
+  if(cTarget)cTarget.firstChild.textContent='Tavoiteltu netto kuukaudessa (€) · valinnainen';
+  const freeWeekends=document.createElement('p');
+  freeWeekends.id='betaCFreeWeekends';
+  freeWeekends.className='hint';
+  freeWeekends.setAttribute('aria-live','polite');
+  cPanel.querySelector('#betaCCount')?.after(freeWeekends);
+  section.insertAdjacentElement('afterend',goalSection);
   const cards=[section.querySelector('.beta-ab-a'),section.querySelector('.beta-ab-b')];
   const labels=[...section.querySelectorAll('.beta-ab-workload-grid label')];
   if(cards.some(x=>!x)||labels.length!==2)throw new Error('Missing A/B input cards');
@@ -263,8 +313,8 @@ function mount() {
   const caution=document.createElement('summary');
   caution.textContent='Miten arviot on laskettu?';
   caveats.append(caution,...section.querySelectorAll('.beta-ab-caveat'));
-  section.append(caveats);
-  // One explanation area rather than multiple nested dropdown menus.
+  goalSection.append(caveats);
+  // One supporting explanation area; the main inputs and results are always visible.
   const extraMetrics=document.createElement('div');
   extraMetrics.className='beta-extra-metrics';
   for(const [id,prefix] of [['betaABPeriodA','A'],['betaABPeriodB','B'],
@@ -281,7 +331,7 @@ function mount() {
     const node=document.getElementById(id);
     if(node)caveats.append(node);
   }
-  const cDetails=section.querySelector('.beta-ab-c > details');
+  const cDetails=goalSection.querySelector('.beta-ab-c > details');
   if(cDetails){
     for(const note of [...cDetails.children].filter(node=>node.tagName!=='SUMMARY'))
       caveats.append(note);
@@ -292,15 +342,17 @@ function mount() {
   extra.className='beta-ab-progress-details';
   extra.append(progress);
   oldComparison.insertAdjacentElement('afterend',extra);
-  // Deep figures stay mounted, but a single deliberate expansion reveals them.
+  // Core result figures remain mounted and immediately visible; no hidden mega-panel.
   const results=document.getElementById('results-title')?.closest('section.card');
   const curves=document.getElementById('curves-title')?.closest('section.card');
   if(!results||!curves)throw new Error('Missing detailed planner sections');
-  const advanced=document.createElement('details');
+  const advanced=document.createElement('section');
   advanced.id='plannerAdvanced';
-  advanced.className='scenario-explain planner-advanced';
-  const advancedTitle=document.createElement('summary');
-  advancedTitle.textContent='Tarkempi analyysi · käyrät, taulukot ja laskentaperusteet';
+  advanced.className='planner-advanced';
+  advanced.setAttribute('aria-labelledby','plannerAdvancedTitle');
+  const advancedTitle=document.createElement('h2');
+  advancedTitle.id='plannerAdvancedTitle';
+  advancedTitle.textContent='Käyrät ja tarkemmat tulokset';
   advanced.append(advancedTitle);
   results.before(advanced);
   advanced.append(results,curves,oldComparison,extra);
@@ -311,8 +363,7 @@ function mount() {
   const limits=[...oldComparison.querySelectorAll('details')].find(node=>
     node.querySelector('summary')?.textContent.includes('Mitä tässä mallissa'));
   if(limits){const p=limits.querySelector('p');if(p){p.classList.add('hint');limits.replaceWith(p);}}
-  // Keep C in the same comparison group as A/B. On narrow phones it spans
-  // both columns rather than compressing three numeric cards into tiny widths.
+  // C is now its own goal-search section, never a third tax-card comparison.
 
   // Keep the verified shared-scenario calculation as an internal A-reference.
   // Its duplicate week-count selector and presets are unnecessary once the
@@ -383,7 +434,19 @@ function mount() {
      .beta-extra-metrics>div{display:grid;gap:2px;border-top:1px solid #374c57;padding-top:6px;}
      .beta-extra-metrics span{font-size:.73rem;}
      .planner-advanced{margin-top:12px;padding:11px!important;border:1px solid #354d58;}
-     .planner-advanced>summary{font-weight:700;font-size:.88rem;}
+     .planner-advanced>h2{font-weight:750;font-size:1.08rem;margin:0 0 12px;}
+     .beta-kta-panel{margin:13px 0;padding:12px;border:1px solid #435866;border-radius:12px;background:#19282f;}
+     .beta-kta-panel h3{font-size:.97rem;margin:0 0 8px;color:#e8f5fc;}
+     .beta-kta-panel .grid{margin:10px 0;}
+     .beta-kta-panel #weekendDataSuggestion{margin:10px 0 0;}
+     .beta-kta-panel #weekendUseHistoryGross{min-height:44px;}
+     .beta-c-goal{margin:14px 0;padding:14px!important;border-color:#566780!important;}
+     .beta-c-goal h2{font-size:1.15rem;margin:0 0 10px;}
+     .beta-c-goal>.beta-ab-c{border:0;background:transparent;padding:0;}
+     .beta-c-goal .beta-ab-option>strong{font-size:1.45rem;}
+     .beta-c-goal .beta-ab-option>label input{min-height:44px;}
+     .beta-shared-lines-note{margin:7px 0 10px;line-height:1.4;font-size:.76rem;}
+     .planner-advanced{margin-top:12px;}
      .planner-advanced>section.card{padding:11px 7px;margin:11px 0;}
      .planner-advanced .beta-ab-progress-details{margin-top:14px;}
      html.beta-integrated .shell>.eyebrow,
@@ -566,6 +629,7 @@ function mount() {
       putSafe('betaCReason',message);
       putSafe('betaCMarginalLabel','Lisänetto / työviikonloppu¹');
       putSafe('betaCNextImpact','');
+      putSafe('betaCFreeWeekends','');
       if(computed)paintTables(computed,reference);
     };
     if(!computed||!(computed.grossPerWeekend>0)){
@@ -618,6 +682,7 @@ function mount() {
       ?money(a/denominator)+' – '+money(b/denominator):money(b/denominator);
     if(current){
       putSafe('betaCCount',current.n+' viikonloppua');
+      putSafe('betaCFreeWeekends','Vapaita viikonloppuja: '+(52-current.n)+' / 52');
       putSafe('betaCGross',money(current.gross));
       putSafe('betaCNet',money(current.net));
       putSafe('betaCMonth',money(current.monthlyNet));
@@ -633,6 +698,7 @@ function mount() {
       } else cStatus.textContent='Alustavaa 2026-veroviitettä ei tallenneta vuoden '+year+' tavoitteeksi.';
     } else if(analysis.reason==='target-unreachable'){
       putSafe('betaCCount','Nettotavoite ei täyty');
+      putSafe('betaCFreeWeekends','Tavoite ei täyty käytettävissä olevalla viitealueella.');
       putSafe('betaCGross',money(displayed.gross));
       putSafe('betaCNet',money(endNet));
       putSafe('betaCMonth',money(endNet/12));
@@ -645,6 +711,7 @@ function mount() {
         money(analysis.missedBy)+' vuodessa puuttumaan. C ei nimeä mahdotonta tavoitetta optimaaliseksi.');
     } else {
       putSafe('betaCCount','0–'+analysis.eligibleMax+' viikonloppua');
+      putSafe('betaCFreeWeekends','Ilman nettotavoitetta etsimme vertailualueen, emme yhtä oikeaa työmäärää.');
       putSafe('betaCGross',output(rows[0].gross,displayed.gross));
       putSafe('betaCNet',output(analysis.baselineNet,endNet));
       putSafe('betaCMonth',output(analysis.baselineNet,endNet,12));
@@ -681,6 +748,48 @@ function mount() {
       ?'Tavoite '+event.data.goal+' viikonloppua tallennettu vuodelle '+event.data.year+'.'
       :'Tavoitetta ei voitu tallentaa.';
   });
+  // SVG coordinates are compared, not artificially offset: where lines
+  // truly coincide, draw a single visible neutral segment and name it.
+  const markCoincidentSegments=(hostId,names)=>{
+    const host=document.getElementById(hostId),svg=host?.querySelector('svg');
+    if(!svg)return;
+    for(const old of svg.querySelectorAll('line[data-beta-shared]'))old.remove();
+    const paths=[...svg.querySelectorAll('polyline.line')];
+    const sets=paths.map(path=>String(path.getAttribute('points')||'').trim().split(/\s+/)
+      .map(pair=>pair.split(',').map(Number)).filter(p=>p.length===2&&p.every(Number.isFinite)));
+    const commonNames=new Set();
+    for(let i=0;i<sets.length;i++)for(let j=i+1;j<sets.length;j++){
+      for(let a=1;a<sets[i].length;a++){
+        const p=sets[i][a-1],q=sets[i][a];
+        for(let b=1;b<sets[j].length;b++){
+          const r=sets[j][b-1],t=sets[j][b];
+          if(Math.abs(p[0]-r[0])>.001||Math.abs(p[1]-r[1])>.001||
+             Math.abs(q[0]-t[0])>.001||Math.abs(q[1]-t[1])>.001)continue;
+          const shared=document.createElementNS('http://www.w3.org/2000/svg','line');
+          shared.setAttribute('data-beta-shared','true');
+          for(const [key,val] of Object.entries({x1:p[0],y1:p[1],x2:q[0],y2:q[1],
+            stroke:'#edf5ff','stroke-width':'4','stroke-linecap':'round'}))
+            shared.setAttribute(key,String(val));
+          const title=document.createElementNS('http://www.w3.org/2000/svg','title');
+          title.textContent=(names[i]||'Viiva '+(i+1))+' = '+(names[j]||'Viiva '+(j+1));
+          shared.append(title);
+          svg.append(shared);
+          commonNames.add(title.textContent);
+        }
+      }
+    }
+    let note=document.getElementById(hostId+'SharedNote');
+    if(!note){
+      note=document.createElement('p');
+      note.id=hostId+'SharedNote';
+      note.className='hint beta-shared-lines-note';
+      host.after(note);
+    }
+    note.textContent=commonNames.size?'Vaalea viiva = kuvaajassa päällekkäiset arvot ('+
+      [...commonNames].join('; ')+'). Eroavat osat säilyvät omissa väreissään.':'';
+    note.hidden=!commonNames.size;
+  };
+
   const syncModelFromA=()=>{
     const chosen=chosenWeekends(weekFieldA);
     if(chosen===null)return;
@@ -754,6 +863,9 @@ function mount() {
     }else put('betaABBreakdown','Sama työmäärä molemmissa: erotus kuvaa tämän laskurin verokorttioletusten eroa.');
     const cReference=renderC(computed);
     drawProgressChart(computed,rowA,rowB,year,nA,nB,cReference);
+    markCoincidentSegments('grossChart',['Brutto','A:n tuloraja','B:n tuloraja']);
+    markCoincidentSegments('netChart',['A','B','C']);
+    markCoincidentSegments('netDifferenceChart',['A−B','Epävarmuuden alaraja','Epävarmuuden yläraja']);
   };
   weekFieldA.addEventListener('input',()=>{syncModelFromA();update();});
   weekFieldA.addEventListener('change',update);

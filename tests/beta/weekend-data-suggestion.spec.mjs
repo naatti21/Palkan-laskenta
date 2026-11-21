@@ -39,7 +39,7 @@ test('16 h gross suggestion from local payslips requires user approval and keeps
   await expect(frame.locator('#weekendDataExplanation')).toContainText('Ei havaittu toteutunut');
   await expect(frame.locator('#weekendGross')).toHaveValue('0');
   await expect(frame.locator('#weekendUseHistoryGross')).toBeDisabled();
-  await frame.locator('#weekendPayDetails').evaluate(el=>el.open=true);
+  await expect(frame.locator('#weekendPayDetails')).toBeVisible();
   await frame.locator('#rulesConfirmed').check();
   await expect(frame.locator('#weekendUseHistoryGross')).toBeEnabled();
   await frame.locator('#weekendUseHistoryGross').click();
