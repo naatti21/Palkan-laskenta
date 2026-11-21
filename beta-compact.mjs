@@ -235,14 +235,14 @@ export function installCompact() {
     // Keep the year selector and overview heading available across all topics.
     const overview = byId("analysisMetrics").closest("section");
     analysisView.prepend(overview.querySelector(".section-heading"));
-    for (const card of analysisView.querySelectorAll(":scope > section.card:not(.beta-replaced)")) {
-      const content = Object.keys(topicByContent).find(id => card.contains(byId(id)));
-      panes.get(topicByContent[content] ?? "detail").append(card);
-    }
     const tracker=byId("betaWeekendTracker");
     if(tracker)panes.get("hours").prepend(tracker);
     const law=byId("betaWorkTimeLaw");
     if(law)panes.get("hours").append(law);
+    for (const card of analysisView.querySelectorAll(":scope > section.card:not(.beta-replaced)")) {
+      const content = Object.keys(topicByContent).find(id => card.contains(byId(id)));
+      panes.get(topicByContent[content] ?? "detail").append(card);
+    }
     // Insert before all analysis content, then group cards into their topics.
     analysisView.querySelector(".section-heading").after(nav);
     for(const topic of topics)analysisView.append(panes.get(topic.id));
