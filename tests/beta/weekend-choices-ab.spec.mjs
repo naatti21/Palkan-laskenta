@@ -154,7 +154,10 @@ test('C remains a distinct net-goal optimizer after A/B: no arbitrary optimum, t
   await p.locator('#planYear').fill('2027');
   await p.locator('#betaCTarget').fill('3000');
   await expect(p.locator('#betaCCount')).toHaveText('17 viikonloppua');
-  await expect(p.locator('#betaCCompare')).toContainText('käyttää vuoden 2026 yleisviitettä');
+  await expect(p.locator('#betaCCompare')).toHaveText('Suunnitteluvuosi 2027 · C-veroviite 2026.');
+  await expect(p.locator('#betaProgressTitle')).toContainText('2026');
+  await expect(p.locator('.beta-progress-legend .p-c')).toHaveText('C · 2026-viite');
+  await expect(p.locator('#betaProgressChart circle[data-series="C"] title')).toContainText('yleinen 2026 vero- ja maksutaso');
   await expect(p.locator('#betaCUseGoal')).toBeDisabled();
 });
 
@@ -167,7 +170,8 @@ test('C reference curve does not hide unrepresented income ranges or compare as 
   await p.locator('#weekendGross').fill('1000');
   await expect(p.locator('#allSamples .beta-c-net-cell')).toHaveCount(53);
   await expect(p.locator('#allSamples tr').last().locator('.beta-c-net-cell')).toHaveText('–');
-  await expect(p.locator('#betaCCompare')).toContainText('A/B kuvaavat verokortin ennakonpidätyksen jälkeistä rahaa');
+  await expect(p.locator('#betaCCompare')).toHaveText('C-veroviite 2026.');
+  await expect(p.locator('.beta-progress-caveat')).toContainText('A/B-pisteet näyttävät ennakonpidätyksen');
   await p.locator('#baseGross').fill('180000');
   await expect(p.locator('#betaCCount')).toHaveText('–');
   await expect(p.locator('#betaCReason')).toContainText('ei kata näitä lähtötuloja');

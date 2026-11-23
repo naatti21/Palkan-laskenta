@@ -6,13 +6,19 @@
 // automated deductions, and includes TyEL and unemployment contributions.
 // Interpolation is NOT an official or personalized Finnish tax assessment.
 // This file is copied only into the isolated _beta planner iframe.
-export const REFERENCE_YEAR = 2026;
-export const NET_ANCHORS_2026 = Object.freeze([
-  [20000,17987],[30000,24316],[40000,30268],[45000,32880],
-  [50000,35358],[51000,35854],[52000,36363],[53000,36879],
-  [55000,37910],[60000,40415],[70000,45185],[80000,49954],
-  [90000,54723],[100000,59492],[120000,69031],[140000,78569]
-].map(p => Object.freeze(p)));
+const YEAR_2026 = 2026;
+const SOURCE_2026 = 'https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/';
+// Annual gross, annual net, marginal tax percentage from the same tax year.
+const ROWS_2026 = [
+  [20000, 17987, 35.9], [30000, 24316, 40.2], [40000, 30268, 47.7], [45000, 32880, 50.4],
+  [50000, 35358, 50.4], [51000, 35854, 49.6], [52000, 36363, 48.4], [53000, 36879, 48.4],
+  [55000, 37910, 48.4], [60000, 40415, 52.3], [70000, 45185, 52.3], [80000, 49954, 52.3],
+  [90000, 54723, 52.3], [100000, 59492, 52.3], [120000, 69031, 52.3], [140000, 78569, 52.3],
+];
+
+export const NET_ANCHORS_2026 = Object.freeze(
+  ROWS_2026.map(([gross, net]) => Object.freeze([gross, net]))
+);
 
 export function referenceNet2026(annualGross) {
   if (typeof annualGross !== "number" || !Number.isFinite(annualGross) ||
@@ -28,6 +34,20 @@ export function referenceNet2026(annualGross) {
   const last = NET_ANCHORS_2026.at(-1);
   return {gross:last[0],net:last[1],effectiveAllInPercent:(1-last[1]/last[0])*100,interpolated:false};
 }
+
+const REFERENCE_2026 = Object.freeze({
+  year: YEAR_2026,
+  sourceUrl: SOURCE_2026,
+  netAnchors: NET_ANCHORS_2026,
+  marginalAnchors: Object.freeze(
+    ROWS_2026.map(([gross, , marginal]) => Object.freeze([gross, marginal]))
+  ),
+  netAt: referenceNet2026
+});
+
+// Switch the entire dataset explicitly when a new year has been verified.
+export const ACTIVE_TAX_REFERENCE = REFERENCE_2026;
+export const REFERENCE_YEAR = ACTIVE_TAX_REFERENCE.year;
 
 const eur = amount => Math.round(amount).toLocaleString("fi-FI")+" €";
 const pct = amount => amount.toLocaleString("fi-FI",{maximumFractionDigits:1})+" %";
@@ -68,8 +88,8 @@ function mountPreview() {
   host.className="card netref26";
   host.setAttribute("aria-labelledby","netref26Title");
   host.innerHTML=`
-    <div class="netref26-head"><h2 id="netref26Title">Perusansio: brutto → netto</h2><span>2026 viitearvio</span></div>
-    <p class="muted">Koko vuoden perusansio ilman ylityöviikonloppuja. Yleinen vuoden 2026 vero- ja maksuarvio, ei oma verokorttisi.</p>
+    <div class="netref26-head"><h2 id="netref26Title">Perusansio: brutto → netto</h2><span>${REFERENCE_YEAR} viitearvio</span></div>
+    <p class="muted">Koko vuoden perusansio ilman ylityöviikonloppuja. Yleinen vuoden ${REFERENCE_YEAR} vero- ja maksuarvio, ei oma verokorttisi.</p>
     <div class="netref26-annual" aria-label="Vuoden brutto ja arvioitu netto">
       <div><small>Vuosibrutto</small><strong id="netref26GrossAnnual">–</strong></div>
       <div><small>Arvioitu vuosinetto</small><strong id="netref26NetAnnual">–</strong></div>
@@ -91,7 +111,7 @@ function mountPreview() {
     <p class="netref26-yearnote" id="netref26YearWarning"></p>
     <details class="netref26-source">
       <summary>Mistä vero- ja nettoarvio tulee?</summary>
-      <p>Viite perustuu vuoden 2026 verojen ja työntekijämaksujen yhteenlaskettuun
+      <p>Viite perustuu vuoden ${REFERENCE_YEAR} verojen ja työntekijämaksujen yhteenlaskettuun
       vaikutukseen. Vertailutaulukossa on keskimääräinen kunnallisvero ja
       kirkollisvero sekä tavalliset automaattiset vähennykset. Välitulot
       arvioidaan taulukon pisteiden väliltä. TyEL ja työttömyysvakuutusmaksu
@@ -100,12 +120,12 @@ function mountPreview() {
       Henkilökohtainen tulos muuttuu asuinkunnan, kirkon jäsenyyden, vähennysten,
       muiden tulojen ja vuoden mukaan. Luvut ovat vuotuinen keskiarvo,
       eivät yhden palkkakauden toteutunutta ennakonpidätystä.</p>
-      <p><a href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/"
-        target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat, veroprosentit 2026</a>.
+      <p><a href="${ACTIVE_TAX_REFERENCE.sourceUrl}"
+        target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat, veroprosentit ${REFERENCE_YEAR}</a>.
       Tarkista oma <a href="https://www.vero.fi/henkiloasiakkaat/verokortti-ja-veroilmoitus/verokortti/veroprosenttilaskuri/"
         target="_blank" rel="noopener noreferrer">veroprosentti Verohallinnolta</a>.</p>
       <p>Tämä näkymä ei muuta A/B-verokorttien prosentteja, tulorajoja
-      eikä palkkahistoriaa. Ei laskelmaa vuoden 2027 verolaista.</p>
+      eikä palkkahistoriaa.</p>
     </details>
   `;
   const css=document.createElement("style");
@@ -152,8 +172,8 @@ function mountPreview() {
     const year=readFinite("planYear");
     const info=document.getElementById("netref26Overtime");
     const yearNote=year===REFERENCE_YEAR
-      ? "Verovuoden 2026 yleinen vertailu, ei henkilökohtainen verokortti."
-      : `Huom: suunnitteluvuosi ${year||"?"}. Tämä vertailu käyttää vain vuoden 2026 viitetasoa; se EI ennusta vuoden ${year||"?"} verotusta.`;
+      ? `Verovuoden ${REFERENCE_YEAR} yleinen vertailu, ei henkilökohtainen verokortti.`
+      : `Huom: suunnitteluvuosi ${year||"?"}. Tämä vertailu käyttää vain vuoden ${REFERENCE_YEAR} viitetasoa; se EI ennusta vuoden ${year||"?"} verotusta.`;
     put("netref26YearWarning",yearNote);
     if(!(base>0&&base<=1000000&&raise!=null&&raise>=0&&raise<=50&&
          raiseMonth!=null&&Number.isInteger(raiseMonth)&&raiseMonth>=1&&raiseMonth<=12)){
@@ -174,10 +194,10 @@ function mountPreview() {
       extra=fields.reduce((a,b)=>a+b,0);
     }
     const annualGross=baseAfterRaise+extra;
-    const annual=referenceNet2026(annualGross);
+    const annual=ACTIVE_TAX_REFERENCE.netAt(annualGross);
     if(!annual){
       resetAnnual();
-      put("netref26Summary","Vuositulo on tämän kokeellisen 2026 viitemallin 20 000–140 000 € alueen ulkopuolella. Älä käytä arvausprosenttia.");
+      put("netref26Summary",`Vuositulo jää ${REFERENCE_YEAR}-viitteen alueen ulkopuolelle.`);
       info.hidden=true;return;
     }
     put("netref26GrossAnnual",eur(annualGross));
@@ -187,7 +207,7 @@ function mountPreview() {
     put("netref26Summary",`Verojen ja työntekijämaksujen arvioitu yhteisosuus ${pct(annual.effectiveAllInPercent)}. Ei verokortin perusprosentti. ${included?"Valitut lisät mukana.":"Lomarahat, bonukset ja muut erilliset tulot eivät ole mukana."}`);
     const addGross=getWeekendGross();
     if(!(addGross>0)){info.hidden=true;return;}
-    const plus=referenceNet2026(annualGross+addGross);
+    const plus=ACTIVE_TAX_REFERENCE.netAt(annualGross+addGross);
     if(!plus){
       info.hidden=false;
       put("netref26OvertimeTitle","Ylityövertailu tämän viitetaulukon ulkopuolella");

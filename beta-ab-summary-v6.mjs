@@ -2,19 +2,17 @@
 // Reads the planner's displayed annual gross / annual after-withholding net.
 // Monthly and fortnight values are arithmetic annual averages, never pay-date promises.
 import { SUMMARY_INPUT_FIELDS, parseDisplayedEuro, parseWeekendCount, summaryBreakdown, cashFlowDifference, calculateTaxKnee, referenceWeekendAnalysis, optimizeWeekendWorkload } from './ab-summary-model.mjs';
-import { NET_ANCHORS_2026, referenceNet2026 } from './net-reference-2026.mjs';
+import { ACTIVE_TAX_REFERENCE, referenceNet2026 } from './net-reference-2026.mjs';
 
-// 2026 comparison, not a personalized tax calculator. Annual A/B estimates
-// are planner cash flow; their deduction share is NOT an official tax rate.
-// Marginal figures at these points are from Veronmaksajat' 2026 table.
-const MARGINAL_2026 = Object.freeze([
-  [20000,35.9],[30000,40.2],[40000,47.7],[45000,50.4],
-  [50000,50.4],[51000,49.6],[52000,48.4],[53000,48.4],
-  [55000,48.4],[60000,52.3],[70000,52.3],[80000,52.3],
-  [90000,52.3],[100000,52.3],[120000,52.3],[140000,52.3]
-]);
+const { year: referenceYear, sourceUrl, netAnchors, marginalAnchors, netAt } = ACTIVE_TAX_REFERENCE;
+const referenceRange = `${netAnchors[0][0].toLocaleString('fi-FI')}–${netAnchors.at(-1)[0].toLocaleString('fi-FI')} €`;
+
 export function progressComparison2026(gross, netA, netB) {
-  const ref=referenceNet2026(gross);
+  return progressComparison(gross, netA, netB, referenceNet2026);
+}
+
+function progressComparison(gross, netA, netB, lookup = netAt) {
+  const ref=lookup(gross);
   if(!ref || ![netA,netB].every(n=>Number.isFinite(n) && n>=0 && n<=gross)) return null;
   return {gross,referencePercent:ref.effectiveAllInPercent,
     aDeductionPercent:(1-netA/gross)*100,
@@ -38,12 +36,12 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
   const note=document.getElementById('betaProgressSummary');
   if(!host||!note)return;
   host.replaceChildren();
-  const a=progressComparison2026(rowA.gross,rowA.netA,rowA.netA);
-  const b=progressComparison2026(rowB.gross,rowB.netB,rowB.netB);
+  const a=progressComparison(rowA.gross,rowA.netA,rowA.netA);
+  const b=progressComparison(rowB.gross,rowB.netB,rowB.netB);
   const baseline=plan.baseline;
-  const low=NET_ANCHORS_2026[0][0],high=NET_ANCHORS_2026.at(-1)[0];
+  const low=netAnchors[0][0],high=netAnchors.at(-1)[0];
   if(!a||!b) {
-    note.textContent='Jompikumpi vuosibrutto on 2026 viiteaineiston 20 000–140 000 € alueen ulkopuolella. Vertailukäyrä ei arvaa puuttuvia veroasteita.';
+    note.textContent=`Jompikumpi vuosibrutto on ${referenceYear} viiteaineiston ${referenceRange} alueen ulkopuolella. Vertailukäyrä ei arvaa puuttuvia veroasteita.`;
     return;
   }
   const W=600,H=310,L=55,R=20,T=20,B=54;
@@ -51,8 +49,8 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
   const x=v=>L+(v-low)/(high-low)*plotW;
   const y=v=>T+(60-v)/60*plotH;
   const svg=progressSvg('svg',{viewBox:'0 0 600 310',role:'img',
-    'aria-label':'Vuoden 2026 vertailu: kokonaisveroaste, marginaalivero sekä A:n ja B:n laskurivähennykset. Valittu C-tavoite näkyy 2026-viitepisteenä.'});
-  svg.append(progressSvg('title',{},'Veroprogressio 2026 · vertailukuva'));
+    'aria-label':`Vuoden ${referenceYear} vertailu: kokonaisveroaste, marginaalivero sekä A:n ja B:n laskurivähennykset. Valittu C-tavoite näkyy ${referenceYear}-viitepisteenä.`});
+  svg.append(progressSvg('title',{},`Veroprogressio ${referenceYear} · vertailukuva`));
   for(let p=0;p<=60;p+=15){
     const yy=y(p);
     svg.append(progressSvg('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'#394858','stroke-width':1}));
@@ -69,8 +67,8 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
       'stroke-width':3,'stroke-linejoin':'round','stroke-linecap':'round',
       ...(dashed?{'stroke-dasharray':'7 5'}:{})}));
   };
-  line(NET_ANCHORS_2026.map(([g,net])=>[g,100*(1-net/g)]),'#70dea9');
-  line(MARGINAL_2026,'#f4bb67',true);
+  line(netAnchors.map(([g,net])=>[g,100*(1-net/g)]),'#70dea9');
+  line(marginalAnchors,'#f4bb67',true);
   const guide=(value,color,label)=>{
     if(value<low||value>high)return;
     const xx=x(value);
@@ -104,30 +102,30 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
   // third withholding percentage. No unique point when no goal is selected.
   if(cReference?.selection){
     const gross=cReference.selection.gross;
-    const cTax=referenceNet2026(gross);
+    const cTax=netAt(gross);
     if(cTax){
       marker('C',gross,cTax.effectiveAllInPercent,7,'#ffe047',
         'C: '+cReference.selection.n+' viikonloppua, '+money(gross)+
-        ' vuosibrutto, yleinen 2026 vero- ja maksutaso '+progressPct(cTax.effectiveAllInPercent));
+        ` vuosibrutto, yleinen ${referenceYear} vero- ja maksutaso `+progressPct(cTax.effectiveAllInPercent));
     }
   }
   host.append(svg);
-  const baseRef=referenceNet2026(baseline);
+  const baseRef=netAt(baseline);
   const shift=(Math.abs(rowA.gross-baseline)>.5||Math.abs(rowB.gross-baseline)>.5)&&baseRef
     ?' Ilman valittuja työviikonloppuja: '+money(baseline)+
       ' → viiteveroaste '+progressPct(baseRef.effectiveAllInPercent)+'.':'';
-  const yearWarning=Number(year)===2026?''
-    :' Suunnitteluvuosi '+year+' — vertailukäyrä on silti vuoden 2026 tasoa.';
+  const yearWarning=Number(year)===referenceYear?''
+    :' Suunnitteluvuosi '+year+` — vertailukäyrä on silti vuoden ${referenceYear} tasoa.`;
   if(nA===nB){
     note.textContent='Valittu vuosibrutto '+money(rowA.gross)+
-      ' → 2026 yleinen kokonaisveroaste '+progressPct(a.referencePercent)+'.'+shift+
+      ` → ${referenceYear} yleinen kokonaisveroaste `+progressPct(a.referencePercent)+'.'+shift+
       ' Laskurin A-vaihtoehdossa palkasta vähentyy '+progressPct(a.aDeductionPercent)+
       ' ja B-vaihtoehdossa '+progressPct(b.bDeductionPercent)+
       '. Nämä A/B-luvut kuvaavat ennakonpidätystä ja muita laskurin vähennyksiä, eivät lopullista veroastetta.'+
       yearWarning;
   } else {
     note.textContent='A: '+nA+' työviikonloppua, brutto '+money(rowA.gross)+
-      ', vuoden 2026 viiteveroaste '+progressPct(a.referencePercent)+
+      `, vuoden ${referenceYear} viiteveroaste `+progressPct(a.referencePercent)+
       ', laskurin vähennysosuus '+progressPct(a.aDeductionPercent)+
       '. B: '+nB+' työviikonloppua, brutto '+money(rowB.gross)+
       ', viiteveroaste '+progressPct(b.referencePercent)+
@@ -135,11 +133,7 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
       '.'+shift+' A/B-vähennysosuus ei ole lopullinen veroaste.'+yearWarning;
   }
   if(cReference?.selection){
-    note.textContent+=' C: '+cReference.selection.n+' viikonloppua nettotavoitteen ja käyttäjän asettamien lisätyön ehtojen mukaan. '+
-      'C käyttää vuoden 2026 yleistä veroviitettä.';
-  }else if(cReference?.available){
-    note.textContent+=' C: vuoden 2026 nettoviite jatkuu taulukoissa ja lisätyön nettokäyrässä. '+
-      'Ilman nettotavoitetta ei nimetä yhtä optimaalista työmäärää.';
+    note.textContent+=' C: '+cReference.selection.n+' viikonloppua nettotavoitteeseen.';
   }
 }
 
@@ -159,7 +153,6 @@ function mount() {
     <p class="eyebrow">YHTEENVETO · OMA VALINTA</p>
     <h2 id="betaABHeading">Vuosiansio · A / B / C</h2>
     <nav aria-label="Muokkaa suunnitelmaa"><a href="#income-title">Ansiot</a> · <a href="#weekends-title">Viikonloput</a> · <a href="#tax-title">Verokortit</a></nav>
-    <p class="beta-ab-description">A ja B: omat verokorttiarviot. C: lisätyön hyöty ja tarvittava työmäärä vuoden 2026 veroviitteellä.</p>
     <div class="beta-ab-workload" role="group" aria-label="Verokorttivaihtoehtojen työviikonloppumäärät">
       <div class="beta-ab-workload-grid">
         <label class="beta-ab-workload-a">A · työviikonloppuja / vuosi
@@ -194,7 +187,7 @@ function mount() {
       </section>
       <section class="beta-ab-option beta-ab-c" aria-label="C lisätyön kannattavuus ja optimointi">
         <h3>C · Lisätyön optimointi</h3>
-        <p id="betaCCompare" class="hint">Vuoden 2026 yleinen veroviite. A/B ovat omia ennakonpidätysarvioita.</p>
+        <p id="betaCCompare" class="hint">Vuoden ${referenceYear} yleinen veroviite. A/B ovat omia ennakonpidätysarvioita.</p>
         <label for="betaCTarget">Nettotavoite / kk (€) · valinnainen
           <input id="betaCTarget" type="number" inputmode="decimal" min="0" max="1000000" step="50" placeholder="Esim. 4 000">
         </label>
@@ -210,27 +203,19 @@ function mount() {
         <p id="betaCLimit" class="hint"></p>
         <details class="scenario-explain">
           <summary>Miten C valitsee työmäärän?</summary>
-          <p class="hint">C etsii pienimmän työviikonloppujen määrän, jolla valitsemasi kuukausinettotavoite täyttyy. Lisänetto tarkoittaa koko seuraavasta työviikonlopusta jäävää arviota, ei lauantaityön tai sunnuntaityön tuntipalkkaa.</p>
-          <p class="hint">Ilman tavoitetta C näyttää lisätyön vaikutuksen ja mahdollisen työmääräalueen, ei yhtä oikeaa lukua. Viitteen nettosumma perustuu vuoden 2026 yleisiin vero-oletuksiin; oma palkkapäivän netto voi erota. C:n laskelma näkyy A/B:n rinnalla myös taulukoissa ja käyrissä.</p>
+          <p class="hint">C etsii pienimmän työviikonloppumäärän, jolla kuukausinettotavoite täyttyy.
+          Ilman tavoitetta näytetään työmääräväli. Lisänetto koskee koko viikonloppua.</p>
         </details>
-        <a href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/" target="_blank" rel="noopener noreferrer">Veroviitteen lähde (2026)</a>
         <button type="button" class="chip" id="betaCUseGoal" disabled>Aseta C tavoitteeksi Analyysiin</button>
         <p id="betaCStatus" class="hint" role="status" aria-live="polite"></p>
       </section>
     </div>
     <p class="beta-ab-difference" id="betaABDifference" role="status">Täytä laskurin lähtöarvot vertailua varten.</p>
     <p class="beta-ab-breakdown" id="betaABBreakdown"></p>
-    <p class="beta-ab-caveat">A/B perustuu käyttäjän syöttämiin ennakonpidätysprosentteihin,
-    tulorajoihin ja muihin mallin vähennyksiin. Vertailu kertoo arvioidusta
-    <strong>palkasta käteen jäävästä kassavirrasta</strong>, ei lopullisesta verosta
-    tai verokortin paremmuudesta. Kuukausi- ja 2 viikon luvut ovat vuosikeskiarvoja,
-    eivät yksittäisen palkkakauden tarkkoja ennusteita.</p>
-    <p class="beta-ab-caveat">Yllä oleva vuoden 2026 yleinen nettovertailu käyttää
-    <strong>eri laskentaperustetta</strong> kuin tämä A/B-skenaario. Näitä
-    prosentteja ei pidä yhdistää.</p>
+    <p class="beta-ab-caveat">A/B arvioi kassavirtaa verokortin ennakonpidätyksen, tulorajan
+    ja muiden vähennysten perusteella. Kuukausi- ja kahden viikon nettoluvut ovat vuosikeskiarvoja.</p>
     <div class="beta-progress" aria-labelledby="betaProgressTitle">
-      <h3 id="betaProgressTitle">Veroprogressio 2026 · vertailukuva</h3>
-      <p class="beta-progress-desc">Vuoden 2026 viitekäyrä ja A/B-vaihtoehtojen omat vuositulot. Verokortin pidätyksen ja lopullisen veron ero säilyy.</p>
+      <h3 id="betaProgressTitle">Veroprogressio ${referenceYear} · vertailukuva</h3>
       <div class="beta-progress-legend" aria-label="Veroprogressiokuvaajan selite">
         <div class="beta-progress-legend-group" aria-label="Käyrät">
           <strong>Käyrät</strong>
@@ -241,13 +226,15 @@ function mount() {
           <strong>Vertailupisteet</strong>
           <span class="p-a">Laskuri A</span>
           <span class="p-b">Laskuri B</span>
-          <span class="p-c">C · 2026-viite</span>
+          <span class="p-c">C · ${referenceYear}-viite</span>
         </div>
       </div>
       <div id="betaProgressChart" class="beta-progress-chart"></div>
       <p id="betaProgressSummary" class="beta-progress-summary" role="status">Käyrä näkyy laskurin lukujen valmistuttua.</p>
-      <p class="beta-progress-caveat">A/B-merkit näyttävät laskurin vähennysten osuuden, eivät virallista veroastetta. Vihreä käyrä sisältää työntekijän eläke- ja työttömyysvakuutusmaksut, keskimääräiset kunnallis- ja kirkollisverot sekä tavalliset vähennykset. Marginaali kertoo seuraavan ansaitun euron arvioidun verorasituksen. Vertailupisteet on harvennettu ja välit yhdistetty suorilla.</p>
-      <a class="beta-progress-source" href="https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/" target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat, palkansaajan veroprosentit 2026</a>
+      <p class="beta-progress-caveat">A/B-pisteet näyttävät ennakonpidätyksen ja muiden vähennysten osuuden.
+      Viite sisältää verot ja työntekijämaksut sekä käyttää keskimääräisiä kunta- ja kirkollisveroja. Marginaalivero kuvaa seuraavan euron verorasitusta.
+      Välitulot arvioidaan viitepisteiden väliltä.</p>
+      <a class="beta-progress-source" href="${sourceUrl}" target="_blank" rel="noopener noreferrer">Lähde: Veronmaksajat, palkansaajan veroprosentit ${referenceYear}</a>
     </div>`;
   // The independent A/B choices are the planner's main workflow, not a
   // second calculator bolted on after the charts.
@@ -290,10 +277,7 @@ function mount() {
   const cHeading=document.createElement('h2');
   cHeading.id='betaCGoalHeading';
   cHeading.textContent='Nettotavoitehaku · C';
-  const cIntro=document.createElement('p');
-  cIntro.className='hint';
-  cIntro.textContent='Määritä haluamasi kuukausinetto. Näet vähimmäismäärän työviikonloppuja, jos tavoite on saavutettavissa. C käyttää vuoden 2026 yleistä veroviitettä, ei A/B-verokorttien prosentteja.';
-  goalSection.append(cHeading,cIntro,cPanel);
+  goalSection.append(cHeading,cPanel);
   const duplicateCHeading=cPanel.querySelector('h3');
   if(duplicateCHeading)duplicateCHeading.remove();
   const cTarget=goalSection.querySelector('label[for="betaCTarget"]');
@@ -386,7 +370,6 @@ function mount() {
   css.textContent=`
     .beta-ab-summary{background:#111920!important;border:1px solid #394956!important;padding:14px!important;margin-top:11px!important;}
     .beta-ab-summary h2{font-size:1.15rem;margin:4px 0 9px;letter-spacing:-.025em;}
-    .beta-ab-description{font-size:.79rem;line-height:1.5;color:#c5d3df;margin:5px 0 11px;}
     .beta-ab-gross{display:grid;gap:3px;padding:11px 12px;border-radius:11px;background:#192531;border:1px solid #3d5269;}
     .beta-ab-gross>span{color:#ccd8e8;font-size:.76rem;}
     .beta-ab-gross strong{color:#e7f4ff;font-size:1.4rem;font-weight:850;line-height:1.22;font-variant-numeric:tabular-nums;}
@@ -407,7 +390,7 @@ function mount() {
     .beta-ab-caveat{font-size:.74rem;line-height:1.55;color:#bfcddd;margin:10px 0 0;}
     .beta-progress{border-top:1px solid #3e4e60;margin-top:18px;padding-top:14px;}
     .beta-progress h3{font-size:1.02rem;color:#f2f8ff;margin:0 0 7px;}
-    .beta-progress-desc,.beta-progress-caveat{font-size:.75rem;line-height:1.55;color:#c2d2df;margin:7px 0;}
+    .beta-progress-caveat{font-size:.75rem;line-height:1.55;color:#c2d2df;margin:7px 0;}
     .beta-progress-legend{display:grid;gap:10px;margin:11px 0 8px;font-size:.73rem;color:#d4e0ec;}
     .beta-progress-legend-group{display:flex;flex-wrap:wrap;align-items:center;gap:7px 13px;}
     .beta-progress-legend-group>strong{width:100%;font-size:.73rem;color:#ecf3fa;letter-spacing:.01em;}
@@ -440,7 +423,6 @@ function mount() {
      .beta-ab-option>strong{margin:3px 0 6px;}
      .beta-ab-option>div{padding-top:5px;margin-top:4px;}
      .beta-ab-option>label{margin:5px 0 7px;}
-     .beta-ab-description{margin:2px 0 7px;line-height:1.38;}
      .beta-ab-explanation{font-size:.78rem;}
      .beta-extra-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
      .beta-extra-metrics>div{display:grid;gap:2px;border-top:1px solid #374c57;padding-top:6px;}
@@ -486,7 +468,7 @@ function mount() {
     const results=resultSection.querySelector('.grid.two');
     const fact=document.createElement('div');
     fact.className='fact';
-    fact.innerHTML='<small>C: yleinen veroviite 2026</small><strong id="betaCResult">–</strong><span>C:n arvioitu vuosinetto¹ tai saatavilla oleva vaihteluväli</span>';
+    fact.innerHTML=`<small>C: yleinen veroviite ${referenceYear}</small><strong id="betaCResult">–</strong><span>C:n arvioitu vuosinetto¹ tai saatavilla oleva vaihteluväli</span>`;
     results?.append(fact);
   }
   const samplePanel=document.getElementById('sample-title')?.closest('section.card');
@@ -494,7 +476,7 @@ function mount() {
     const note=document.createElement('p');
     note.id='betaCSamplesNote';
     note.className='hint';
-    note.textContent='¹ C: Veronmaksajien vuoden 2026 yleinen vuotuinen nettotulo (verot ja työntekijämaksut mukana). A/B: ennakonpidätyksen mukainen kassavirta. Merkki – tarkoittaa, ettei C-viite kata tätä tulotasoa.';
+    note.textContent=`¹ C: Veronmaksajien vuoden ${referenceYear} yleinen vuotuinen nettotulo (verot ja työntekijämaksut mukana). A/B: ennakonpidätyksen mukainen kassavirta. Merkki – tarkoittaa, ettei C-viite kata tätä tulotasoa.`;
     samplePanel.querySelector('.comparison-table-wrap')?.before(note);
   }
   const nextImpact=document.getElementById('nextImpact');
@@ -520,7 +502,7 @@ function mount() {
         const th=document.createElement('th');
         th.dataset.cHeader='yes';
         th.textContent='C: netto¹';
-        th.title='2026 Veronmaksajien yleinen vuosinettoviite, ei A/B-verokortin ennakonpidätys.';
+        th.title=`${referenceYear} Veronmaksajien yleinen vuosinettoviite, ei A/B-verokortin ennakonpidätys.`;
         header.append(th);
       }
       for(const row of body.querySelectorAll('tr')){
@@ -575,7 +557,7 @@ function mount() {
     const x=n=>L+n/52*(W-L-R);
     const y=n=>T+(hi-n)/(hi-min)*(H-T-B);
     const svg=svgNode('svg',{viewBox:'0 0 740 267',role:'img',
-      'aria-label':'Lisäviikonlopun netto: A ja B ennakonpidätysoletuksilla, C vuoden 2026 yleisellä veroviitteellä'});
+      'aria-label':`Lisäviikonlopun netto: A ja B ennakonpidätysoletuksilla, C vuoden ${referenceYear} yleisellä veroviitteellä`});
     svg.append(svgNode('title',{},'A/B/C seuraavan viikonlopun lisänetto'));
     for(let i=0;i<=4;i++){
       const v=min+(hi-min)*i/4,yy=y(v);
@@ -622,7 +604,7 @@ function mount() {
     item.dataset.cLegend='yes';
     const dot=document.createElement('i');
     dot.className='dot';dot.style.background='#de95e3';
-    item.append(dot,document.createTextNode(' C: Veronmaksajat 2026¹'));
+    item.append(dot,document.createTextNode(` C: Veronmaksajat ${referenceYear}¹`));
     netLegend.append(item);
   }
   const targetField=document.getElementById('betaCTarget');
@@ -643,7 +625,7 @@ function mount() {
         'betaCPeriod','betaCMarginal','betaCResult',
         'betaCFormula','betaCLimit'])
         putSafe(id,'–');
-      putSafe('betaCCompare','C on yleinen veroviite, ei A/B:n ennakonpidätys.');
+      putSafe('betaCCompare',`C-veroviite ${referenceYear}.`);
       putSafe('betaCReason',message);
       putSafe('betaCMarginalLabel','Lisänetto / työviikonloppu¹');
       putSafe('betaCNextImpact','');
@@ -660,9 +642,9 @@ function mount() {
       return null;
     }
     const year=Number(document.getElementById('planYear')?.value);
-    const reference=referenceWeekendAnalysis(computed.series,referenceNet2026,year,2026);
+    const reference=referenceWeekendAnalysis(computed.series,netAt,year,referenceYear);
     if(!reference?.available){
-      clear('Yleinen 2026-veroviite ei kata näitä lähtötuloja. C ei arvaa puuttuvaa verotusta.');
+      clear(`Yleinen ${referenceYear}-veroviite ei kata näitä lähtötuloja. C ei arvaa puuttuvaa verotusta.`);
       return null;
     }
     const analysis=optimizeWeekendWorkload(reference.points,{
@@ -680,16 +662,16 @@ function mount() {
     const next=Number.isInteger(aCount)&&aCount<52?rows[aCount+1]:null;
     putSafe('betaCNextImpact',next?.gain==null
       ?'C:n vertailu ei kata tämän lisäviikonlopun vuosituloja.'
-      :'C (yleinen 2026-viite): '+(aCount+1)+'. lisäviikonloppu tuo noin '+
+      :`C (yleinen ${referenceYear}-viite): `+(aCount+1)+'. lisäviikonloppu tuo noin '+
         money(next.gain)+' lisää käteen koko viikonlopusta. A/B käyttävät omia ennakonpidätysprosentteja.');
     const tag=reference.provisional
-      ?'Suunnitteluvuosi '+year+': C käyttää vuoden 2026 yleisviitettä, ei vuoden '+year+' verolakia.'
-      :'C käyttää vuoden 2026 julkaistua yleistä vuosinettoviitettä.';
-    putSafe('betaCCompare',tag+' A/B kuvaavat verokortin ennakonpidätyksen jälkeistä rahaa; eurot eivät ole samaa verolaskentaa.');
+      ?`Suunnitteluvuosi ${year} · C-veroviite ${referenceYear}.`
+      :`C-veroviite ${referenceYear}.`;
+    putSafe('betaCCompare',tag);
     putSafe('betaCFormula','Vuoden lähtöbrutto '+money(rows[0].gross)+
       ' + '+money(reference.perWeekend)+' / työviikonloppu. C näyttää jokaisen kokonaisen lisäviikonlopun arvioidun neton.');
-    putSafe('betaCLimit','2026-viite kattaa näillä tuloilla viikonloput 0–'+analysis.covered+
-      '. Taulukon viitealue on 20 000–140 000 €; tietoja ei ekstrapoloida.');
+    putSafe('betaCLimit',`${referenceYear}-viite kattaa näillä tuloilla viikonloput 0–`+analysis.covered+
+      `. Taulukon viitealue on ${referenceRange}; tietoja ei ekstrapoloida.`);
     const targetText=target.value===null?'':'Nettotavoite '+money(target.value)+'/kk. ';
     const current=analysis.selection;
     const endCount=current?.n??analysis.eligibleMax;
@@ -713,7 +695,7 @@ function mount() {
       if(!reference.provisional) {
         currentC={found:true,n:current.n};
         cButton.disabled=false;
-      } else cStatus.textContent='Alustavaa 2026-veroviitettä ei tallenneta vuoden '+year+' tavoitteeksi.';
+      } else cStatus.textContent=`Alustavaa ${referenceYear}-veroviitettä ei tallenneta vuoden `+year+' tavoitteeksi.';
     } else if(analysis.reason==='target-unreachable'){
       putSafe('betaCCount','Nettotavoite ei täyty');
       putSafe('betaCFreeWeekends','Tavoite ei täyty käytettävissä olevalla viitealueella.');
@@ -741,7 +723,7 @@ function mount() {
         'Vertaa viikonloppujen määrää ja lisänettoa käyrässä ja taulukoissa.');
     }
     if(reference.provisional&&analysis.reason!=='target-met')
-      cStatus.textContent='Vertailuvuosi '+year+' käyttää yhä vuoden 2026 veroviitettä.';
+      cStatus.textContent='Vertailuvuosi '+year+` käyttää yhä vuoden ${referenceYear} veroviitettä.`;
     putSafe('betaCResult',current
       ?money(current.net)+'¹ · '+current.n+' viikonloppua'
       :range?output(analysis.baselineNet,endNet)+'¹'
