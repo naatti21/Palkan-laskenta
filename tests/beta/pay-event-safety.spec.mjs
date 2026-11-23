@@ -103,8 +103,8 @@ for(const width of [360,412]) test(`PDF source selection survives replay and rel
  await page.setViewportSize({width,height:915});await page.goto('/index.html');
  await page.locator('#betaImportOpen').click();
  for (const [name,marker] of [['Päätyö','A'],['Keikat','B']]) {
-   const details=page.locator('details').filter({has:page.locator('#createIncomeSource')});
-   if(!await details.evaluate(node=>node.open)) await details.locator('summary').click();
+   await expect(page.locator('#betaImportSourceControls')).toBeVisible();
+   await expect(page.locator('#incomeSourceName')).toBeVisible();
    await page.locator('#incomeSourceName').fill(name);
    await page.locator('#createIncomeSource').click();
    await expect(page.locator('#incomeSourceSelect option:checked')).toHaveText(name);
