@@ -197,7 +197,7 @@ function mountPreview() {
     const annual=ACTIVE_TAX_REFERENCE.netAt(annualGross);
     if(!annual){
       resetAnnual();
-      put("netref26Summary",`Vuositulo jää ${REFERENCE_YEAR}-viitteen alueen ulkopuolelle.`);
+      put("netref26Summary",`Vuositulo on ${REFERENCE_YEAR}-viitteen alueen ulkopuolella.`);
       info.hidden=true;return;
     }
     put("netref26GrossAnnual",eur(annualGross));

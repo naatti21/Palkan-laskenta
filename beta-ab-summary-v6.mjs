@@ -212,8 +212,8 @@ function mount() {
     </div>
     <p class="beta-ab-difference" id="betaABDifference" role="status">Täytä laskurin lähtöarvot vertailua varten.</p>
     <p class="beta-ab-breakdown" id="betaABBreakdown"></p>
-    <p class="beta-ab-caveat">A/B arvioi kassavirtaa verokortin ennakonpidätyksen, tulorajan
-    ja muiden vähennysten perusteella. Kuukausi- ja kahden viikon nettoluvut ovat vuosikeskiarvoja.</p>
+    <p class="beta-ab-caveat">A/B kertoo arvion kassavirrasta, ei lopullisesta verosta.
+    C käyttää vuoden ${referenceYear} yleistä veroviitettä. Kuukausi- ja kahden viikon nettoluvut ovat vuosikeskiarvoja.</p>
     <div class="beta-progress" aria-labelledby="betaProgressTitle">
       <h3 id="betaProgressTitle">Veroprogressio ${referenceYear} · vertailukuva</h3>
       <div class="beta-progress-legend" aria-label="Veroprogressiokuvaajan selite">
