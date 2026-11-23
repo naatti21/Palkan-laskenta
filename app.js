@@ -1576,17 +1576,47 @@ function installPdfBatchQueue() {
   title.textContent = "Tuo useita palkkalaskelmia samalla kertaa";
   const inner = document.createElement("div");
   const pickerLabel = document.createElement("label");
-  pickerLabel.textContent = "Valitse useita PDF-tiedostoja";
+  pickerLabel.className = "beta-import-picker";
+  pickerLabel.textContent = "1. Valitse PDF-tiedostot";
   const picker = document.createElement("input");
   picker.id = "betaBatchInput";
   picker.type = "file"; picker.accept = "application/pdf"; picker.multiple = true;
-  pickerLabel.append(picker);
+  picker.setAttribute("aria-label","Valitse palkkalaskelmat PDF-tiedostoina");
+  picker.setAttribute("aria-describedby","betaFileSelection");
+  const pickButton = document.createElement("span");
+  pickButton.className = "beta-import-picker-button";
+  pickButton.textContent = "Valitse PDF:t";
+  pickerLabel.append(picker,pickButton);
+  const selectedFiles = document.createElement("p");
+  selectedFiles.id = "betaFileSelection";
+  selectedFiles.className = "beta-file-selection";
+  selectedFiles.setAttribute("role","status");
+  selectedFiles.setAttribute("aria-live","polite");
   const payerLabel = document.createElement("label");
-  payerLabel.textContent = "Vahvistettu tulolähde seuraavalle tiedostolle";
+  payerLabel.textContent = "Valitse tulolähde";
   const payer = document.createElement("select");
   payer.id = "betaBatchSource";
   payer.setAttribute("aria-label", "Erätuonnin tulolähde");
   payerLabel.append(payer);
+  // The source selector and source creation are a single decision point.
+  // Move the existing controls rather than creating duplicate source forms.
+  const sourceControls = document.createElement("section");
+  sourceControls.id = "betaImportSourceControls";
+  sourceControls.className = "beta-import-source-controls";
+  const sourceHeading = document.createElement("h3");
+  sourceHeading.textContent = "2. Tulolähde";
+  sourceControls.append(sourceHeading,payerLabel);
+  const sourceCreation = document.createElement("div");
+  sourceCreation.className = "beta-import-source-creation";
+  const sourceNameLabel = document.getElementById("incomeSourceName")?.closest("label");
+  const sourceCreateButton = document.getElementById("createIncomeSource");
+  const sourceDisclosure = sourceCreateButton?.closest("details");
+  if (sourceNameLabel && sourceCreateButton && sourceDisclosure && upload.contains(sourceDisclosure)) {
+    sourceNameLabel.firstChild.textContent = "Uusi tulolähde (tarvittaessa)";
+    sourceCreation.append(sourceNameLabel,sourceCreateButton);
+    sourceControls.append(sourceCreation);
+    sourceDisclosure.remove();
+  }
   const note = document.createElement("p");
   note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Epäselvät tiedot pysäyttävät jonon.";
   const autoLabel = document.createElement("label");
@@ -1617,7 +1647,7 @@ function installPdfBatchQueue() {
   list.id = "betaBatchFiles";
   const disclaimer = document.createElement("p");
   disclaimer.textContent = "Jono säilyy vain tällä avoimella sivulla. Jos suljet sovelluksen, valitse tiedostot uudelleen: jo tallennetut tunnistetaan tiivisteellä eikä samaa PDF:ää kirjata kahdesti.";
-  inner.append(pickerLabel, payerLabel, note, autoLabel, actions, status, list, disclaimer);
+  inner.append(pickerLabel,selectedFiles,sourceControls,note,autoLabel,actions,status,list,disclaimer);
   group.append(title, inner);
   upload.after(group);
   const mainPicker = document.getElementById("pdfInput");
@@ -1648,8 +1678,14 @@ function installPdfBatchQueue() {
     const counts = entries.reduce((out, entry) => {
       out[entry.state] = (out[entry.state] || 0) + 1; return out;
     }, {});
+    selectedFiles.textContent = entries.length
+      ? entries.length === 1
+        ? "1 PDF valittu: " + entries[0].name
+        : entries.length + " PDF-tiedostoa jonossa"
+      : "Ei PDF-tiedostoja jonossa.";
+    fileLog.hidden = !entries.length;
     status.textContent = entries.length
-      ? entries.length + " tiedostoa · tallennettu " + (counts.saved || 0) +
+      ? (entries.length === 1 ? "1 tiedosto" : entries.length + " tiedostoa") + " · tallennettu " + (counts.saved || 0) +
         " · jo olemassa " + (counts.duplicate || 0) +
         " · tarkistettava " + ((counts.review || 0)+(counts.conflict || 0)+(counts.unknown || 0)) +
         " · ohitettu " + ((counts.skipped || 0)+(counts.error || 0)) +
@@ -1808,12 +1844,21 @@ function installPdfBatchQueue() {
   heading.append(headingTitle, headingSubtitle);
   header.append(back, heading);
 
-  const fileLog = document.createElement("details");
+  const fileLog = document.createElement("section");
+  fileLog.id = "betaImportFilesPanel";
   fileLog.className = "beta-import-file-details";
-  const fileLogTitle = document.createElement("summary");
-  fileLogTitle.textContent = "Näytä tiedostot";
+  fileLog.hidden = true;
+  const fileLogTitle = document.createElement("h3");
+  fileLogTitle.textContent = "Valitut tiedostot";
   list.before(fileLog);
-  fileLog.append(fileLogTitle, list, disclaimer, clear);
+  fileLog.append(fileLogTitle,list,clear);
+  selectedFiles.after(fileLog);
+  // The list is visible, but its own scroll area prevents 80 items from
+  // turning the import form into an unbounded page.
+  const help=document.createElement("p");
+  help.className="beta-import-privacy-note";
+  help.textContent="PDF:t käsitellään vain laitteellasi. Tarvittaessa valitse eri työnantajan tiedostot erikseen.";
+  note.replaceWith(help);
   // Keep the one-file legacy input in the DOM for older import integrations,
   // but users see only the multi-capable picker in this sheet.
   workspace.append(header, group, upload);
@@ -1824,7 +1869,7 @@ function installPdfBatchQueue() {
   entry.after(workspace);
 
   title.textContent = "PDF-tuontijono";
-  pickerLabel.firstChild.textContent = "Valitse PDF-tiedostot";
+  pickerLabel.firstChild.textContent = "1. Valitse PDF-tiedostot";
   auto.checked = false; // Legacy single-step tests remain available; the visible action enables bulk flow.
   autoLabel.classList.add("beta-import-legacy-control");
   next.textContent = "Tallenna selkeät palkkalaskelmat";

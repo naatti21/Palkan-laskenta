@@ -347,6 +347,23 @@ const betaImportCss = `
 .beta-pdf-slot .file-button { cursor:pointer; opacity:1; }
 .beta-pdf-slot #status { display:block; flex-basis:100%; margin:0; font-size:.73rem; line-height:1.45; }
 .beta-pdf-slot .privacy { display:none; }
+/* Beta import sheet: a real queue, not the misleading cleared native file label. */
+.beta-import-workspace .beta-import-picker{position:relative;display:grid;gap:8px;min-width:0;font-weight:700}
+.beta-import-workspace .beta-import-picker-button{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--mint);border-radius:var(--tight);background:var(--raised);color:var(--mint);font-size:.88rem;font-weight:740;pointer-events:none}
+.beta-import-workspace #betaBatchInput{position:absolute;bottom:0;left:0;width:100%;height:52px;min-height:52px;z-index:1;opacity:0;cursor:pointer;margin:0;padding:0;border:0}
+.beta-import-workspace .beta-import-picker:focus-within .beta-import-picker-button{outline:2px solid var(--cyan);outline-offset:2px}
+.beta-import-workspace #betaFileSelection{margin:0 0 3px;font-size:.81rem;line-height:1.4;color:var(--cyan);overflow-wrap:anywhere}
+.beta-import-workspace .beta-import-source-controls{display:grid;gap:9px;border-top:1px solid var(--edge);padding-top:15px}
+.beta-import-workspace .beta-import-source-controls>h3{margin:0;font-size:.95rem;line-height:1.35}
+.beta-import-workspace .beta-import-source-creation{display:grid;gap:9px;margin:3px 0 0;padding:10px;border:1px solid var(--edge);border-radius:var(--tight);background:var(--surface)}
+.beta-import-workspace .beta-import-source-creation label{font-size:.79rem!important;color:var(--sub)!important}
+.beta-import-workspace .beta-import-source-creation input{width:100%;min-width:0;min-height:44px}
+.beta-import-workspace .beta-import-source-creation button{min-height:44px;width:100%;border:1px solid var(--mint);color:var(--mint);background:var(--raised);font-size:.83rem;font-weight:700}
+.beta-import-workspace #betaImportFilesPanel{border:1px solid var(--edge);border-radius:var(--tight);padding:9px 11px;min-width:0;margin:0 0 8px;background:var(--surface)}
+.beta-import-workspace #betaImportFilesPanel[hidden]{display:none!important}
+.beta-import-workspace #betaImportFilesPanel>h3{margin:0 0 6px;font-size:.84rem;line-height:1.3;color:var(--ink)}
+.beta-import-workspace #betaBatchFiles{max-height:190px;overflow-y:auto;overscroll-behavior:contain;padding-left:19px;margin:0 0 6px}
+.beta-import-workspace .beta-import-privacy-note{font-size:.73rem;line-height:1.42;color:var(--sub);margin:0}
 `;
 await writeFile(`${output}/styles.css`,
   (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss);

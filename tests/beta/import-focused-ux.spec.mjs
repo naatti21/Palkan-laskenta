@@ -33,7 +33,11 @@ for(const width of [320,390,412]){
     await expect(page.locator("#betaBatchAuto")).toBeHidden();
     await expect(page.locator("#betaBatchNext")).toBeVisible();
     await expect(page.locator("#betaBatchNext")).toBeDisabled();
-    await expect(page.locator(".beta-import-file-details")).not.toHaveAttribute("open","");
+    await expect(page.locator("#betaImportFilesPanel")).toBeHidden();
+    await expect(page.locator("#betaFileSelection")).toContainText("Ei PDF-tiedostoja jonossa");
+    await expect(page.locator("#betaImportSourceControls")).toBeVisible();
+    await expect(page.locator("#incomeSourceName")).toBeVisible();
+    await expect(page.locator("#createIncomeSource")).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
     await page.locator("#betaImportBack").click();
     await expect(page.locator("#betaImportWorkspace")).toBeHidden();
@@ -48,6 +52,9 @@ test("single visible import picker accepts 2 PDFs, saves with one explicit bulk 
   await page.locator("#betaImportOpen").click();
   await page.locator("#betaBatchInput").setInputFiles(files);
   await expect(page.locator("#betaBatchStatus")).toContainText("2 tiedostoa");
+  await expect(page.locator("#betaFileSelection")).toContainText("2 PDF-tiedostoa jonossa");
+  await expect(page.locator("#betaImportFilesPanel")).toBeVisible();
+  await expect(page.locator("#betaBatchFiles li")).toHaveCount(2);
   await expect(page.locator("#betaBatchNext")).toBeDisabled();
   await page.locator("#betaBatchSource").selectOption(sourceId);
   page.once("dialog",dialog=>dialog.accept());
@@ -84,4 +91,42 @@ test("history conflict decision opens import workspace but does not auto-confirm
   await page.locator("#betaImportBack").click();
   await expect(page.locator("#betaImportWorkspace")).toBeHidden();
   expect((await stored(page)).filter(r=>r.resolution==="active")).toHaveLength(2);
+});
+
+test("single PDF selection shows its queue state, not a stale native no-file label",async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto("/index.html");
+  await page.locator("#betaImportOpen").click();
+  await page.locator("#betaBatchInput").setInputFiles(files[0]);
+  await expect(page.locator("#betaFileSelection")).toContainText("1 PDF valittu: synthetic-01.pdf");
+  await expect(page.locator("#betaImportFilesPanel")).toBeVisible();
+  await expect(page.locator("#betaBatchFiles li")).toHaveCount(1);
+  await expect(page.locator("#betaBatchSource")).toBeVisible();
+  const nativeInput=await page.locator("#betaBatchInput").evaluate(el=>({
+    opacity:getComputedStyle(el).opacity,
+    width:Math.round(el.getBoundingClientRect().width),
+    height:Math.round(el.getBoundingClientRect().height)
+  }));
+  expect(nativeInput.opacity).toBe("0");
+  expect(nativeInput.width).toBeGreaterThan(200);
+  expect(nativeInput.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+});
+
+test("source creation is beside the visible selector and becomes selected immediately",async({page})=>{
+  await page.goto("/index.html");
+  await page.locator("#betaImportOpen").click();
+  await expect(page.locator("#betaImportSourceControls")).toBeVisible();
+  await expect(page.locator("#incomeSourceName")).toBeVisible();
+  await page.locator("#incomeSourceName").fill("Uusi työpaikka");
+  await page.locator("#createIncomeSource").click();
+  await expect(page.locator("#betaBatchSource option:checked")).toHaveText("Uusi työpaikka");
+  await page.locator("#betaBatchInput").setInputFiles(files[0]);
+  await expect(page.locator("#betaBatchNext")).toBeEnabled();
+  await page.locator("#betaBatchNext").click();
+  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 1");
+  const saved=await stored(page);
+  const id=await page.locator("#betaBatchSource").inputValue();
+  expect(saved).toHaveLength(1);
+  expect(saved[0].incomeSourceId).toBe(id);
 });
