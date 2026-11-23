@@ -811,9 +811,9 @@ function mount() {
       window.parent.postMessage({type:'palkka:beta:salary-comparison', comparison},location.origin);
     }
   };
-  const publishComparison = plans => {
+  const publishComparison = (plans, cUnavailable) => {
     const year = Number(document.getElementById('planYear')?.value);
-    const next = Number.isInteger(year) && year >= 2020 && year <= 2100 ? {year, plans} : null;
+    const next = Number.isInteger(year) && year >= 2020 && year <= 2100 ? {year, plans, cUnavailable} : null;
     if (JSON.stringify(comparison) === JSON.stringify(next)) return;
     comparison = next;
     sendComparison();
@@ -881,12 +881,16 @@ function mount() {
     }else put('betaABBreakdown','Sama työmäärä molemmissa: erotus kuvaa tämän laskurin verokorttioletusten eroa.');
     const cReference=renderC(computed);
     const selectedC = cReference?.selection;
+    const cTarget = optionalNumber(targetField,1000000);
+    const cUnavailable = cTarget.value === null && cTarget.ok
+      ? 'C-tavoitetta ei ole asetettu.'
+      : 'C: '+document.getElementById('betaCReason').textContent;
     publishComparison([
       {id:'A', annualNet:a, weekends:nA},
       {id:'B', annualNet:b, weekends:nB},
       ...(selectedC ? [{id:'C', annualNet:selectedC.net, weekends:selectedC.n,
         referenceYear:cReference.referenceYear}] : [])
-    ]);
+    ], selectedC ? null : cUnavailable);
     drawProgressChart(computed,rowA,rowB,year,nA,nB,cReference);
     markCoincidentSegments('grossChart',['Brutto','A:n tuloraja','B:n tuloraja']);
     markCoincidentSegments('netChart',['A','B','C']);
