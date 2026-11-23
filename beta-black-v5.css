@@ -252,7 +252,7 @@ body.beta-import-active{overflow:hidden}
 .salary-comparison-month .chart-bar-net { left:52%; }
 .salary-comparison-month-label {
   position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
-  font-size:.68rem; color:var(--sub);
+  font-size:.68rem; color:var(--sub); white-space:nowrap;
 }
 .salary-plan-A { --salary-plan-color:#87b8ff; }
 .salary-plan-B { --salary-plan-color:#cca4ff; }

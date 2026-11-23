@@ -164,6 +164,9 @@ test("coincident markers remain touchable at 320, 360 and 390 px and the switch 
     await b.tap();
     await expect(detail(page)).toHaveText(/^B ·/);
     await expect(chart(page).locator(".salary-comparison-month")).toHaveCount(12);
+    const december = chart(page).locator("[data-month='12'] .salary-comparison-month-label");
+    await expect(december).toHaveText("12");
+    await expect(december).toHaveCSS("white-space", "nowrap");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
