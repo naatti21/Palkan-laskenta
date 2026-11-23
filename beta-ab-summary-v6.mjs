@@ -805,7 +805,25 @@ function mount() {
     rulesConfirmed:!!document.getElementById('rulesConfirmed')?.checked
   },weekFieldA.value,weekFieldB.value,globalThis.PalkkaPlannerCore?.computePlan);
   const signed=n=>(n>=0?'+':'−')+money(Math.abs(n));
+  let comparison = null;
+  const sendComparison = () => {
+    if (window.parent !== window) {
+      window.parent.postMessage({type:'palkka:beta:salary-comparison', comparison},location.origin);
+    }
+  };
+  const publishComparison = plans => {
+    const year = Number(document.getElementById('planYear')?.value);
+    const next = Number.isInteger(year) && year >= 2020 && year <= 2100 ? {year, plans} : null;
+    if (JSON.stringify(comparison) === JSON.stringify(next)) return;
+    comparison = next;
+    sendComparison();
+  };
+  window.addEventListener('message', event => {
+    if (event.origin === location.origin && event.source === window.parent &&
+        event.data?.type === 'palkka:beta:salary-comparison-request') sendComparison();
+  });
   const reset=message=>{
+    publishComparison([]);
     for(const id of ['betaABGross','betaABGrossA','betaABGrossB',
       'betaABYearA','betaABYearB','betaABMonthA','betaABMonthB',
       'betaABPeriodA','betaABPeriodB'])put(id,'–');
@@ -862,6 +880,13 @@ function mount() {
         '. Laskurin kaksisuuntainen vertailuerittely, ei lopullinen veropäätös.');
     }else put('betaABBreakdown','Sama työmäärä molemmissa: erotus kuvaa tämän laskurin verokorttioletusten eroa.');
     const cReference=renderC(computed);
+    const selectedC = cReference?.selection;
+    publishComparison([
+      {id:'A', annualNet:a, weekends:nA},
+      {id:'B', annualNet:b, weekends:nB},
+      ...(selectedC ? [{id:'C', annualNet:selectedC.net, weekends:selectedC.n,
+        referenceYear:cReference.referenceYear}] : [])
+    ]);
     drawProgressChart(computed,rowA,rowB,year,nA,nB,cReference);
     markCoincidentSegments('grossChart',['Brutto','A:n tuloraja','B:n tuloraja']);
     markCoincidentSegments('netChart',['A','B','C']);

@@ -19,7 +19,7 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
   throw new Error('Use only the approved palkka-beta.pages.dev origin or a dedicated local beta test port.');
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = ['beta-compact.mjs', 'beta-weekend-tracker.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
+const files = ['beta-compact.mjs', 'beta-salary-comparison.mjs', 'beta-weekend-tracker.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
@@ -27,6 +27,7 @@ for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
 hash.update(await readFile('beta-net-reference-2026.mjs')); // Beta-only tax benchmark invalidates cache
 hash.update(await readFile('beta-ab-summary-model.mjs'));
+hash.update(await readFile('beta-salary-comparison.css'));
 hash.update(await readFile('scripts/beta-build-anchors.mjs'));
 hash.update(await readFile('beta-ab-summary-v6.mjs')); // Final A/B presentation is also offline versioned
 for (const themeFile of ['beta-precision-tokens.css', 'beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css', 'beta-black-v5.css', 'beta-planner-black-v5.css']) {
@@ -327,6 +328,7 @@ const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
 const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
 const precisionTokens = await readFile('beta-precision-tokens.css', 'utf8');
 const betaBlackV5 = await readFile('beta-black-v5.css', 'utf8');
+const betaSalaryComparisonCss = await readFile('beta-salary-comparison.css', 'utf8');
 const betaImportCss = `
 .ledger-opening #dashboard {display:block}
 .ledger-opening #dashboard .metric {min-height:76px;border:0;border-radius:0;border-bottom:1px solid #36454b;background:transparent;box-shadow:none}
@@ -366,7 +368,7 @@ const betaImportCss = `
 .beta-import-workspace .beta-import-privacy-note{font-size:.73rem;line-height:1.42;color:var(--sub);margin:0}
 `;
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaSalaryComparisonCss + '\n' + betaImportCss);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');
@@ -426,7 +428,7 @@ if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const 
 }
 sw = replaceUnique(sw, 'const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";', 'service worker dependency');
 sw = replaceUnique(sw, 'const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-beta-v' + revision}';`, 'service worker dependency');
-sw = replaceUnique(sw, '"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs", "./beta-weekend-tracker.mjs",', 'service worker dependency');
+sw = replaceUnique(sw, '"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs", "./beta-salary-comparison.mjs", "./beta-weekend-tracker.mjs",', 'service worker dependency');
 sw = replaceUnique(sw, '"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",', 'service worker dependency');
 sw = replaceUnique(sw, '"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs", "./experiments/year-planner/ab-summary-model.mjs"', 'service worker dependency');
 sw = replaceUnique(sw, '"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",', 'service worker dependency');

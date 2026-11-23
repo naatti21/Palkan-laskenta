@@ -1,5 +1,6 @@
 import { paymentState, projectPayroll } from "./model.js";
 import { buildYearAnalysis } from "./analytics.js";
+import { installSalaryComparison } from "./beta-salary-comparison.mjs";
 import { installWeekendTracker } from "./beta-weekend-tracker.mjs";
 
 const money = new Intl.NumberFormat("fi-FI",{style:"currency",currency:"EUR"});
@@ -18,6 +19,7 @@ function sum(rows,key) {
 
 export function installCompact() {
   installWeekendTracker();
+  const updateSalaryComparison = installSalaryComparison();
   const planner = byId("plannerFrame");
   const bindPlannerLinks = () => {
     const doc = planner.contentDocument;
@@ -75,7 +77,9 @@ export function installCompact() {
   document.addEventListener("compact-payments",({detail})=>{
     const year=Number(detail?.year);
     if(!Number.isInteger(year)||year<1900||year>2200)return;
-    const overtime=buildYearAnalysis(detail?.records||[],year).overtime;
+    const analysis=buildYearAnalysis(detail?.records||[],year);
+    updateSalaryComparison(analysis);
+    const {overtime}=analysis;
     const known=overtime.recordsWithHours;
     const total=overtime.recordsTotal;
     overtimeObservation.textContent=known
