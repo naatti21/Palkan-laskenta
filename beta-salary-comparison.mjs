@@ -20,110 +20,125 @@ function planDetails(plan) {
 }
 
 function drawComparison(host, detail, months, plans) {
-  // The original horizontal bars use euros on the x-axis. For horizontal
-  // comparison lines, both realized amounts and estimated net use a y-axis.
-  const values = months.filter(month => month.complete).flatMap(month => [month.gross, month.net]);
-  values.push(...plans.map(plan => plan.annualNet / 12));
+  const groups = new Map();
+  for (const plan of plans) {
+    const value = plan.annualNet / 12;
+    if (!groups.has(value)) groups.set(value, []);
+    groups.get(value).push(plan);
+  }
+  const values = months.filter(month => month.complete).map(month => month.net);
+  values.push(...groups.keys());
   const max = Math.max(1, ...values);
   const min = Math.min(0, ...values);
   const y = value => (max - value) / (max - min) * 100;
+  const keys = element("div", "salary-comparison-keys");
+  keys.style.setProperty("--plan-count", groups.size);
   const plot = element("div", "salary-comparison-plot");
   const bars = element("div", "salary-comparison-bars");
   bars.style.gridTemplateColumns = `repeat(${months.length}, minmax(0, 1fr))`;
   bars.setAttribute("role", "group");
-  bars.setAttribute("aria-label", "Maksetut kuukausipalkat euroina");
+  bars.setAttribute("aria-label", "Toteutuneet kuukausinetot");
+
+  function select(button, texts) {
+    for (const item of host.querySelectorAll("button[aria-pressed]")) {
+      item.setAttribute("aria-pressed", String(item === button));
+    }
+    detail.replaceChildren(...texts.map(text => element("div", "", text)));
+  }
 
   const zero = element("div", "salary-comparison-zero");
   zero.style.top = y(0) + "%";
   plot.append(zero);
-  for (const tick of min < 0 ? [max, min] : [max, max / 2, 0]) {
+  for (const tick of min < 0 ? [max, 0, min] : [max, max / 2, 0]) {
     const label = element("span", "salary-comparison-tick", axisNumber.format(tick) + " €");
     label.style.top = y(tick) + "%";
     plot.append(label);
   }
 
   for (const month of months) {
-    const group = element("div", "salary-comparison-month");
-    group.setAttribute("role", "img");
-    group.setAttribute("aria-label", month.complete
-      ? `${month.label}: brutto ${currency.format(month.gross)}, netto ${currency.format(month.net)}`
-      : `${month.label}: tarkistettavaa`);
-    group.title = group.getAttribute("aria-label");
+    const label = String(month.month) + (month.complete ? "" : "*");
+    const group = element(month.complete ? "button" : "div", "salary-comparison-month");
     group.dataset.month = String(month.month);
-    const label = element("span", "salary-comparison-month-label", String(month.month) + (month.complete ? "" : "*"));
-    label.setAttribute("aria-hidden", "true");
-    group.append(label);
+    group.append(element("span", "salary-comparison-month-label", label));
     if (month.complete) {
-      for (const [kind, value] of [["gross", month.gross], ["net", month.net]]) {
-        const bar = element("span", `chart-bar chart-bar-${kind}`);
-        bar.style.top = Math.min(y(value), y(0)) + "%";
-        bar.style.height = Math.abs(y(value) - y(0)) + "%";
-        group.append(bar);
-      }
+      const name = `${month.label} · Toteutunut netto ${currency.format(month.net)}`;
+      group.type = "button";
+      group.setAttribute("aria-label", name);
+      group.setAttribute("aria-pressed", "false");
+      group.addEventListener("click", () => select(group, [name]));
+      const bar = element("span", "chart-bar chart-bar-net");
+      bar.style.top = Math.min(y(month.net), y(0)) + "%";
+      bar.style.height = Math.abs(y(month.net) - y(0)) + "%";
+      group.append(bar);
+    } else {
+      group.setAttribute("role", "img");
+      group.setAttribute("aria-label", `${month.label}: tarkistettavaa`);
     }
     bars.append(group);
   }
   plot.append(bars);
 
-  for (const plan of plans) {
-    const position = y(plan.annualNet / 12) + "%";
-    const lane = ids.indexOf(plan.id);
-    const coincident = plans.filter(other => other.annualNet === plan.annualNet);
-    const line = element("div", `salary-comparison-line salary-plan-${plan.id}`);
-    line.style.top = position;
-    if (coincident.length > 1) {
-      const index = coincident.indexOf(plan);
-      line.style.left = (index / coincident.length * 100) + "%";
-      line.style.width = (100 / coincident.length) + "%";
-    }
+  for (const [value, members] of groups) {
+    const label = members.map(plan => plan.id).join("+");
+    const style = members.length === 1 ? `salary-plan-${label}` : "salary-plan-shared";
+    const line = element("div", `salary-comparison-line ${style}`);
+    line.dataset.plans = label;
+    line.style.top = y(value) + "%";
     plot.append(line);
-    // The buttons occupy separate horizontal lanes, including at identical levels.
-    const mark = element("button", `salary-comparison-marker salary-plan-${plan.id}`);
-    mark.type = "button";
-    mark.style.top = position;
-    mark.style.left = ((lane + 0.5) * 100 / ids.length) + "%";
-    mark.setAttribute("aria-label", planDetails(plan));
-    mark.setAttribute("aria-controls", detail.id);
-    mark.setAttribute("aria-pressed", "false");
-    mark.append(element("span", "", plan.id));
-    mark.addEventListener("click", () => {
-      for (const button of plot.querySelectorAll("button")) {
-        button.setAttribute("aria-pressed", String(button === mark));
-      }
-      detail.textContent = planDetails(plan);
-    });
-    plot.append(mark);
+
+    const button = element("button", `salary-comparison-marker ${style}`);
+    button.type = "button";
+    button.setAttribute("aria-pressed", "false");
+    button.setAttribute("aria-controls", detail.id);
+    button.append(element("strong", "", label), element("span", "", currency.format(value)));
+    button.addEventListener("click", () => select(button, members.map(planDetails)));
+    keys.append(button);
   }
-  host.replaceChildren(plot);
+  const legend = element("p", "salary-comparison-legend", "Toteutunut netto");
+  const estimate = element("p", "salary-comparison-caption", "Laskurin kuukausinetot · vuosinetto ÷ 12");
+  host.replaceChildren(legend, ...(plans.length ? [estimate, keys] : []), plot);
 }
+
+const missingC = {
+  "no-target": "C-tavoitetta ei ole asetettu.",
+  "invalid-target": "C-tavoite on virheellinen.",
+  "no-result": "C-tavoitteelle ei löytynyt tulosta veroviitteen alueella."
+};
 
 export function installSalaryComparison() {
   const actualChart = document.getElementById("monthlyChart");
   const frame = document.getElementById("plannerFrame");
   const card = actualChart.closest("section");
-  const controls = element("label", "salary-comparison-switch");
-  const toggle = element("input");
-  toggle.type = "checkbox";
+  card.classList.add("salary-comparison-card");
+  const actualLegend = card.querySelector(".chart-legend");
+  const toggle = element("button", "salary-comparison-switch", "Näytä A/B/C");
+  toggle.type = "button";
   toggle.setAttribute("role", "switch");
+  const track = element("span", "salary-comparison-switch-track");
+  track.setAttribute("aria-hidden", "true");
+  toggle.append(track);
   let enabled = false;
   try { enabled = localStorage.getItem(preferenceKey) === "on"; } catch { /* optional preference */ }
-  toggle.checked = enabled;
-  const state = element("span", "salary-comparison-switch-state");
-  state.setAttribute("aria-hidden", "true");
-  controls.append(toggle, document.createTextNode("Näytä A/B/C"), state);
-  card.querySelector(".section-heading").after(controls);
+  card.querySelector(".section-heading").after(toggle);
 
-  const stack = element("div", "salary-comparison-stack");
-  actualChart.before(stack);
   const comparisonChart = element("div", "salary-comparison-chart");
   comparisonChart.id = "salaryComparisonChart";
   toggle.setAttribute("aria-controls", comparisonChart.id);
-  stack.append(actualChart, comparisonChart);
+  actualChart.after(comparisonChart);
 
-  const detail = element("p", "muted salary-comparison-detail");
+  const detail = element("div", "muted salary-comparison-detail");
   detail.id = "salaryComparisonDetail";
   detail.setAttribute("role", "status");
-  stack.after(detail);
+  const cNotice = element("p", "muted salary-comparison-notice");
+  const plannerLink = element("button", "chip salary-comparison-link", "Avaa Laskuri");
+  plannerLink.type = "button";
+  plannerLink.addEventListener("click", () => {
+    document.querySelector('[data-view-target="planning"]').click();
+    const heading = document.getElementById("plannerHeading");
+    heading.tabIndex = -1;
+    heading.focus();
+  });
+  comparisonChart.after(detail, cNotice, plannerLink);
 
   let analysis = null;
   let comparison = null;
@@ -133,13 +148,15 @@ export function installSalaryComparison() {
     const matchesYear = analysis && comparison?.year === analysis.year;
     const plans = matchesYear ? comparison.plans : [];
     const available = hasActual && plans.length > 0;
-    const show = enabled && available;
+    const show = enabled && hasActual;
 
-    state.textContent = enabled ? "ON" : "OFF";
-    stack.classList.toggle("salary-comparison-available", available);
-    actualChart.classList.toggle("salary-comparison-inactive", show);
-    comparisonChart.classList.toggle("salary-comparison-inactive", !show);
-    detail.classList.toggle("salary-comparison-inactive", !enabled);
+    toggle.setAttribute("aria-checked", String(enabled));
+    actualChart.hidden = enabled;
+    actualLegend.hidden = enabled;
+    comparisonChart.hidden = !show;
+    detail.hidden = !enabled;
+    cNotice.hidden = true;
+    plannerLink.hidden = true;
     if (show) drawComparison(comparisonChart, detail, months, plans);
     else comparisonChart.replaceChildren();
 
@@ -147,17 +164,27 @@ export function installSalaryComparison() {
     else if (!analysis) detail.textContent = "Haetaan valitun vuoden palkkoja…";
     else if (!months.length) detail.textContent = "Valitulta vuodelta ei ole palkkahistoriaa toteumavertailuun.";
     else if (!hasActual) detail.textContent = "Toteumavertailu vaatii vähintään yhden kuukauden, jonka palkkatiedot ovat kunnossa.";
-    else if (comparison && !matchesYear) detail.textContent = `Analyysin vuosi ${analysis.year} ja Laskurin suunnitteluvuosi ${comparison.year} eroavat. Valitse sama vuosi.`;
-    else if (!available) detail.textContent = "Täytä Laskuriin kelvolliset lähtötiedot, niin vertailutasot näkyvät.";
-    else {
+    else if (comparison && !matchesYear) {
+      detail.textContent = `Analyysin vuosi ${analysis.year} ja Laskurin suunnitteluvuosi ${comparison.year} eroavat. Valitse sama vuosi.`;
+      plannerLink.hidden = false;
+    } else if (!available) {
+      detail.textContent = "Täytä Laskuriin kelvolliset lähtötiedot, niin vertailutasot näkyvät.";
+      plannerLink.hidden = false;
+    } else {
+      detail.textContent = "Valitse kuukausi tai A/B/C-taso nähdäksesi tarkan summan.";
       const c = plans.find(plan => plan.id === "C");
-      detail.textContent = "Vertailuviivat ovat arvioituja kuukausinettoja (vuosinetto ÷ 12). Valitse tunnus."
-        + (c && c.referenceYear !== analysis.year ? ` C:n veroviite: ${c.referenceYear}.` : "")
-        + (months.some(month => !month.complete) ? " * Kuukauden palkkatiedot pitää tarkistaa." : "");
+      const notes = [];
+      if (!c) {
+        notes.push(missingC[comparison.cUnavailable] ?? missingC["no-result"]);
+        plannerLink.hidden = false;
+      } else if (c.referenceYear !== analysis.year) notes.push(`C:n veroviite: ${c.referenceYear}.`);
+      if (months.some(month => !month.complete)) notes.push("* Kuukauden palkkatiedot pitää tarkistaa.");
+      cNotice.textContent = notes.join(" ");
+      cNotice.hidden = notes.length === 0;
     }
   }
-  toggle.addEventListener("change", () => {
-    enabled = toggle.checked;
+  toggle.addEventListener("click", () => {
+    enabled = !enabled;
     try { localStorage.setItem(preferenceKey, enabled ? "on" : "off"); } catch { /* optional preference */ }
     render();
   });
@@ -176,7 +203,7 @@ export function installSalaryComparison() {
     const plans = Array.isArray(next?.plans)
       ? next.plans.filter(plan => ids.includes(plan?.id) && Number.isFinite(plan.annualNet))
       : [];
-    comparison = Number.isInteger(next?.year) ? { year: next.year, plans } : null;
+    comparison = Number.isInteger(next?.year) ? { year: next.year, plans, cUnavailable: next.cUnavailable } : null;
     render();
   });
   requestComparison();

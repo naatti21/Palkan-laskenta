@@ -7,7 +7,8 @@ const showPlanner = page => page.getByRole("button", { name: "Laskuri", exact: t
 const chart = page => page.locator("#salaryComparisonChart");
 const detail = page => page.locator("#salaryComparisonDetail");
 const toggle = page => page.getByRole("switch", { name: "Näytä A/B/C" });
-const marker = (page, id) => chart(page).getByRole("button", { name: new RegExp("^" + id + " ·") });
+const card = page => page.locator(".salary-comparison-card");
+const marker = (page, id) => chart(page).getByRole("button", { name: new RegExp("^" + id + " ") });
 const euros = text => [...text.matchAll(/([\d\s]+(?:,\d+)?)\s*€/g)]
   .map(([, value]) => Number(value.replace(/\s/g, "").replace(",", ".")));
 
@@ -59,12 +60,17 @@ test("OFF preserves the actuals and ON plots the calculator values on the actual
   await expect(actual).toBeVisible();
   await expect(actual.locator(".chart-amount")).toHaveText([/2\s*600,00/, /2\s*800,00/]);
   const original = await actual.innerHTML();
-  const initialHeight = (await actual.locator("xpath=ancestor::section[1]").boundingBox()).height;
+  const initialHeight = (await card(page).boundingBox()).height;
   await toggle(page).check();
   await expect(chart(page)).toBeVisible();
   await expect(actual).toBeHidden();
   await expect(chart(page).locator(".salary-comparison-line")).toHaveCount(3);
-  expect(Math.abs((await actual.locator("xpath=ancestor::section[1]").boundingBox()).height - initialHeight)).toBeLessThanOrEqual(1);
+  await expect(actual).toHaveCSS("display", "none");
+  await expect(chart(page).locator(".chart-bar-gross")).toHaveCount(0);
+  await expect(chart(page).locator(".salary-comparison-tick").last()).toHaveText("0 €");
+  const scaleMax = Math.max(2800, ...Object.values(expected).map(([monthly]) => monthly));
+  const exactScaleMax = euros(await chart(page).locator(".salary-comparison-tick").first().innerText())[0];
+  expect(Math.abs(exactScaleMax - scaleMax)).toBeLessThanOrEqual(0.5);
   for (const [id, weekends] of [["A", 3], ["B", 9], ["C", 17]]) {
     if (id === "B") {
       await marker(page, id).focus();
@@ -76,13 +82,16 @@ test("OFF preserves the actuals and ON plots the calculator values on the actual
     expect([Math.round(monthly), Math.round(annual)]).toEqual(expected[id]);
     expect(monthly).toBeCloseTo(annual / 12, 2);
     expect(text).toContain(weekends + " työviikonloppua");
-    const midpoint = await chart(page).locator(".salary-comparison-line.salary-plan-" + id).evaluate(el => parseFloat(el.style.top));
-    expect(midpoint).toBeCloseTo((4000 - annual / 12) / 4000 * 100, 3);
+    const midpoint = await chart(page).locator("[data-plans=" + id + "]").evaluate(el => parseFloat(el.style.top));
+    expect(midpoint).toBeCloseTo((exactScaleMax - annual / 12) / exactScaleMax * 100, 2);
   }
   await expect(detail(page)).toContainText("Veroviite 2026");
+  await chart(page).locator("button[data-month='3']").tap();
+  await expect(detail(page)).toContainText(/Toteutunut netto 2\s*800,00/);
   await toggle(page).uncheck();
   await expect(actual).toBeVisible();
   expect(await actual.innerHTML()).toBe(original);
+  expect((await card(page).boundingBox()).height).toBe(initialHeight);
   await expect(chart(page)).toBeHidden();
   await expect(page.locator("[data-view='tracking'] .salary-comparison-switch")).toHaveCount(0);
 });
@@ -93,7 +102,9 @@ test("changing either year gates comparison and C is visible only when the targe
   await showAnalysis(page);
   await toggle(page).check();
   await expect(detail(page)).toContainText("Analyysin vuosi 2027 ja Laskurin suunnitteluvuosi 2026");
-  await expect(chart(page).locator("button")).toHaveCount(0);
+  await expect(chart(page).locator(".chart-bar-net")).toHaveCount(1);
+  await expect(page.locator("#monthlyChart")).toBeHidden();
+  await expect(chart(page).locator(".salary-comparison-marker")).toHaveCount(0);
   await page.locator("#analysisYear").selectOption("2026");
   await expect(marker(page, "C")).toBeVisible();
 
@@ -102,7 +113,7 @@ test("changing either year gates comparison and C is visible only when the targe
   await showAnalysis(page);
   await expect(detail(page)).toContainText("Analyysin vuosi 2026 ja Laskurin suunnitteluvuosi 2027");
   await page.locator("#analysisYear").selectOption("2027");
-  await expect(detail(page)).toContainText("C:n veroviite: 2026");
+  await expect(card(page)).toContainText("C:n veroviite: 2026");
   await marker(page, "C").tap();
   await expect(detail(page)).toContainText("Veroviite 2026");
 
@@ -113,6 +124,10 @@ test("changing either year gates comparison and C is visible only when the targe
   await showAnalysis(page);
   await expect(chart(page).locator(".salary-comparison-line")).toHaveCount(2);
   await expect(marker(page, "C")).toHaveCount(0);
+  await expect(card(page)).toContainText("C-tavoitetta ei ole asetettu.");
+  await card(page).getByRole("button", { name: "Avaa Laskuri" }).click();
+  await expect(frame.locator("#betaCTarget")).toBeVisible();
+  await showAnalysis(page);
   await marker(page, "A").tap();
   expect(Math.round(euros(await detail(page).innerText())[1])).toBe(newA);
 
@@ -120,7 +135,7 @@ test("changing either year gates comparison and C is visible only when the targe
   await frame.locator("#betaWeekendsA").fill("53");
   await showAnalysis(page);
   await expect(detail(page)).toContainText("Täytä Laskuriin");
-  await expect(chart(page).locator("button")).toHaveCount(0);
+  await expect(chart(page).locator(".salary-comparison-marker")).toHaveCount(0);
 });
 
 test("no history and unresolved months do not produce chart actuals", async ({ page }) => {
@@ -128,7 +143,7 @@ test("no history and unresolved months do not produce chart actuals", async ({ p
   await showAnalysis(page);
   await toggle(page).check();
   await expect(detail(page)).toContainText("ei ole palkkahistoriaa toteumavertailuun");
-  await expect(chart(page).locator("button")).toHaveCount(0);
+  await expect(chart(page).locator(".salary-comparison-marker")).toHaveCount(0);
 
   await open(page, [["one", "2026-02", 2600], ["conflict", "2026-02", 2700], ["clean", "2026-03", 2800]]);
   await configurePlanner(page);
@@ -136,7 +151,7 @@ test("no history and unresolved months do not produce chart actuals", async ({ p
   await expect(toggle(page)).toBeChecked();
   await expect(chart(page).locator("[data-month='2']")).toHaveAttribute("aria-label", /tarkistettavaa/);
   await expect(chart(page).locator("[data-month='2'] .chart-bar")).toHaveCount(0);
-  await expect(chart(page).locator("[data-month='3'] .chart-bar")).toHaveCount(2);
+  await expect(chart(page).locator("[data-month='3'] .chart-bar")).toHaveCount(1);
 });
 
 test("coincident markers remain touchable at 320, 360 and 390 px and the switch survives offline", async ({ page, context }) => {
@@ -154,15 +169,19 @@ test("coincident markers remain touchable at 320, 360 and 390 px and the switch 
   await toggle(page).check();
   for (const width of [320, 360, 390]) {
     await page.setViewportSize({ width, height: 820 });
-    const a = marker(page, "A"), b = marker(page, "B");
-    await expect(a).toBeVisible();
-    const rectA = await a.boundingBox(), rectB = await b.boundingBox();
-    expect(rectA.y).toBeCloseTo(rectB.y, 0);
-    expect(rectB.x - rectA.x).toBeGreaterThanOrEqual(rectA.width);
-    await a.tap();
-    await expect(detail(page)).toHaveText(/^A ·/);
-    await b.tap();
-    await expect(detail(page)).toHaveText(/^B ·/);
+    const shared = chart(page).getByRole("button", { name: /^A\+B / });
+    await expect(shared).toBeVisible();
+    await expect(chart(page).locator(".salary-comparison-line")).toHaveCount(2);
+    await expect(chart(page).locator('[data-plans="A+B"]')).toHaveCount(1);
+    await shared.tap();
+    await expect(detail(page).locator("div")).toHaveText([/^A ·/, /^B ·/]);
+    const chartHeight = (await chart(page).boundingBox()).height;
+    expect(chartHeight).toBeGreaterThanOrEqual(250);
+    expect(chartHeight).toBeLessThanOrEqual(320);
+    await expect(page.locator("#monthlyChart")).toHaveCSS("display", "none");
+    const detailGap = await detail(page).evaluate(el => el.getBoundingClientRect().top -
+      document.getElementById("salaryComparisonChart").getBoundingClientRect().bottom);
+    expect(detailGap).toBeLessThanOrEqual(16);
     await expect(chart(page).locator(".salary-comparison-month")).toHaveCount(12);
     const december = chart(page).locator("[data-month='12'] .salary-comparison-month-label");
     await expect(december).toHaveText("12");
@@ -183,4 +202,23 @@ test("coincident markers remain touchable at 320, 360 and 390 px and the switch 
   } finally {
     await context.setOffline(false);
   }
+});
+
+test("capture the 360 px salary comparison with varied monthly net payments", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 360, height: 710 });
+  const payments = [2515.42, 2844.18, 2671.06, 3080.90, 2465.57, 3612.34,
+    3234.23, 2756.91, 2989.08, 2391.67, 2897.76, 3498.52];
+  await open(page, payments.map((net, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    return ["preview-" + month, "2026-" + month, net];
+  }));
+  await configurePlanner(page);
+  await showAnalysis(page);
+  await toggle(page).check();
+  await expect(chart(page).locator(".salary-comparison-line")).toHaveCount(3);
+  await marker(page, "C").tap();
+  await card(page).evaluate(el => window.scrollBy(0, el.getBoundingClientRect().top - 76));
+  const path = testInfo.outputPath("salary-comparison-360.png");
+  await page.screenshot({ path, animations: "disabled" });
+  await testInfo.attach("360 px · Vaihtelevat kuukausinetot ja A/B/C", { path, contentType: "image/png" });
 });
