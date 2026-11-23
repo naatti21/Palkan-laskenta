@@ -51,8 +51,8 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
   const x=v=>L+(v-low)/(high-low)*plotW;
   const y=v=>T+(60-v)/60*plotH;
   const svg=progressSvg('svg',{viewBox:'0 0 600 310',role:'img',
-    'aria-label':'Vuoden 2026 vertailu: kokonaisveroaste, marginaalivero sekä A:n ja B:n omien vuositulojen laskurivähennykset.'});
-  svg.append(progressSvg('title',{},'Veroprogressio 2026, A ja B erikseen'));
+    'aria-label':'Vuoden 2026 vertailu: kokonaisveroaste, marginaalivero sekä A:n ja B:n laskurivähennykset. Valittu C-tavoite näkyy 2026-viitepisteenä.'});
+  svg.append(progressSvg('title',{},'Veroprogressio 2026 · vertailukuva'));
   for(let p=0;p<=60;p+=15){
     const yy=y(p);
     svg.append(progressSvg('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'#394858','stroke-width':1}));
@@ -86,15 +86,19 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
     guide(rowA.gross,'#81caff','A');
     guide(rowB.gross,'#bb9afb','B');
   }
+  const marker=(series,gross,percent,radius,color,description)=>{
+    const point=progressSvg('circle',{cx:x(gross),cy:y(percent),r:radius,fill:color,
+      stroke:'#101820','stroke-width':2,'data-series':series});
+    point.append(progressSvg('title',{},description));
+    svg.append(point);
+  };
   for(const [gross,percent,color,label] of [
     [rowA.gross,a.aDeductionPercent,'#81caff','A'],
     [rowB.gross,b.bDeductionPercent,'#bb9afb','B']
   ]){
     if(percent<0||percent>60)continue;
-    svg.append(progressSvg('circle',{cx:x(gross),cy:y(percent),r:6,fill:color,
-      stroke:'#101820','stroke-width':2}));
-    svg.append(progressSvg('title',{},label+': vuosibrutto '+money(gross)+
-      ', laskurin vähennysosuus '+progressPct(percent)));
+    marker(label,gross,percent,6,color,label+': vuosibrutto '+money(gross)+
+      ', laskurin vähennysosuus '+progressPct(percent));
   }
   // C is a user-constrained workload from the PUBLIC net reference, not a
   // third withholding percentage. No unique point when no goal is selected.
@@ -102,12 +106,9 @@ function drawProgressChart(plan,rowA,rowB,year,nA,nB,cReference=null) {
     const gross=cReference.selection.gross;
     const cTax=referenceNet2026(gross);
     if(cTax){
-      svg.append(progressSvg('circle',{cx:x(gross),cy:y(cTax.effectiveAllInPercent),
-        r:7,fill:'#f4d98f',stroke:'#101820','stroke-width':2,
-        'data-series':'C'}));
-      svg.append(progressSvg('title',{},'C: '+cReference.selection.n+' viikonloppua, '+
-        money(gross)+' vuosibrutto, yleinen 2026 vero- ja maksutaso '+
-        progressPct(cTax.effectiveAllInPercent)));
+      marker('C',gross,cTax.effectiveAllInPercent,7,'#ffe047',
+        'C: '+cReference.selection.n+' viikonloppua, '+money(gross)+
+        ' vuosibrutto, yleinen 2026 vero- ja maksutaso '+progressPct(cTax.effectiveAllInPercent));
     }
   }
   host.append(svg);
@@ -366,9 +367,6 @@ function mount() {
   // Preserve the original inverse-goal tool inside the advanced panel for expert users.
   const december=document.getElementById('decemberTaxNote');
   if(december)advanced.append(december);
-  const limits=[...oldComparison.querySelectorAll('details')].find(node=>
-    node.querySelector('summary')?.textContent.includes('Mitä tässä mallissa'));
-  if(limits){const p=limits.querySelector('p');if(p){p.classList.add('hint');limits.replaceWith(p);}}
   // C is now its own goal-search section, never a third tax-card comparison.
 
   // Keep the verified shared-scenario calculation as an internal A-reference.
@@ -420,7 +418,7 @@ function mount() {
     .beta-progress-legend :is(.p-a,.p-b,.p-c)::before{width:9px;height:9px;border:2px solid #101820;border-radius:50%;box-sizing:content-box;}
     .beta-progress-legend .p-a::before{background:#81caff}
     .beta-progress-legend .p-b::before{background:#bb9afb}
-    .beta-progress-legend .p-c::before{background:#f4d98f}
+    .beta-progress-legend .p-c::before{background:#ffe047}
     .beta-progress-chart{width:100%;overflow:hidden;}
     .beta-progress-chart svg{display:block;width:100%;height:auto;max-height:320px;}
     .beta-progress-summary{font-size:.78rem;line-height:1.58;color:#e5eff9;background:#192432;border-left:3px solid #70dea9;padding:10px 11px;border-radius:6px;}
