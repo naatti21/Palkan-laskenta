@@ -99,12 +99,6 @@ function drawComparison(host, detail, months, plans) {
   host.replaceChildren(legend, ...(plans.length ? [estimate, keys] : []), plot);
 }
 
-const missingC = {
-  "no-target": "C-tavoitetta ei ole asetettu.",
-  "invalid-target": "C-tavoite on virheellinen.",
-  "no-result": "C-tavoitteelle ei löytynyt tulosta veroviitteen alueella."
-};
-
 export function installSalaryComparison() {
   const actualChart = document.getElementById("monthlyChart");
   const frame = document.getElementById("plannerFrame");
@@ -175,7 +169,7 @@ export function installSalaryComparison() {
       const c = plans.find(plan => plan.id === "C");
       const notes = [];
       if (!c) {
-        notes.push(missingC[comparison.cUnavailable] ?? missingC["no-result"]);
+        notes.push(comparison.cUnavailable || "C-tavoitteelle ei löytynyt tulosta.");
         plannerLink.hidden = false;
       } else if (c.referenceYear !== analysis.year) notes.push(`C:n veroviite: ${c.referenceYear}.`);
       if (months.some(month => !month.complete)) notes.push("* Kuukauden palkkatiedot pitää tarkistaa.");

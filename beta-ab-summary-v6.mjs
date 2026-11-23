@@ -882,8 +882,9 @@ function mount() {
     const cReference=renderC(computed);
     const selectedC = cReference?.selection;
     const cTarget = optionalNumber(targetField,1000000);
-    const cUnavailable = !cTarget.ok ? 'invalid-target'
-      : cTarget.value === null ? 'no-target' : 'no-result';
+    const cUnavailable = cTarget.value === null && cTarget.ok
+      ? 'C-tavoitetta ei ole asetettu.'
+      : 'C: '+document.getElementById('betaCReason').textContent;
     publishComparison([
       {id:'A', annualNet:a, weekends:nA},
       {id:'B', annualNet:b, weekends:nB},

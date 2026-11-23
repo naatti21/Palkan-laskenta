@@ -132,6 +132,12 @@ test("changing either year gates comparison and C is visible only when the targe
   expect(Math.round(euros(await detail(page).innerText())[1])).toBe(newA);
 
   await showPlanner(page);
+  await frame.locator("#betaCTarget").fill("100000");
+  await showAnalysis(page);
+  await expect(marker(page, "C")).toHaveCount(0);
+  await expect(card(page).locator(".salary-comparison-notice")).toContainText("Nettotavoitteesta jää");
+
+  await showPlanner(page);
   await frame.locator("#betaWeekendsA").fill("53");
   await showAnalysis(page);
   await expect(detail(page)).toContainText("Täytä Laskuriin");
