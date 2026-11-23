@@ -1685,7 +1685,7 @@ function installPdfBatchQueue() {
       : "Ei PDF-tiedostoja jonossa.";
     fileLog.hidden = !entries.length;
     status.textContent = entries.length
-      ? entries.length + " tiedostoa · tallennettu " + (counts.saved || 0) +
+      ? (entries.length === 1 ? "1 tiedosto" : entries.length + " tiedostoa") + " · tallennettu " + (counts.saved || 0) +
         " · jo olemassa " + (counts.duplicate || 0) +
         " · tarkistettava " + ((counts.review || 0)+(counts.conflict || 0)+(counts.unknown || 0)) +
         " · ohitettu " + ((counts.skipped || 0)+(counts.error || 0)) +
