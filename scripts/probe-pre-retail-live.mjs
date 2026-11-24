@@ -26,12 +26,12 @@ try {
   const frame = await (await iframe.elementHandle()).contentFrame();
   let frameInfo;
   try {
-    frameInfo=await frame.evaluate(()=>({href:location.href,title:document.title,ready:document.readyState,text:document.body?.innerText.slice(0,700)}));
+    frameInfo=await frame.evaluate(()=>({href:location.href,title:document.title,ready:document.readyState,hasYear:!!document.getElementById("planYear"),text:document.body?.innerText.slice(0,700)}));
   } catch(error) { frameInfo={error:String(error)}; }
   console.log("IFRAME",JSON.stringify(frameInfo));
   console.log("ERRORS",JSON.stringify(errors));
   await page.screenshot({path:"pre-retail-live-mobile.png",fullPage:false});
-  if (!frameInfo.text?.includes("Suunnitteluvuosi") && !frameInfo.text?.includes("Kuinka paljon teet viikonlopputöitä")) {
+  if (!frameInfo.hasYear) {
     throw new Error("Deployed Android viewport planner iframe is not rendering real calculator content");
   }
   await context.close();
