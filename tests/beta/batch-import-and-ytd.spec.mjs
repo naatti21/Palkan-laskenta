@@ -60,25 +60,30 @@ test("select multiple PDF files, require a source and process sequentially witho
   expect(await records(page)).toHaveLength(2);
 });
 
-test("automatic batch stops on corrected payslip and needs explicit user decision",async({page})=>{
+test("automatic batch pauses for corrected payslip, then resumes after an explicit decision",async({page})=>{
   await page.goto("/index.html");
   const id=await createSource(page);
   await page.locator("#betaImportOpen").click();
   await page.locator("#betaBatchInput").setInputFiles([first(),conflict(),second()]);
   await page.locator("#betaBatchSource").selectOption(id);
   await page.locator("#betaBatchAuto").evaluate(el => { el.checked = true; });
-  page.once("dialog",d=>d.accept());
+  let confirmations=0;
+  page.on("dialog",async dialog=>{ confirmations++; await dialog.accept(); });
   await page.locator("#betaBatchNext").click();
   await expect(page.locator("#conflictSection")).toBeVisible();
-  await expect(page.locator("#betaBatchStatus")).toContainText("Käsittele avoin tarkistus");
+  await expect(page.locator("#betaBatchStatus")).toContainText("Jono jatkuu sen jälkeen automaattisesti");
   expect(await records(page)).toHaveLength(1);
   await expect(page.locator("#betaBatchNext")).toBeDisabled();
+  await expect(page.locator("#betaBatchContinue")).toHaveCount(0);
+  // The existing reject/skip decision must release the paused queue.
   await page.locator("#cancelConflictButton").click();
   await expect(page.locator("#betaBatchStatus")).toContainText("ohitettu 1");
-  await page.locator("#betaBatchAuto").evaluate(el => { el.checked = false; });
-  await page.locator("#betaBatchNext").click();
   await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
-  expect(await records(page)).toHaveLength(2);
+  await expect(page.locator("#betaBatchFiles li").nth(2)).toContainText("Tallennettu");
+  expect(confirmations).toBe(1);
+  const all=await records(page);
+  expect(all).toHaveLength(2);
+  expect(all.map(row=>row.values.payDate).sort()).toEqual(["2026-08-28","2026-09-11"]);
 });
 
 test("diagnostic panel exposes unknown source and overlapping periods without claiming full YTD",async({page})=>{
