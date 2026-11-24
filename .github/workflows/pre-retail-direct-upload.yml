@@ -1,0 +1,180 @@
+name: Publish isolated Palkka Pre-retail
+
+on:
+  push:
+    branches: ["pre-retail/v0.1-foundation-20261124"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: palkka-pre-retail-direct-upload
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.ref == 'refs/heads/pre-retail/v0.1-foundation-20261124'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PRE_RETAIL_ORIGIN: https://palkka-pre-retail.pages.dev
+    steps:
+      - name: Checkout exact pre-retail commit
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium for full regression suite
+        run: npx playwright install --with-deps chromium
+
+      - name: Unit and payroll scenarios
+        run: npm run test:logic
+
+      - name: Existing browser regression suite
+        run: npm run test:e2e
+
+      - name: Isolated Beta regression suite
+        run: npm run test:beta
+
+      - name: Staging isolation regression suite
+        run: npm run test:staging
+
+      - name: Pre-retail browser and offline regression suite
+        run: npm run test:pre-retail
+
+      - name: Build for exact pre-retail HTTPS origin
+        run: npm run build:pre-retail
+
+      - name: Verify exclusive preview build and origin
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFile,stat} from 'node:fs/promises';
+          const root = '_pre-retail/';
+          const info = JSON.parse(await readFile(root+'build-info.json','utf8'));
+          assert.equal(info.environment,'pre-retail');
+          assert.equal(info.origin,process.env.PRE_RETAIL_ORIGIN);
+          assert.equal(info.commit,process.env.GITHUB_SHA);
+          assert.equal(new URL(info.origin).hostname,'palkka-pre-retail.pages.dev');
+          const config = await readFile(root+'pre-retail-config.mjs','utf8');
+          assert.ok(config.includes(process.env.PRE_RETAIL_ORIGIN));
+          const html = await readFile(root+'index.html','utf8');
+          assert.match(html,/Palkka Pre-retail/);
+          assert.match(html,/pre-retail-entry\.mjs/);
+          const sw = await readFile(root+'sw.js','utf8');
+          assert.match(sw,/palkka-pre-retail-v-/);
+          const manifest = JSON.parse(await readFile(root+'manifest.webmanifest','utf8'));
+          assert.equal(manifest.id,'./palkka-pre-retail');
+          for (const path of ['index.html','app.js','storage.js','model.js','parser.js',
+            'pre-retail-entry.mjs','pre-retail-config.mjs','sw.js','styles.css',
+            'build-info.json','_headers','manifest.webmanifest',
+            'vendor/pdfjs/pdf.min.mjs','vendor/pdfjs/pdf.worker.min.mjs']) {
+            assert.ok((await stat(root+path)).isFile(),path);
+          }
+          console.log('Pre-retail preview build verified',info.commit,info.origin);
+          NODE
+
+      - name: Keep exact preview artifact for rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: palkka-pre-retail-tested-preview
+          path: _pre-retail/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Confirm Cloudflare secrets
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_API_TOKEN" || { echo "Missing Cloudflare token"; exit 1; }
+          test -n "$CF_ACCOUNT_ID" || { echo "Missing Cloudflare account ID"; exit 1; }
+
+      - name: Create or verify separate Direct Upload Pages project
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,re,urllib.error,urllib.request
+          account=os.environ['CF_ACCOUNT_ID']
+          assert re.fullmatch(r'[a-fA-F0-9]{32}',account)
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/pages/projects'
+          headers={'Authorization':'Bearer '+os.environ['CF_API_TOKEN'],'Content-Type':'application/json'}
+          def request(method,url,body=None):
+              data=json.dumps(body).encode() if body is not None else None
+              req=urllib.request.Request(url,headers=headers,method=method,data=data)
+              with urllib.request.urlopen(req,timeout=35) as response:
+                  payload=json.load(response)
+              assert payload.get('success') is True,'Cloudflare request failed'
+              return payload['result']
+          name='palkka-pre-retail'
+          try:
+              project=request('GET',base+'/'+name)
+          except urllib.error.HTTPError as error:
+              if error.code!=404: raise
+              project=request('POST',base,{'name':name,'production_branch':'pre-retail'})
+          assert project.get('name')==name,'Unexpected project'
+          assert project.get('subdomain')=='palkka-pre-retail.pages.dev','Unexpected assigned hostname'
+          assert project.get('production_branch')=='pre-retail','Production branch belongs to a different project'
+          assert (project.get('source') or {}).get('type') not in ('github','gitlab'),'Do not deploy into Git-connected project'
+          print('Verified isolated Cloudflare Pages project',name)
+          PY
+
+      - name: Publish only dedicated pre-retail Pages project
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _pre-retail --project-name=palkka-pre-retail --branch=pre-retail --commit-hash=${{ github.sha }}
+
+      - name: Verify production deployment and origin content
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,time,urllib.request
+          sha=os.environ['GITHUB_SHA']
+          origin=os.environ['PRE_RETAIL_ORIGIN']
+          project='palkka-pre-retail'
+          url='https://api.cloudflare.com/client/v4/accounts/'+os.environ['CF_ACCOUNT_ID']+'/pages/projects/'+project+'/deployments?env=production&per_page=1'
+          headers={'Authorization':'Bearer '+os.environ['CF_API_TOKEN'],'Cache-Control':'no-cache'}
+          verified=False
+          last=''
+          for i in range(25):
+              with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=20) as r: data=json.load(r)
+              assert data.get('success'),'Cloudflare deployment API failed'
+              d=(data.get('result') or [None])[0]
+              if d:
+                  meta=(d.get('deployment_trigger') or {}).get('metadata') or {}
+                  last=str((meta.get('commit_hash'),(d.get('latest_stage') or {}).get('status'),d.get('environment')))
+                  if meta.get('commit_hash')==sha and (d.get('latest_stage') or {}).get('status')=='success' and d.get('environment')=='production':
+                      with urllib.request.urlopen(urllib.request.Request(origin+'/build-info.json',headers={'Cache-Control':'no-cache'}),timeout=20) as response:
+                          build=json.load(response)
+                      assert build['commit']==sha
+                      assert build['origin']==origin
+                      assert build['environment']=='pre-retail'
+                      verified=True
+                      break
+              time.sleep(5)
+          assert verified,'Could not verify exact published pre-retail commit: '+last
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf8') as f:
+              f.write('### Palkka Pre-retail preview verified\n')
+              f.write('- URL: '+origin+'\n- SHA: '+sha+'\n')
+              f.write('- Separate from Beta, GitHub Pages, and user data.\n')
+          print('Verified preview URL',origin,sha)
+          PY
