@@ -1,0 +1,8 @@
+html.beta-integrated [hidden] { display:none !important; }
+html.beta-integrated .shell label,html.beta-integrated .shell button { overflow-wrap:anywhere; }
+html.beta-integrated .shell :is(input,button,summary,a):focus-visible {
+  outline:2px solid #8cecff; outline-offset:2px;
+}
+
+.retail-planner-intro { display:grid; gap:8px; }
+.retail-planner-intro :is(h2,p) { margin:0; }

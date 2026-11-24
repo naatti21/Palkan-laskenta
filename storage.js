@@ -381,22 +381,33 @@ export async function migrateLegacyLocalStorage() {
   const done = await getSetting("legacyLocalStorageMigrated");
   if (done) return { migrated: 0 };
 
-  let records = [];
-  try {
-    const raw = localStorage.getItem(LEGACY_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) records = parsed;
+  const raw = localStorage.getItem(LEGACY_KEY);
+  let migratedRecords = [];
+  if (raw !== null) {
+    try {
+      const records = JSON.parse(raw);
+      if (!Array.isArray(records)) throw new Error("Legacy history must be an array");
+      for (const record of records) {
+        if (record?.recordSchemaVersion != null && ![1, 2, 3].includes(record.recordSchemaVersion)) {
+          throw new Error("Unsupported legacy record schema");
+        }
+      }
+      migratedRecords = records.map((record, index) => {
+        const normalized = validateBackupRecordInput(record, index, true);
+        if (!Object.values(normalized.values).some(value => value != null) && !normalized.payLines.length) {
+          throw new Error("Legacy record has no recognized pay data");
+        }
+        return normalized;
+      });
+    } catch {
+      throw new Error("Vanhan paikallisen historian muotoa ei tunnistettu. Alkuperäinen historia säilytettiin.");
     }
-  } catch {
-    records = [];
   }
 
-  const migratedRecords = records.map(migrateLegacyRecord).filter(Boolean);
   if (migratedRecords.length) await mergeManyRecords(migratedRecords);
 
   await setSetting("legacyLocalStorageMigrated", true);
-  if (migratedRecords.length > 0) localStorage.removeItem(LEGACY_KEY);
+  if (raw !== null) localStorage.removeItem(LEGACY_KEY);
   return { migrated: migratedRecords.length };
 }
 

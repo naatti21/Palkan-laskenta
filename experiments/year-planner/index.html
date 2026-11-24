@@ -708,15 +708,16 @@ globalThis.PalkkaPlannerHistory={historySuggestions};
       if(event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='palkka:planner:prefill')return;
       try{
         if(event.data.backup?.app!=='Palkka PWA'||!Array.isArray(event.data.backup.records))throw new Error('Tuntematon palkkahistorian muoto');
-        if(!event.data.backup.records.length){lastHistory=null;showWeekendHistoryProposal();clearSourceSuggestions();setStatus('Beta ei sisällä vielä vahvistettua palkkahistoriaa. Voit käyttää muokattavia esimerkkilukuja.');return;}
+        const product=document.documentElement.dataset.parentProduct||'Beta';
+        if(!event.data.backup.records.length){lastHistory=null;showWeekendHistoryProposal();clearSourceSuggestions();setStatus(product+' ei sisällä vielä vahvistettua palkkahistoriaa. Voit käyttää muokattavia esimerkkilukuja.');return;}
         lastPayload=event.data.backup;
         showHistory(PalkkaPlannerHistory.historySuggestions(lastPayload,Number(el('regularHours').value)));
         if(!acceptedOnce){
           acceptedOnce=true;
           el('applyHistory').click();
-          setStatus('Beta ehdotti luvut paikallisesta palkkahistoriasta. Tarkista palkkamalli ja viikonlopun korvaus. Bonuksia ei lisätä automaattisesti.');
+          setStatus(product+' ehdotti luvut paikallisesta palkkahistoriasta. Tarkista palkkamalli ja viikonlopun korvaus. Bonuksia ei lisätä automaattisesti.');
         }else setStatus('Palkkahistoria päivitetty. Omia käsin muutettuja arvoja ei ylikirjoitettu; voit halutessasi valita ”Käytä varmistettavia ehdotuksia”.');
-      }catch(err){clearSourceSuggestions();setStatus('Betan historiasta ei saatu luotettavia ehdotuksia: '+err.message,true);}
+      }catch(err){clearSourceSuggestions();setStatus('Palkkahistoriasta ei saatu luotettavia ehdotuksia: '+err.message,true);}
     });
   }
   showWeekendHistoryProposal();

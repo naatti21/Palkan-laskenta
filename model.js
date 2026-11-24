@@ -259,7 +259,10 @@ export function recordDifferences(existingInput, incomingInput) {
   const existing = migrateLegacyRecord(existingInput);
   const incoming = migrateLegacyRecord(incomingInput);
   if (!existing || !incoming) return [];
+  return normalizedRecordDifferences(existing, incoming);
+}
 
+function normalizedRecordDifferences(existing, incoming) {
   const differences = [];
   for (const key of CONFLICT_VALUE_KEYS) {
     const before = existing.values?.[key] ?? null;
@@ -275,28 +278,32 @@ export function classifyRecordRelation(existingInput, incomingInput) {
   const incoming = migrateLegacyRecord(incomingInput);
   if (!existing || !incoming) return { type: "distinct", differences: [] };
 
-  const differences = recordDifferences(existing, incoming);
+  const relation = classifyNormalizedRelation(existing, incoming);
+  return { ...relation, differences: relation.type === "distinct" ? [] : normalizedRecordDifferences(existing, incoming) };
+}
+
+function classifyNormalizedRelation(existing, incoming) {
   const a = existing.values, b = incoming.values;
   const eventKey = payEventKeyFromValues(a);
   // Legacy confirmed-distinct labels are retained for compatibility, but only
   // an explicit edge between these payment IDs authorizes separate counting.
   if (existing.payEventId !== incoming.payEventId && (
     existing.distinctFrom.includes(incoming.payEventId) || incoming.distinctFrom.includes(existing.payEventId)
-  )) return { type: "distinct", differences: [] };
+  )) return { type: "distinct" };
   const sameSource = existing.sourceHash && existing.sourceHash === incoming.sourceHash;
   const sameRevision = existing.id === incoming.id && sameRecordContent(existing, incoming);
-  if (sameSource || sameRevision) return { type: "exact_duplicate", eventKey, differences };
-  if (existing.payEventId === incoming.payEventId) return { type: "same_event_conflict", eventKey, differences };
+  if (sameSource || sameRevision) return { type: "exact_duplicate", eventKey };
+  if (existing.payEventId === incoming.payEventId) return { type: "same_event_conflict", eventKey };
   if (existing.incomeSourceId && incoming.incomeSourceId && existing.incomeSourceId !== incoming.incomeSourceId)
-    return { type: "distinct", eventKey: null, differences: [] };
+    return { type: "distinct", eventKey: null };
   const overlap = a.payPeriodStart && a.payPeriodEnd && b.payPeriodStart && b.payPeriodEnd &&
     a.payPeriodStart <= b.payPeriodEnd && b.payPeriodStart <= a.payPeriodEnd;
   const incomplete = !a.payPeriodStart || !a.payPeriodEnd || !b.payPeriodStart || !b.payPeriodEnd;
   if (existing.payEventId === incoming.payEventId || overlap ||
       (a.payDate === b.payDate && incomplete) || !a.payDate || !b.payDate) {
-    return { type: "same_event_conflict", eventKey, differences };
+    return { type: "same_event_conflict", eventKey };
   }
-  return { type: "distinct", eventKey: null, differences: [] };
+  return { type: "distinct", eventKey: null };
 }
 
 /**
@@ -659,12 +666,13 @@ export function visibleRevisions(records = []) {
 // One conservative inclusion policy for every consumer. Explicit separation is pairwise.
 export function projectPayroll(records = []) {
   const visible = visibleRevisions(records).filter(r => r.kind !== "forecast");
+  const normalized = visible.map(migrateLegacyRecord);
   const blocked = new Set();
   for (let i = 0; i < visible.length; i++) {
     for (let j = i + 1; j < visible.length; j++) {
       const a = visible[i], b = visible[j];
-      const relation = classifyRecordRelation(a, b);
-      if (relation.type !== "distinct") { blocked.add(a); blocked.add(b); }
+      const relation = normalized[i] && normalized[j] && classifyNormalizedRelation(normalized[i], normalized[j]);
+      if (relation && relation.type !== "distinct") { blocked.add(a); blocked.add(b); }
     }
   }
   for (const row of visible) if (!validIsoDate(row.values?.payDate)) blocked.add(row);

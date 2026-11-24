@@ -735,7 +735,7 @@ function mount() {
     const year=Number(document.getElementById('planYear')?.value);
     if(!Number.isInteger(year)||year<2020||year>2100)return;
     if(window.parent===window){
-      cStatus.textContent='C-tavoitteen tallennus on käytettävissä Palkka Betassa.';
+      cStatus.textContent='C-tavoitteen voi tallentaa Palkan Laskurissa.';
       return;
     }
     cStatus.textContent='Tallennetaan C-tavoite Analyysiin…';

@@ -1,0 +1,84 @@
+:root {
+  color-scheme: dark;
+  --retail-canvas:#0b1015;
+  --retail-surface:#121a23;
+  --retail-raised:#192530;
+  --retail-text:#f3f7fa;
+  --retail-muted:#b5c4d0;
+  --retail-accent:#75e5ce;
+  --retail-positive:#72e7a8;
+  --retail-warning:#ffd17c;
+  --retail-danger:#ffada9;
+  --retail-edge:#374a59;
+  --retail-focus:#8cecff;
+  --retail-chart-net:#4ade80;
+  --retail-chart-gross:#60a5fa;
+  --retail-space-1:4px;
+  --retail-space-2:8px;
+  --retail-space-3:12px;
+  --retail-space-4:16px;
+  --retail-space-6:24px;
+  --retail-radius:6px;
+  --retail-control:44px;
+  --retail-caption:.875rem;
+  --retail-body:1rem;
+  --retail-heading:1.25rem;
+  --retail-number:clamp(1.8rem, 7vw, 2.65rem);
+  --canvas:var(--retail-canvas);
+  --surface:var(--retail-surface);
+  --raised:var(--retail-raised);
+  --ink:var(--retail-text);
+  --sub:var(--retail-muted);
+  --edge:var(--retail-edge);
+  --mint:var(--retail-accent);
+  --corner:var(--retail-radius);
+}
+body { font-size:var(--retail-body); line-height:1.5; }
+.shell { max-width:960px; margin-inline:auto; padding-inline:var(--retail-space-4); }
+.hero { padding-block:var(--retail-space-3); }
+.retail-edition { font-size:.7rem; letter-spacing:.08em; color:var(--retail-muted); font-weight:650; }
+.section-heading h2, .card h2, .compact-title, .retail-welcome h2 { font-size:var(--retail-heading); line-height:1.25; }
+.card { margin-block:var(--retail-space-3); padding:var(--retail-space-3); }
+.muted,.metric-caption { color:var(--retail-muted); }
+.controls button, nav button, select, .actions button { min-height:var(--retail-control); }
+button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visible {
+  outline:2px solid var(--retail-focus); outline-offset:2px;
+}
+.retail-skip { position:absolute; top:-100px; z-index:100; padding:var(--retail-space-2); }
+.retail-skip:focus { top:var(--retail-space-2); background:var(--retail-surface); }
+.retail-welcome { margin-block:var(--retail-space-4); padding:var(--retail-space-4); border:1px solid var(--retail-edge); border-radius:var(--retail-radius); }
+.retail-welcome p { margin-block:var(--retail-space-2); }
+.retail-welcome summary { min-height:var(--retail-control); display:list-item; align-content:center; color:var(--retail-accent); }
+.retail-first-use #ledgerOpening,.retail-first-use .beta-compact-dashboard { display:none; }
+.retail-first-use .upload-card { margin-top:0; }
+.ledger-opening .compact-lead { padding-block:var(--retail-space-3); }
+.ledger-opening .compact-amount { display:block; font-size:var(--retail-number); line-height:1.2; }
+.compact-amount,.chart-amount,.metric strong,.summary-row strong { font-variant-numeric:tabular-nums; }
+.retail-system-error { color:var(--retail-danger); padding:var(--retail-space-3); border:1px solid currentColor; }
+.retail-version { font-size:var(--retail-caption); color:var(--retail-muted); }
+.ledger-opening .compact-gross { overflow-wrap:anywhere; }
+@media (min-width:768px) {
+  .shell { padding-inline:var(--retail-space-6); }
+}
+.ledger-opening .compact-lead:nth-of-type(2) > .compact-gross:first-of-type {
+  color:var(--retail-text); font-size:var(--retail-heading); font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+.chart-bar-net,.legend-net::before,.salary-comparison-legend::before { background:var(--retail-chart-net); }
+.chart-bar-gross,.legend-gross::before { background:var(--retail-chart-gross); }
+.beta-import-entry { margin-block:var(--retail-space-3); }
+.retail-history-amounts { display:grid; text-align:right; min-width:0; }
+.retail-history-amounts small { color:var(--retail-muted); font-size:var(--retail-caption); }
+.retail-payslip-superseded .payslip-summary :is(.payslip-net,.payslip-heading strong) {
+  color:var(--retail-muted);
+  font-weight:600;
+}
+.retail-payslip-superseded .payslip-net { text-decoration:line-through; }
+.retail-version-badge {
+  width:fit-content; padding:var(--retail-space-1); border:1px solid var(--retail-edge);
+  border-radius:var(--retail-radius);
+}
+.retail-source-disclosure > summary {
+  display:list-item; min-height:var(--retail-control); align-content:center;
+  color:var(--retail-accent); cursor:pointer;
+}

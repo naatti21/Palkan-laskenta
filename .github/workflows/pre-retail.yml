@@ -1,0 +1,32 @@
+name: Pre-retail verification
+
+on:
+  pull_request:
+    branches: ["pre-retail/v0.1-foundation-20261124"]
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:pre-retail
+        env:
+          PRE_RETAIL_EVIDENCE_DIR: pre-retail-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: palkka-pre-retail-local-candidate
+          path: |
+            _pre-retail/
+            pre-retail-evidence/
+            test-results/
+          retention-days: 14

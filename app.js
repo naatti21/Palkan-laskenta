@@ -393,7 +393,11 @@ function renderSuccess(record, mergedDuplicate = false) {
   for (const [label, value] of rows) {
     const row = document.createElement("div");
     row.className = "summary-row";
-    row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+    const title = document.createElement("span");
+    title.textContent = label;
+    const amount = document.createElement("strong");
+    amount.textContent = value;
+    row.append(title, amount);
     summary.append(row);
   }
 
@@ -1220,7 +1224,8 @@ function renderHistory(records) {
     heading.append(date, period, source);
     const versionState = document.createElement("span");
     const unresolved = projection.unresolved.includes(record);
-    versionState.textContent = !projection.visible.includes(record) ? "Korvattu versio – ei laskennassa" : unresolved ? "Ratkaisematon – ei laskennassa" : "Huomioidaan laskennassa";
+    const superseded = !projection.visible.includes(record);
+    versionState.textContent = superseded ? "Korvattu versio – ei laskennassa" : unresolved ? "Ratkaisematon – ei laskennassa" : "Huomioidaan laskennassa";
     heading.append(versionState);
     if (unresolved) {
       const resolve = document.createElement("button");
@@ -1257,7 +1262,21 @@ function renderHistory(records) {
     arrow.className = "payslip-chevron";
     arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = "⌄";
-    header.append(heading, net, arrow);
+    if (el("retailVersion")) {
+      if (superseded) {
+        row.classList.add("retail-payslip-superseded");
+        versionState.classList.add("retail-version-badge");
+      }
+      const amounts = document.createElement("span");
+      amounts.className = "retail-history-amounts";
+      const gross = document.createElement("small");
+      gross.textContent = "Brutto " + fmtMoney(valueOf(record, "grossPay"));
+      net.setAttribute("aria-label", "Netto " + net.textContent);
+      amounts.append(net, gross);
+      header.append(heading, amounts, arrow);
+    } else {
+      header.append(heading, net, arrow);
+    }
     row.append(header);
 
     const detail = document.createElement("div");
@@ -1614,8 +1633,17 @@ function installPdfBatchQueue() {
   if (sourceNameLabel && sourceCreateButton && sourceDisclosure && upload.contains(sourceDisclosure)) {
     sourceNameLabel.firstChild.textContent = "Uusi tulolähde (tarvittaessa)";
     sourceCreation.append(sourceNameLabel,sourceCreateButton);
-    sourceControls.append(sourceCreation);
-    sourceDisclosure.remove();
+    if (el("retailVersion")) {
+      const summary = sourceDisclosure.querySelector("summary");
+      summary.textContent = "Luo uusi tulolähde";
+      sourceDisclosure.classList.add("retail-source-disclosure");
+      sourceDisclosure.open = false;
+      sourceDisclosure.append(sourceCreation);
+      sourceControls.append(sourceDisclosure);
+    } else {
+      sourceControls.append(sourceCreation);
+      sourceDisclosure.remove();
+    }
   }
   const note = document.createElement("p");
   note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Epäselvät tiedot pysäyttävät jonon.";
@@ -2096,11 +2124,13 @@ el("importButton").addEventListener("click", () => el("backupInput").click());
 el("backupInput").addEventListener("change", async event => {
   const file = event.target.files?.[0];
   if (!file) return;
+  let payrollRestored = false;
   try {
     const payload = JSON.parse(await file.text());
     const records = parseBackup(payload);
     const learnedProfiles = parseBackupLearnedProfiles(payload);
     const result = await mergeManyRecords(records, parseBackupIncomeSources(payload));
+    payrollRestored = true;
     if (learnedProfiles.length) await mergeLearnedProfiles(learnedProfiles);
     await renderAll();
     const preserved = result.conflictsPreserved
@@ -2108,7 +2138,9 @@ el("backupInput").addEventListener("change", async event => {
       : "";
     el("backupStatus").textContent = `Palautus valmis: ${result.added} uutta, ${result.merged} yhdistettyä/jo olemassa olevaa${preserved}${learnedProfiles.length ? `, ${learnedProfiles.length} tunnistettua rakennetta` : ""}.`;
   } catch (err) {
-    el("backupStatus").textContent = `Palautus epäonnistui: ${err.message}`;
+    el("backupStatus").textContent = payrollRestored
+      ? `Palkkatiedot palautettiin. Palautuksen viimeistely epäonnistui: ${err.message}`
+      : `Palautus epäonnistui: ${err.message}`;
   } finally {
     event.target.value = "";
   }
@@ -2155,13 +2187,21 @@ async function init() {
     initBetaYearProgress();
     await initInsightsUi();
     initScenarioUi();
-    const migration = await migrateLegacyLocalStorage();
-    if (migration.migrated) el("status").textContent = `Vanha paikallinen historia siirrettiin uuteen tietokantaan (${migration.migrated} laskelmaa).`;
+    try {
+      const migration = await migrateLegacyLocalStorage();
+      if (migration.migrated) el("status").textContent = `Vanha paikallinen historia siirrettiin uuteen tietokantaan (${migration.migrated} laskelmaa).`;
+    } catch (error) {
+      const warning = el("retailSystemError") ?? el("status");
+      warning.textContent = error.message;
+      warning.hidden = false;
+    }
     await renderAll();
     batchQueue = installPdfBatchQueue();
   } catch (err) {
     console.error(err);
-    el("status").textContent = `Paikallisen tietokannan avaaminen epäonnistui: ${err.message}`;
+    const warning = el("retailSystemError") ?? el("status");
+    warning.textContent = `Paikallisen tietokannan avaaminen epäonnistui: ${err.message}`;
+    warning.hidden = false;
   }
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
