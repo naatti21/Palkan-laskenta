@@ -1559,7 +1559,11 @@ function payrollAction(action) {
         const conflict = await conflictForRecord(error.incoming);
         if (conflict) renderConflict(error.incoming, conflict);
       }
-    } finally { payrollBusy = false; controls.forEach(control => { control.disabled = false; }); }
+    } finally {
+      payrollBusy = false;
+      controls.forEach(control => { control.disabled = false; });
+      batchQueue?.resumeAfterDecision();
+    }
   };
 }
 
@@ -1618,7 +1622,7 @@ function installPdfBatchQueue() {
     sourceDisclosure.remove();
   }
   const note = document.createElement("p");
-  note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Epäselvät tiedot pysäyttävät jonon.";
+  note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Ristiriita odottaa käyttäjän päätöstä. Sen jälkeen loput PDF:t käsitellään automaattisesti.";
   const autoLabel = document.createElement("label");
   autoLabel.className = "beta-batch-auto";
   const auto = document.createElement("input");
@@ -1661,6 +1665,9 @@ function installPdfBatchQueue() {
   let cursor = 0;
   let awaiting = -1;
   let running = false;
+  // A conflict pauses only the current PDF. Continue after an explicit decision.
+  let resumeRequested = false;
+  let resumingBatch = false;
   const finished = new Set(["saved", "duplicate", "skipped", "error"]);
   const labels = {
     pending:"Odottaa", processing:"Luetaan", saved:"Tallennettu",
@@ -1689,7 +1696,7 @@ function installPdfBatchQueue() {
         " · jo olemassa " + (counts.duplicate || 0) +
         " · tarkistettava " + ((counts.review || 0)+(counts.conflict || 0)+(counts.unknown || 0)) +
         " · ohitettu " + ((counts.skipped || 0)+(counts.error || 0)) +
-        (awaiting >= 0 ? " · Käsittele avoin tarkistus ennen jatkamista." : "")
+        (awaiting >= 0 ? " · Ratkaise avoin tarkistus. Jono jatkuu sen jälkeen automaattisesti." : "")
       : "Valitse PDF:t aloittaaksesi. Mitään ei lähetetä palvelimelle.";
     next.disabled = running || awaiting >= 0 || cursor >= entries.length || !payer.value;
     picker.disabled = running;
@@ -1716,20 +1723,30 @@ function installPdfBatchQueue() {
   function complete(state) {
     if (awaiting < 0) return;
     releaseEntry(entries[awaiting],state);
-    awaiting=-1;
+    awaiting = -1;
+    resumeRequested = cursor < entries.length;
     refresh();
   }
-  function skipCurrent() {
+  function resumeAfterDecision() {
+    if (!resumeRequested || running || payrollBusy || awaiting >= 0 ||
+        cursor >= entries.length || !payer.value || workspace.hidden) return;
+    resumeRequested = false;
+    resumingBatch = true;
+    next.click();
+  }
+  function skipCurrent(resume = true) {
     if (awaiting < 0) return;
     releaseEntry(entries[awaiting],"skipped");
-    awaiting=-1;
+    awaiting = -1;
     for (const id of ["reviewSection","unknownSection","conflictSection"])
       document.getElementById(id)?.classList.add("hidden");
     currentParsed=null; currentPendingRecord=null; currentConflict=null;
     currentRawText="";
     document.getElementById("rawText").textContent="";
     el("status").textContent="Tiedosto ohitettu. Mitään ei tallennettu.";
+    resumeRequested = resume && cursor < entries.length;
     refresh();
+    if (resume) resumeAfterDecision();
   }
   function enqueueFiles(files, fromPrimary = false) {
     if (running || awaiting >= 0) {
@@ -1750,7 +1767,7 @@ function installPdfBatchQueue() {
       return false;
     }
     entries = valid.map(file => ({file,name:file.name,state:"pending"}));
-    cursor = 0; awaiting = -1;
+    cursor = 0; awaiting = -1; resumeRequested = false; resumingBatch = false;
     if (fromPrimary && !payer.value) {
       const chosen = el("incomeSourceSelect")?.value || "";
       if (incomeSources.some(source => source.id === chosen)) payer.value = chosen;
@@ -1770,12 +1787,14 @@ function installPdfBatchQueue() {
   clear.addEventListener("click",()=>{
     if (running) return;
     if (!confirm("Tyhjennetäänkö vain käsittelemättömien PDF-tiedostojen jono? Jo tallennetut palkat säilyvät.")) return;
-    if (awaiting>=0) skipCurrent();
+    if (awaiting>=0) skipCurrent(false);
     entries=[]; cursor=0; awaiting=-1; refresh();
   });
   next.addEventListener("click",payrollAction(async()=>{
     if (running || awaiting>=0 || !payer.value || cursor>=entries.length) return;
-    if (auto.checked && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
+    const continuing = resumingBatch;
+    resumingBatch = false;
+    if (auto.checked && !continuing && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
     const processingSource = payer.value; // Locked for this run, even if the UI changes elsewhere.
     running=true;
     try {
@@ -1792,7 +1811,7 @@ function installPdfBatchQueue() {
             showBatchOutcome();
             releaseEntry(entry,result.state);
             refresh();
-            if (!auto.checked) break;
+            if (!auto.checked && !continuing) break;
             continue;
           }
           entry.state=result?.state || "review";
@@ -1907,7 +1926,7 @@ function installPdfBatchQueue() {
 
   refreshSources();
   refresh();
-  return { refreshSources, complete, skipCurrent, enqueueFiles, openWorkspace, closeWorkspace,
+  return { refreshSources, complete, skipCurrent, resumeAfterDecision, enqueueFiles, openWorkspace, closeWorkspace,
     isAwaiting() { return awaiting >= 0; },
     hasPending() { return awaiting >= 0 || entries.some(entry => !finished.has(entry.state)); },
     chooseSource(id) {
