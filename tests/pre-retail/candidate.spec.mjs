@@ -314,7 +314,7 @@ for (const width of [360, 390]) {
 }
 
 
-test("batch import can park a real conflict and finish later PDFs without double counting", async ({page}) => {
+test("batch import resumes automatically after resolving an ambiguous PDF", async ({page}) => {
   await page.setViewportSize({width:360,height:860});
   await open(page);
   await restore(page,await backup(page));
@@ -342,18 +342,17 @@ test("batch import can park a real conflict and finish later PDFs without double
   ]);
   page.once("dialog",dialog=>dialog.accept());
   await page.locator("#betaBatchNext").click();
-  await expect(page.locator("#betaBatchContinue")).toBeVisible();
   await expect(page.locator("#conflictSection")).toBeVisible();
-  await page.locator("#betaBatchContinue").click();
-  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
-  await expect(page.locator("#betaBatchFiles li").nth(1)).toContainText("Odottaa tarkistusta");
-  const count = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()).length);
-  expect(count).toBe(11);
-  await page.locator("#betaBatchFiles li").nth(1).getByRole("button",{name:"Tarkista tämä PDF"}).click();
-  await expect(page.locator("#conflictSection")).toBeVisible();
+  await expect(page.locator("#betaBatchContinue")).toHaveCount(0);
+  await expect(page.locator("#betaBatchFiles li").nth(2)).toContainText("Odottaa");
+  // The existing "peru / ohita" decision resumes the rest of the queue.
+  // No extra "continue" click is permitted or necessary.
   await page.locator("#cancelConflictButton").click();
   await expect(page.locator("#betaBatchFiles li").nth(1)).toContainText("Ohitettu");
-  expect(await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()).length)).toBe(11);
+  await expect(page.locator("#betaBatchFiles li").nth(2)).toContainText("Tallennettu");
+  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
+  const count = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()).length);
+  expect(count).toBe(11);
 });
 
 
