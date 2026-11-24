@@ -21,6 +21,15 @@ jobs:
       - run: npm run test:pre-retail
         env:
           PRE_RETAIL_EVIDENCE_DIR: pre-retail-evidence
+      - name: Diagnose published Android calculator frame
+        run: node scripts/probe-pre-retail-live.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pre-retail-live-planner-mobile
+          path: pre-retail-live-mobile.png
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: always()
         with:
