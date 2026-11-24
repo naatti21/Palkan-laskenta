@@ -4,8 +4,13 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 const origin = process.env.PRE_RETAIL_ORIGIN;
-if (origin !== "http://127.0.0.1:4190") {
-  throw new Error("PRE_RETAIL_ORIGIN must be http://127.0.0.1:4190. This build has no release target.");
+const localOrigin = "http://127.0.0.1:4190";
+const previewOrigin = "https://palkka-pre-retail.pages.dev";
+if (origin !== localOrigin && origin !== previewOrigin) {
+  throw new Error("PRE_RETAIL_ORIGIN must be the isolated local test origin or the exact pre-retail Pages origin.");
+}
+if (origin === previewOrigin && process.env.GITHUB_REF_NAME !== "pre-retail/v0.1-foundation-20261124") {
+  throw new Error("Pre-retail Pages build only allowed from its dedicated reviewed branch.");
 }
 const output = "_pre-retail";
 const version = "Palkka Pre-retail v0.1";
