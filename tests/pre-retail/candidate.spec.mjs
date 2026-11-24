@@ -312,3 +312,46 @@ for (const width of [360, 390]) {
     await capture("07-asetukset");
   });
 }
+
+
+test("batch import can park a real conflict and finish later PDFs without double counting", async ({page}) => {
+  await page.setViewportSize({width:360,height:860});
+  await open(page);
+  await restore(page,await backup(page));
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+  await tab(page,"Seuranta").click();
+  await page.locator("#betaImportOpen").click();
+  await page.locator("#betaBatchSource").selectOption("paatyot");
+  const pdf = (date,period,net,ytd) => makeTextPdf([
+    "PALKKALASKELMA",
+    "Palkkakausi " + period,
+    "Maksupäivä " + date,
+    "Maksetaan " + net,
+    "KERTYMÄ PALKKAKAUDELTA",
+    "Ennakonpid. al. tul 3 000,00",
+    "Ennakonpidätys -800,00",
+    "Maksetaan " + net,
+    "KERTYMÄ VUODEN ALUSTA",
+    "Ennakonpid. al. tul " + ytd,
+    "Ennakonpidätys -6 400,00"
+  ]);
+  await page.locator("#betaBatchInput").setInputFiles([
+    {name:"01-selkea.pdf",mimeType:"application/pdf",buffer:pdf("28.9.2026","1.9.2026 - 15.9.2026","1 900,00","24 000,00")},
+    {name:"02-ristiriita.pdf",mimeType:"application/pdf",buffer:pdf("28.9.2026","1.9.2026 - 15.9.2026","1 850,00","23 950,00")},
+    {name:"03-loppujono.pdf",mimeType:"application/pdf",buffer:pdf("28.10.2026","1.10.2026 - 15.10.2026","2 050,00","27 000,00")}
+  ]);
+  page.once("dialog",dialog=>dialog.accept());
+  await page.locator("#betaBatchNext").click();
+  await expect(page.locator("#betaBatchContinue")).toBeVisible();
+  await expect(page.locator("#conflictSection")).toBeVisible();
+  await page.locator("#betaBatchContinue").click();
+  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
+  await expect(page.locator("#betaBatchFiles li").nth(1)).toContainText("Odottaa tarkistusta");
+  const count = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()).length);
+  expect(count).toBe(11);
+  await page.locator("#betaBatchFiles li").nth(1).getByRole("button",{name:"Tarkista tämä PDF"}).click();
+  await expect(page.locator("#conflictSection")).toBeVisible();
+  await page.locator("#cancelConflictButton").click();
+  await expect(page.locator("#betaBatchFiles li").nth(1)).toContainText("Ohitettu");
+  expect(await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()).length)).toBe(11);
+});
