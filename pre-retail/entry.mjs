@@ -11,9 +11,32 @@ function showError(message) {
 
 function preparePlanner() {
   const frame = document.getElementById("plannerFrame");
+  const status = document.getElementById("plannerSyncStatus");
+  const view = document.querySelector('[data-view="planning"]');
+  let checkTimer;
+  function readable() {
+    try { return !!frame.contentDocument?.getElementById("planYear"); }
+    catch { return false; }
+  }
+  function checkWhenVisible() {
+    clearTimeout(checkTimer);
+    if (view.classList.contains("hidden")) return;
+    checkTimer = setTimeout(() => {
+      if (!readable()) status.textContent =
+        "Laskuri ei latautunut tähän näkymään. Avaa se erilliselle sivulle yllä olevasta linkistä.";
+    }, 9000);
+  }
+  new MutationObserver(checkWhenVisible).observe(view, {attributes:true,attributeFilter:["class"]});
+  frame.addEventListener("error", () => {
+    status.textContent = "Laskurin lataus epäonnistui. Avaa Laskuri erilliselle sivulle.";
+  });
   function mount() {
-    const doc = frame.contentDocument;
-    if (!doc?.documentElement.classList.contains("beta-integrated") || doc.querySelector("[data-retail-planner]")) return;
+    let doc;
+    try { doc = frame.contentDocument; }
+    catch { checkWhenVisible(); return; }
+    if (!doc?.documentElement.classList.contains("beta-integrated")) return;
+    if (doc.documentElement.dataset.retailPlanner === "ready") return;
+    doc.documentElement.dataset.retailPlanner = "ready";
     doc.documentElement.dataset.parentProduct = "Palkka";
     const history = doc.getElementById("history-title").closest("section");
     const year = doc.getElementById("planYear").closest(".field");
