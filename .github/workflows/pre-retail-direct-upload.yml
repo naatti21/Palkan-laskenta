@@ -139,42 +139,43 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy _pre-retail --project-name=palkka-pre-retail --branch=pre-retail --commit-hash=${{ github.sha }}
 
-      - name: Verify production deployment and origin content
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Verify live HTTPS preview serves exact source commit
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json,os,time,urllib.request
-          sha=os.environ['GITHUB_SHA']
+          import json,os,time,urllib.error,urllib.request
+          expected=os.environ['GITHUB_SHA']
           origin=os.environ['PRE_RETAIL_ORIGIN']
-          project='palkka-pre-retail'
-          url='https://api.cloudflare.com/client/v4/accounts/'+os.environ['CF_ACCOUNT_ID']+'/pages/projects/'+project+'/deployments?env=production&per_page=1'
-          headers={'Authorization':'Bearer '+os.environ['CF_API_TOKEN'],'Cache-Control':'no-cache'}
-          verified=False
+          assert origin=='https://palkka-pre-retail.pages.dev'
           last=''
-          for i in range(25):
-              with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=20) as r: data=json.load(r)
-              assert data.get('success'),'Cloudflare deployment API failed'
-              d=(data.get('result') or [None])[0]
-              if d:
-                  meta=(d.get('deployment_trigger') or {}).get('metadata') or {}
-                  last=str((meta.get('commit_hash'),(d.get('latest_stage') or {}).get('status'),d.get('environment')))
-                  if meta.get('commit_hash')==sha and (d.get('latest_stage') or {}).get('status')=='success' and d.get('environment')=='production':
-                      with urllib.request.urlopen(urllib.request.Request(origin+'/build-info.json',headers={'Cache-Control':'no-cache'}),timeout=20) as response:
-                          build=json.load(response)
-                      assert build['commit']==sha
-                      assert build['origin']==origin
-                      assert build['environment']=='pre-retail'
-                      verified=True
-                      break
-              time.sleep(5)
-          assert verified,'Could not verify exact published pre-retail commit: '+last
-          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf8') as f:
-              f.write('### Palkka Pre-retail preview verified\n')
-              f.write('- URL: '+origin+'\n- SHA: '+sha+'\n')
-              f.write('- Separate from Beta, GitHub Pages, and user data.\n')
-          print('Verified preview URL',origin,sha)
+          for attempt in range(25):
+              try:
+                  headers={'Cache-Control':'no-cache','User-Agent':'Palkka-PreRetail-Verify/1.0'}
+                  req=urllib.request.Request(origin+'/build-info.json?sha='+expected,headers=headers)
+                  with urllib.request.urlopen(req,timeout=20) as response:
+                      assert response.status==200
+                      info=json.load(response)
+                  assert info['commit']==expected, 'Stale deployed SHA: '+str(info.get('commit'))
+                  assert info['origin']==origin
+                  assert info['environment']=='pre-retail'
+                  with urllib.request.urlopen(urllib.request.Request(origin+'/index.html?sha='+expected,headers=headers),timeout=20) as response:
+                      html=response.read().decode('utf8')
+                  assert 'pre-retail-entry.mjs' in html
+                  assert 'Palkka Pre-retail' in html
+                  with urllib.request.urlopen(urllib.request.Request(origin+'/sw.js?sha='+expected,headers=headers),timeout=20) as response:
+                      sw=response.read().decode('utf8')
+                  assert 'palkka-pre-retail-v-' in sw
+                  print('LIVE VERIFIED',origin,expected)
+                  with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf8') as f:
+                      f.write('### Palkka Pre-retail LIVE verified\n')
+                      f.write('- URL: '+origin+'\n- SHA: '+expected+'\n')
+                      f.write('- Separate Pages project; no personal data uploaded.\n')
+                  break
+              except (urllib.error.URLError,AssertionError,KeyError,ValueError) as error:
+                  last=str(error)
+                  print('HTTPS verification not yet ready:',last)
+                  time.sleep(5)
+          else:
+              raise RuntimeError('Exact pre-retail live verification failed: '+last)
           PY
