@@ -355,3 +355,29 @@ test("batch import can park a real conflict and finish later PDFs without double
   await expect(page.locator("#betaBatchFiles li").nth(1)).toContainText("Ohitettu");
   expect(await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()).length)).toBe(11);
 });
+
+
+test("planner iframe height is content-based and stable on mobile", async ({page}) => {
+  await page.setViewportSize({width:360,height:860});
+  await open(page);
+  await tab(page,"Laskuri").click();
+  const frame = page.frameLocator("#plannerFrame");
+  await expect(frame.locator("#planYear")).toBeVisible();
+  await expect(page.locator("#plannerStandalone")).toHaveAttribute("href","./experiments/year-planner/index.html");
+  const measure = () => page.locator("#plannerFrame").evaluate(iframe => {
+    const content = iframe.contentDocument?.querySelector(".shell");
+    return {
+      actual: iframe.getBoundingClientRect().height,
+      natural: content ? Math.ceil(content.getBoundingClientRect().bottom + iframe.contentDocument.defaultView.scrollY + 12) : 0
+    };
+  });
+  await expect.poll(async () => {
+    const {actual,natural} = await measure();
+    return Math.abs(actual-natural);
+  }, {timeout:15000}).toBeLessThan(9);
+  const first = await measure();
+  await page.waitForTimeout(1400);
+  const last = await measure();
+  expect(Math.abs(last.actual-first.actual)).toBeLessThan(24);
+  expect(last.actual).toBeLessThan(20000);
+});
