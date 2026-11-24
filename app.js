@@ -1873,7 +1873,7 @@ function installPdfBatchQueue() {
   });
   next.addEventListener("click",payrollAction(async()=>{
     if (running || awaiting>=0 || !payer.value || cursor>=entries.length) return;
-    if (auto.checked && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
+    if (auto.checked && !deferFollowing && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
     const processingSource = payer.value; // Locked for this run, even if the UI changes elsewhere.
     running=true;
     try {
