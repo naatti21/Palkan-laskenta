@@ -1587,7 +1587,11 @@ function payrollAction(action) {
         const conflict = await conflictForRecord(error.incoming);
         if (conflict) renderConflict(error.incoming, conflict);
       }
-    } finally { payrollBusy = false; controls.forEach(control => { control.disabled = false; }); }
+    } finally {
+      payrollBusy = false;
+      controls.forEach(control => { control.disabled = false; });
+      batchQueue?.resumeAfterDecision();
+    }
   };
 }
 
@@ -1655,7 +1659,7 @@ function installPdfBatchQueue() {
     }
   }
   const note = document.createElement("p");
-  note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Epäselvän PDF:n voi jättää tarkistettavaksi ja jatkaa muiden käsittelyä.";
+  note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Ristiriita odottaa käyttäjän päätöstä. Sen jälkeen loput PDF:t käsitellään automaattisesti.";
   const autoLabel = document.createElement("label");
   autoLabel.className = "beta-batch-auto";
   const auto = document.createElement("input");
@@ -1675,12 +1679,7 @@ function installPdfBatchQueue() {
   clear.type = "button"; clear.id = "betaBatchClear";
   clear.textContent = "Tyhjennä jono";
   clear.className = "secondary";
-  const continueQueue = document.createElement("button");
-  continueQueue.type = "button";
-  continueQueue.id = "betaBatchContinue";
-  continueQueue.textContent = "Jatka loppu jonoa";
-  continueQueue.className = "secondary";
-  actions.append(next, continueQueue, skip, clear);
+  actions.append(next, skip, clear);
   const status = document.createElement("p");
   status.id = "betaBatchStatus";
   status.setAttribute("role", "status");
@@ -1703,13 +1702,15 @@ function installPdfBatchQueue() {
   let cursor = 0;
   let awaiting = -1;
   let running = false;
-  let deferFollowing = false;
+  // A conflict holds only the current PDF. After an explicit user decision,
+  // the remaining files resume without another button or bulk confirmation.
+  let resumeRequested = false;
+  let resumingBatch = false;
   const finished = new Set(["saved", "duplicate", "skipped", "error"]);
   const labels = {
     pending:"Odottaa", processing:"Luetaan", saved:"Tallennettu",
     duplicate:"Jo tallennettu", review:"Tarkistettava",
     conflict:"Ristiriita — päätös tarvitaan", unknown:"Ei tunnistettu",
-    deferred:"Odottaa tarkistusta — ei tallennettu",
     skipped:"Ohitettu", error:"Virhe — tarkista Historiasta"
   };
   function refreshSources() {
@@ -1731,13 +1732,11 @@ function installPdfBatchQueue() {
     status.textContent = entries.length
       ? (entries.length === 1 ? "1 tiedosto" : entries.length + " tiedostoa") + " · tallennettu " + (counts.saved || 0) +
         " · jo olemassa " + (counts.duplicate || 0) +
-        " · tarkistettava " + ((counts.review || 0)+(counts.conflict || 0)+(counts.unknown || 0)+(counts.deferred || 0)) +
+        " · tarkistettava " + ((counts.review || 0)+(counts.conflict || 0)+(counts.unknown || 0)) +
         " · ohitettu " + ((counts.skipped || 0)+(counts.error || 0)) +
-        (awaiting >= 0 ? " · Ratkaise tämä PDF tai jatka loppu jonoa (jätä epäselvät tarkistettaviksi)." : "")
+        (awaiting >= 0 ? " · Tee päätös avoimesta tarkistuksesta. Jono jatkuu sitten automaattisesti." : "")
       : "Valitse PDF:t aloittaaksesi. Mitään ei lähetetä palvelimelle.";
     next.disabled = running || awaiting >= 0 || cursor >= entries.length || !payer.value;
-    continueQueue.hidden = awaiting < 0 || cursor >= entries.length;
-    continueQueue.disabled = running || awaiting < 0 || cursor >= entries.length || !payer.value;
     picker.disabled = running;
     payer.disabled = running;
     auto.disabled = running;
@@ -1753,40 +1752,6 @@ function installPdfBatchQueue() {
       const state = document.createElement("small");
       state.textContent = labels[entry.state] || entry.state;
       item.append(name, state);
-      if (entry.state === "deferred") {
-        const review = document.createElement("button");
-        review.type = "button";
-        review.className = "secondary";
-        review.textContent = "Tarkista tämä PDF";
-        review.disabled = running || awaiting >= 0;
-        review.addEventListener("click", payrollAction(async () => {
-          if (running || awaiting >= 0 || entry.state !== "deferred" || !entry.file) return;
-          const source = entry.sourceId;
-          if (!incomeSources.some(item => item.id === source)) {
-            status.textContent = "Tämän PDF:n tulolähde ei ole enää käytettävissä. Valitse tiedostot uudelleen.";
-            return;
-          }
-          el("incomeSourceSelect").value = source;
-          payer.value = source;
-          entry.state = "processing";
-          refresh();
-          try {
-            const outcome = await processPdf(entry.file);
-            if (outcome?.state === "saved" || outcome?.state === "duplicate") {
-              releaseEntry(entry, outcome.state);
-              showBatchOutcome();
-            } else {
-              entry.state = outcome?.state || "review";
-              awaiting = i;
-            }
-          } catch (error) {
-            entry.state = "deferred";
-            el("status").textContent = "Tarkistus keskeytyi: " + error.message + ". PDF jäi jonoon.";
-          }
-          refresh();
-        }));
-        item.append(review);
-      }
       list.append(item);
     });
   }
@@ -1797,32 +1762,30 @@ function installPdfBatchQueue() {
     if (awaiting < 0) return;
     releaseEntry(entries[awaiting],state);
     awaiting=-1;
+    resumeRequested = cursor < entries.length;
     refresh();
   }
-  function hidePendingDecision() {
-    for (const id of ["reviewSection","unknownSection","conflictSection"])
-      document.getElementById(id)?.classList.add("hidden");
-    currentParsed = null; currentPendingRecord = null; currentConflict = null;
-    currentPendingWasAutoParsed = false;
-    currentRawText = "";
-    document.getElementById("rawText").textContent = "";
+  function resumeAfterDecision() {
+    if (!resumeRequested || running || payrollBusy || awaiting >= 0 ||
+        cursor >= entries.length || !payer.value || workspace.hidden) return;
+    resumeRequested = false;
+    resumingBatch = true;
+    // This is the existing guarded queue runner, not a new UI action.
+    next.click();
   }
-  function skipCurrent() {
+  function skipCurrent(resume = true) {
     if (awaiting < 0) return;
     releaseEntry(entries[awaiting],"skipped");
     awaiting=-1;
-    hidePendingDecision();
+    for (const id of ["reviewSection","unknownSection","conflictSection"])
+      document.getElementById(id)?.classList.add("hidden");
+    currentParsed=null; currentPendingRecord=null; currentConflict=null;
+    currentRawText="";
+    document.getElementById("rawText").textContent="";
     el("status").textContent="Tiedosto ohitettu. Mitään ei tallennettu.";
+    resumeRequested = resume && cursor < entries.length;
     refresh();
-  }
-  function deferCurrent() {
-    if (awaiting < 0 || !entries[awaiting]?.file) return false;
-    // No automatic storage, resolution or loss of the ambiguous payment.
-    entries[awaiting].state = "deferred";
-    awaiting = -1;
-    hidePendingDecision();
-    refresh();
-    return true;
+    if (resume) resumeAfterDecision();
   }
   function enqueueFiles(files, fromPrimary = false) {
     if (running || awaiting >= 0) {
@@ -1843,7 +1806,7 @@ function installPdfBatchQueue() {
       return false;
     }
     entries = valid.map(file => ({file,name:file.name,state:"pending"}));
-    cursor = 0; awaiting = -1; deferFollowing = false;
+    cursor = 0; awaiting = -1; resumeRequested = false; resumingBatch = false;
     if (fromPrimary && !payer.value) {
       const chosen = el("incomeSourceSelect")?.value || "";
       if (incomeSources.some(source => source.id === chosen)) payer.value = chosen;
@@ -1860,20 +1823,17 @@ function installPdfBatchQueue() {
   });
   payer.addEventListener("change",refresh);
   skip.addEventListener("click",skipCurrent);
-  continueQueue.addEventListener("click", () => {
-    if (!deferCurrent()) return;
-    deferFollowing = true;
-    next.click();
-  });
   clear.addEventListener("click",()=>{
     if (running) return;
     if (!confirm("Tyhjennetäänkö vain käsittelemättömien PDF-tiedostojen jono? Jo tallennetut palkat säilyvät.")) return;
-    if (awaiting>=0) skipCurrent();
+    if (awaiting>=0) skipCurrent(false);
     entries=[]; cursor=0; awaiting=-1; refresh();
   });
   next.addEventListener("click",payrollAction(async()=>{
     if (running || awaiting>=0 || !payer.value || cursor>=entries.length) return;
-    if (auto.checked && !deferFollowing && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
+    const continuing = resumingBatch;
+    resumingBatch = false;
+    if (auto.checked && !continuing && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
     const processingSource = payer.value; // Locked for this run, even if the UI changes elsewhere.
     running=true;
     try {
@@ -1882,7 +1842,6 @@ function installPdfBatchQueue() {
         const index=cursor++;
         const entry=entries[index];
         entry.state="processing";
-        entry.sourceId = processingSource;
         refresh();
         try {
           el("incomeSourceSelect").value=processingSource;
@@ -1891,16 +1850,10 @@ function installPdfBatchQueue() {
             showBatchOutcome();
             releaseEntry(entry,result.state);
             refresh();
-            if (!auto.checked) break;
+            if (!auto.checked && !continuing) break;
             continue;
           }
           entry.state=result?.state || "review";
-          if (deferFollowing) {
-            entry.state = "deferred";
-            hidePendingDecision();
-            refresh();
-            continue;
-          }
           awaiting=index;
           refresh();
           break;
@@ -1912,7 +1865,7 @@ function installPdfBatchQueue() {
         }
       }
     } finally {
-      running=false; deferFollowing=false; refresh();
+      running=false; refresh();
     }
   }));
 
@@ -2012,7 +1965,7 @@ function installPdfBatchQueue() {
 
   refreshSources();
   refresh();
-  return { refreshSources, complete, skipCurrent, enqueueFiles, openWorkspace, closeWorkspace,
+  return { refreshSources, complete, skipCurrent, resumeAfterDecision, enqueueFiles, openWorkspace, closeWorkspace,
     isAwaiting() { return awaiting >= 0; },
     hasPending() { return awaiting >= 0 || entries.some(entry => !finished.has(entry.state)); },
     chooseSource(id) {
