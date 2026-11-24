@@ -18,6 +18,11 @@ test("unknown legacy records preserve the original history and allow a later ret
   assert.equal(storage.get(key), raw);
   assert.equal(await getSetting("legacyLocalStorageMigrated"), null);
   assert.deepEqual(await getAllRecords(), []);
+  const unsupported = JSON.stringify([valid, { unknownPayFormat: "synthetic" }]);
+  storage.set(key, unsupported);
+  await assert.rejects(migrateLegacyLocalStorage(), /Alkuperäinen historia säilytettiin/);
+  assert.equal(storage.get(key), unsupported);
+  assert.deepEqual(await getAllRecords(), []);
 
   storage.set(key, JSON.stringify([valid]));
   assert.deepEqual(await migrateLegacyLocalStorage(), { migrated: 1 });

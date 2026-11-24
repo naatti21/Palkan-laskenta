@@ -392,7 +392,13 @@ export async function migrateLegacyLocalStorage() {
           throw new Error("Unsupported legacy record schema");
         }
       }
-      migratedRecords = records.map((record, index) => validateBackupRecordInput(record, index, true));
+      migratedRecords = records.map((record, index) => {
+        const normalized = validateBackupRecordInput(record, index, true);
+        if (!Object.values(normalized.values).some(value => value != null) && !normalized.payLines.length) {
+          throw new Error("Legacy record has no recognized pay data");
+        }
+        return normalized;
+      });
     } catch {
       throw new Error("Vanhan paikallisen historian muotoa ei tunnistettu. Alkuperäinen historia säilytettiin.");
     }
