@@ -579,14 +579,23 @@ function initPlannerBridge() {
     catch { el('plannerSyncStatus').textContent = 'Suunnittelijan alkuperä ei täsmää. Historiatietoja ei välitetä.'; return; }
     plannerReady = true;
     plannerObserver?.disconnect();
+    // The documentElement scrollHeight includes the iframe viewport itself.
+    // Resizing from that value creates a +12px feedback loop on some mobiles,
+    // potentially growing the frame until the Android renderer crashes.
+    // Measure the planner's actual content box, independent of viewport height.
+    const content = doc.querySelector(".shell") || doc.body;
     const resize = () => {
-      const next = Math.ceil(Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0) + 12);
-      if (Number.isFinite(next) && next > 200 && next < 25000) frame.style.height = next + 'px';
+      if (!content?.isConnected) return;
+      const next = Math.ceil(content.getBoundingClientRect().bottom + (doc.defaultView?.scrollY || 0) + 12);
+      if (Number.isFinite(next) && next > 200 && next < 25000 &&
+          Math.abs(frame.getBoundingClientRect().height - next) > 6) {
+        frame.style.height = next + "px";
+      }
     };
     resize();
-    if (doc.body && 'ResizeObserver' in window) {
+    if (content && 'ResizeObserver' in window) {
       plannerObserver = new ResizeObserver(resize);
-      plannerObserver.observe(doc.body);
+      plannerObserver.observe(content);
     }
     syncPlannerHistory();
   };
