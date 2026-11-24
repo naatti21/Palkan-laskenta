@@ -10,6 +10,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4177',
     headless: true,
+    // Full Chromium uses the modern headless path; headless-shell repeatedly
+    // SIGSEGV'd on unrelated tests in Linux CI even with one worker.
+    channel: 'chromium',
     serviceWorkers: 'allow',
     viewport: { width: 412, height: 915 },
     timezoneId: 'Europe/Helsinki',

@@ -41,6 +41,32 @@ function sumOvertime(records) {
   };
 }
 
+
+// Exact four-code payroll evidence used by the planner history suggestions.
+// Not a standard tax rate, full gross/net gap, or yearly deduction percentage.
+// Use the newest qualifying *unambiguous* payslip, never a mean of missing
+// fields or the latest card default.
+const PLANNER_DEDUCTION_CODES = Object.freeze(["90100","90200","90400","90920"]);
+function latestRecognizedDeductions(records) {
+  const found=[];
+  for(const record of records){
+    const gross=finiteNumber(record.values?.grossPay);
+    if(gross===null||gross<=0)continue;
+    const lines=Array.isArray(record.payLines)?record.payLines:[];
+    const matches=PLANNER_DEDUCTION_CODES.map(code=>lines.find(line=>
+      String(line?.code)===code && finiteNumber(line?.amount)!==null && line.amount<0));
+    if(matches.some(line=>!line))continue;
+    const rate=matches.reduce((total,line)=>total-Math.min(0,line.amount),0)/gross*100;
+    if(rate<0||rate>30||!Number.isFinite(rate))continue;
+    found.push({rate:Math.round(rate*100)/100,
+      payDate:record.values.payDate, incomeSourceId:record.incomeSourceId||null});
+  }
+  const last=found.at(-1)||null;
+  return {latestRate:last?.rate??null,latestPayDate:last?.payDate??null,
+    incomeSourceId:last?.incomeSourceId??null,
+    supportedPayslips:found.length,reviewedPayslips:records.length};
+}
+
 export function buildYearAnalysis(records, year) {
   if (!Number.isInteger(year) || year < 1900 || year > 2200) throw new Error("Virheellinen analyysivuosi");
   const projection = projectPayroll(Array.isArray(records) ? records : []);
@@ -70,6 +96,7 @@ export function buildYearAnalysis(records, year) {
     };
   });
   const hours = sumOvertime(clean);
+  const observedDeductions = latestRecognizedDeductions(clean);
   const last = yearly.at(-1) || null;
   const totalGross = rejected ? null : sumMoney(clean, "grossPay");
   const totalNet = rejected ? null : sumMoney(clean, "netPay");
@@ -86,6 +113,10 @@ export function buildYearAnalysis(records, year) {
     sourceScope: incomeScope(yearly),
     latestYtd: rejected || incomeScope(yearly).multiple || yearly.filter(r => r.values.payDate === last?.values.payDate).length > 1 ? null : finiteNumber(last?.values?.ytdTaxableIncome),
     lastPaymentDate: last?.values?.payDate ?? null,
+    deductions: rejected
+      ? {...observedDeductions,latestRate:null,latestPayDate:null,
+          incomeSourceId:null,blockedByConflicts:true}
+      : {...observedDeductions,blockedByConflicts:false},
     overtime: {
       ...hours,
       // Missing observations and conflicting periods preclude a precise annual total.
@@ -93,5 +124,66 @@ export function buildYearAnalysis(records, year) {
       excludedConflicts: rejected
     },
     months
+  };
+}
+
+
+/**
+ * Source-level evidence only. Payroll-system YTD values are snapshots rather
+ * than amounts to sum, and they never certify a multi-employer tax-card total.
+ * No records are changed and no extrapolation from partial history is made.
+ */
+export function buildIncomeSourceDiagnostics(records, year) {
+  if (!Number.isInteger(year) || year < 1900 || year > 2200)
+    throw new Error("Virheellinen analyysivuosi");
+  const projection = projectPayroll(Array.isArray(records) ? records : []);
+  const visible = projection.visible.filter(r => r.kind !== "forecast" &&
+    r.taxYear === year);
+  const groups = new Map();
+  for (const row of visible) {
+    const id = row.incomeSourceId || null;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(row);
+  }
+  const sources = [];
+  for (const [incomeSourceId, rows] of groups) {
+    const sorted = [...rows].sort((a,b) => String(a.values?.payDate || "")
+      .localeCompare(String(b.values?.payDate || "")));
+    const active = sorted.filter(row => projection.active.includes(row));
+    const latest = active.at(-1) || null;
+    const unresolvedCount = rows.filter(row => projection.unresolved.includes(row)).length;
+    const issues = [];
+    if (!incomeSourceId) issues.push("Tulolähde määrittämättä");
+    if (unresolvedCount) issues.push(unresolvedCount + " ristiriitaista maksutietuetta");
+    if (!latest) issues.push("Ei vahvistettua maksua");
+    if (latest) {
+      if (finiteNumber(latest.values?.ytdTaxableIncome) === null)
+        issues.push("Palkkalaskelman YTD puuttuu");
+      if (finiteNumber(latest.values?.taxCardAccumulatedIncome) === null)
+        issues.push("Verokortin kertymä puuttuu");
+      if (finiteNumber(latest.values?.taxLimit) === null)
+        issues.push("Verokortin tuloraja puuttuu");
+      if (active.filter(r => r.values?.payDate === latest.values?.payDate).length > 1)
+        issues.push("Samana päivänä useita kertymähavaintoja");
+    }
+    const cards = new Set(active.map(r => r.taxCardId).filter(Boolean));
+    if (cards.size > 1) issues.push("Vuoden aikana useita verokorttitunnisteita");
+    sources.push({
+      incomeSourceId, recordCount: rows.length, confirmedCount: active.length,
+      unresolvedCount, lastPayDate: latest?.values?.payDate ?? null,
+      ytdObservation: latest ? finiteNumber(latest.values?.ytdTaxableIncome) : null,
+      cardObservation: latest ? finiteNumber(latest.values?.taxCardAccumulatedIncome) : null,
+      taxLimitObservation: latest ? finiteNumber(latest.values?.taxLimit) : null,
+      issues,
+      comparable: Boolean(incomeSourceId && latest && !unresolvedCount &&
+        !issues.includes("Samana päivänä useita kertymähavaintoja"))
+    });
+  }
+  const conflictCount = visible.filter(r => projection.unresolved.includes(r)).length;
+  const unspecifiedCount = visible.filter(r => !r.incomeSourceId).length;
+  return {
+    year, recordCount: visible.length, conflictCount, unspecifiedCount,
+    multipleSources: new Set(visible.map(r => r.incomeSourceId).filter(Boolean)).size > 1,
+    sources
   };
 }

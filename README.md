@@ -82,6 +82,22 @@ Testit:
 node --test tests/*.test.mjs
 ```
 
+## Betan C-veroviitteen vuosipäivitys
+
+C käyttää `beta-net-reference-2026.mjs`-moduulin aktiivista viitepakettia. Vuosi,
+lähde, vuositulojen nettoarvot ja marginaaliverot kuuluvat samaan aineistoon.
+Suunnitteluvuoden vaihtaminen ei vaihda aineistoa. Eri vuoden viite näkyy
+vertailuna, ja sillä laskettua C-tavoitetta ei voi tallentaa suunnitteluvuodelle.
+
+Kun uuden vuoden vahvistettu aineisto on saatavilla, tarkista samalta
+verovuodelta brutto-, netto- ja marginaaliluvut Veronmaksajain Keskusliiton
+[Palkansaajan veroprosentit](https://www.veronmaksajat.fi/tutkimus-ja-tilastot/tuloverot/palkansaajan-veroprosentit/)-taulukosta.
+Tarkista taulukon vero- ja maksuperusteet [Verohallinnon](https://www.vero.fi/)
+ja tarvittaessa maksujen virallisten lähteiden vuosikohtaisista julkaisuista.
+Lisää uudelle vuodelle oma viitepaketti ja vaihda `ACTIVE_TAX_REFERENCE`
+erillisessä beta-PR:ssä. Tarkista samalla näkyvät oletukset, aineiston rajat,
+kuvaajan vuosimerkinnät ja C-tavoitteen tallennusehto.
+
 ## GitHub Pages
 
 Repossa oleva `Quality gate` ajaa kaikki Node-yksikkö- ja skenaariotestit sekä Playwrightin mobiiliselain-testit ennen GitHub Pages -julkaisua. `pages.yml` julkaisee vain laatutestin läpäisseen commitin.

@@ -1,3 +1,4 @@
+import { replaceUnique } from './beta-build-anchors.mjs';
 import { mkdir, readFile, writeFile, copyFile, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -18,13 +19,16 @@ if (origin.origin !== rawOrigin || origin.hostname === 'naatti21.github.io' ||
   throw new Error('Use only the approved palkka-beta.pages.dev origin or a dedicated local beta test port.');
 }
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = ['beta-compact.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
+const files = ['beta-compact.mjs', 'beta-salary-comparison.mjs', 'beta-weekend-tracker.mjs', 'beta-ledger.mjs', 'index.html', 'styles.css', 'app.js', 'taxcard-forecast.js', 'parser.js', 'model.js', 'storage.js',
   'learning.js', 'analytics.js', 'insights.js', 'insights-ui.js', 'scenario-model.js', 'scenario-ui.js', 'pdf-reader.js', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
   'vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs', 'experiments/year-planner/index.html'];
 const hash = createHash('sha256').update(rawOrigin);
 for (const file of files) hash.update(await readFile(file));
 hash.update(await readFile(new URL(import.meta.url)));
 hash.update(await readFile('beta-net-reference-2026.mjs')); // Beta-only tax benchmark invalidates cache
+hash.update(await readFile('beta-ab-summary-model.mjs'));
+hash.update(await readFile('beta-salary-comparison.css'));
+hash.update(await readFile('scripts/beta-build-anchors.mjs'));
 hash.update(await readFile('beta-ab-summary-v6.mjs')); // Final A/B presentation is also offline versioned
 for (const themeFile of ['beta-precision-tokens.css', 'beta-theme-v2.css', 'beta-planner-theme-v2.css', 'beta-cards-v3.css', 'beta-info-v4.css', 'beta-black-v5.css', 'beta-planner-black-v5.css']) {
   hash.update(await readFile(themeFile)); // changing the visual theme invalidates the Beta offline cache
@@ -36,14 +40,15 @@ await mkdir(`${output}/vendor/pdfjs`, { recursive: true });
 await mkdir(`${output}/experiments/year-planner`, { recursive: true });
 for (const file of files) await copyFile(file, `${output}/${file}`);
 await copyFile('beta-net-reference-2026.mjs', `${output}/experiments/year-planner/net-reference-2026.mjs`);
+await copyFile('beta-ab-summary-model.mjs', `${output}/experiments/year-planner/ab-summary-model.mjs`);
 await copyFile('beta-ab-summary-v6.mjs', `${output}/experiments/year-planner/ab-summary-v6.mjs`);
 let html = await readFile('index.html', 'utf8');
 if (!html.includes('<script type="module" src="./app.js"></script>')) throw new Error('App entry changed; inspect build.');
 html = html.replace('<title>Palkka PWA</title>', '<title>Palkka BETA</title>')
   .replace('<h1>Palkka</h1>', '<h1 class="beta-heading">Palkka <span id="beta-tag" class="beta-tag">BETA</span></h1>')
   .replace('<p class="eyebrow">PAIKALLINEN PALKANSEURANTA</p>', '')
-  .replace('<p>Palkkalaskelma sisään. Sovellus muistaa, seuraa ja huomaa muutokset puolestasi.</p>', '')
-  .replace('<script type="module" src="./app.js"></script>', '<script type="module" src="./beta-entry.mjs"></script>');
+  .replace('<p>Palkkalaskelma sisään. Sovellus muistaa, seuraa ja huomaa muutokset puolestasi.</p>', '');
+html = replaceUnique(html, '<script type="module" src="./app.js"></script>', '<script type="module" src="./beta-entry.mjs"></script>', 'app entry');
 if (qaPreview) {
   html = html.replace('<title>Palkka BETA</title>', '<title>Palkka TUONTITESTI</title>')
     .replace('>BETA</span></h1>', '>TUONTITESTI</span></h1>');
@@ -115,12 +120,6 @@ if (!html.includes(dashboardNoteMarker)) throw new Error('Dashboard note changed
 const dashboardCard = '<section class="card">\n        <div class="section-heading">\n          <div>\n            <p class="eyebrow">TILANNE</p>';
 if (!html.includes(dashboardCard)) throw new Error('Dashboard card changed; inspect compact Beta layout.');
 html = html.replace(dashboardCard, '<section class="card beta-compact-dashboard">\n        <div class="section-heading">\n          <div>');
-const endTracking = '    </section>\n\n    <section data-view="analysis" class="hidden">';
-if (!html.includes(endTracking)) throw new Error('Tracking view boundary changed');
-// The compact PDF placeholder already explains disabled import; no duplicate footer.
-html = html.replace(endTracking, `    </section>
-
-    <section data-view="analysis" class="hidden">`);
 // Five destinations in Beta only. Production and staging keep their original four tabs.
 const dataTab = '<button class="tab" data-view-target="data">Data</button>';
 if (!html.includes(dataTab)) throw new Error('Beta navigation marker changed; inspect before adding Planning.');
@@ -164,10 +163,10 @@ const monthPanel = `      <section class="card">
         <div id="monthlyDetails" class="insight-rows"></div>
       </section>`;
 if (!html.includes(monthPanel)) throw new Error('Month detail block changed');
-html = html.replace(monthPanel,`      <details class="card beta-compact-months">
-        <summary>Kuukausien erittely · avaa tarvittaessa</summary>
+html = html.replace(monthPanel,`      <section class="card beta-compact-months">
+        <h3>Kuukausien erittely</h3>
         <div id="monthlyDetails" class="insight-rows"></div>
-      </details>`);
+      </section>`);
 const budgetLabel = '<label class="insight-label">Valitse maksettu kuukausi';
 if (!html.includes(budgetLabel)) throw new Error('Budget section changed');
 html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
@@ -178,30 +177,11 @@ html = html.replace(budgetLabel,`<label class="insight-label">Nettotulon lähde
           </select>
         </label>
         ` + budgetLabel);
-// Keep primary analysis and monthly chart visible; reveal supporting detail only by choice.
-const detailStart = '<section class="card">\n        <p class="eyebrow">TODELLINEN MAKSU · ERILLINEN TYÖAJASTA</p>';
-const detailEnd = '<section class="card hidden beta-replaced">\n        <p class="eyebrow">OMAT VALINNAT · EI VEROLASKURI</p>';
-if (!html.includes(detailStart) || !html.includes(detailEnd)) throw new Error('Analysis detail grouping markers changed.');
-html = html.replace(detailStart, `<details class="analysis-collection">
-        <summary><strong>Lisää palkka- ja työaikatietoja</strong><span>Brutto, netto, ylityöt, pankkikirjaukset ja kuukausierittely</span></summary>
-        <div class="analysis-collection-body">
-      ` + detailStart);
-html = html.replace(detailEnd, `        </div>
-      </details>
-      ` + detailEnd);
-const budgetStart = '<section class="card">\n        <p class="eyebrow">50 / 30 / 20 · SUUNNITTELUTYÖKALU</p>';
 const historyBoundary = '    </section>\n\n    <section data-view="history" class="hidden">';
-if (!html.includes(budgetStart) || !html.includes(historyBoundary)) throw new Error('Analysis budget grouping markers changed.');
-html = html.replace(budgetStart, `<details class="analysis-collection">
-        <summary><strong>Budjetti ja tavoitteet</strong><span>Vapaaehtoiset laskelmat ja omat tavoitteet</span></summary>
-        <div class="analysis-collection-body">
-      ` + budgetStart);
-html = html.replace(historyBoundary, `        </div>
-      </details>
-    </section>
+html = replaceUnique(html, historyBoundary, `    </section>
 ${plannerView}
 
-    <section data-view="history" class="hidden">`);
+    <section data-view="history" class="hidden">`, 'planner tab placement');
 // Only the isolated generated Beta CSS gets compact mobile-first styling.
 const betaCss = `
 /* Compact Beta dashboard. Shared production stylesheet is never overwritten. */
@@ -331,19 +311,9 @@ body{background:linear-gradient(180deg,#171c1f,#111719 49%,#171d1e);color:#f3f6f
 .planner-toggle::after{content:"Avaa laskuri ↓";color:#8ce0b7;font-size:.77rem;}
 .planner-fold[open] .planner-toggle::after{content:"Sulje laskuri ↑";}
 .planner-fold-content{padding:1px 10px 12px;}
-.analysis-collection{margin:12px 0;border:1px solid #364443;border-radius:15px;background:#252f30;}
-.analysis-collection>summary{cursor:pointer;list-style:none;display:grid;gap:5px;padding:16px;}
-.analysis-collection>summary::-webkit-details-marker{display:none;}
-.analysis-collection>summary strong{font-size:1.02rem;}
-.analysis-collection>summary span{color:#b7c3c0;font-size:.77rem;line-height:1.5;}
-.analysis-collection>summary::after{content:"Näytä ↓";font-size:.78rem;color:#8ce0b7;}
-.analysis-collection[open]>summary::after{content:"Sulje ↑";}
-.analysis-collection-body{padding:0 9px 8px;}
-.analysis-collection-body>.card{box-shadow:none;background:#2d3738;}
 summary:focus-visible{outline:2px solid #9de9c2;outline-offset:2px;}
 @media(max-width:620px){
  .shell{padding-left:11px;padding-right:11px;}
- .analysis-collection-body{padding:0 5px 5px;}
  .beta-primary-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 @media(max-width:350px){
@@ -358,6 +328,7 @@ const betaCompactV3 = await readFile('beta-cards-v3.css', 'utf8');
 const betaInfoV4 = await readFile('beta-info-v4.css', 'utf8');
 const precisionTokens = await readFile('beta-precision-tokens.css', 'utf8');
 const betaBlackV5 = await readFile('beta-black-v5.css', 'utf8');
+const betaSalaryComparisonCss = await readFile('beta-salary-comparison.css', 'utf8');
 const betaImportCss = `
 .ledger-opening #dashboard {display:block}
 .ledger-opening #dashboard .metric {min-height:76px;border:0;border-radius:0;border-bottom:1px solid #36454b;background:transparent;box-shadow:none}
@@ -378,26 +349,51 @@ const betaImportCss = `
 .beta-pdf-slot .file-button { cursor:pointer; opacity:1; }
 .beta-pdf-slot #status { display:block; flex-basis:100%; margin:0; font-size:.73rem; line-height:1.45; }
 .beta-pdf-slot .privacy { display:none; }
+/* Beta import sheet: a real queue, not the misleading cleared native file label. */
+.beta-import-workspace .beta-import-picker{position:relative;display:grid;gap:8px;min-width:0;font-weight:700}
+.beta-import-workspace .beta-import-picker-button{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--mint);border-radius:var(--tight);background:var(--raised);color:var(--mint);font-size:.88rem;font-weight:740;pointer-events:none}
+.beta-import-workspace #betaBatchInput{position:absolute;bottom:0;left:0;width:100%;height:52px;min-height:52px;z-index:1;opacity:0;cursor:pointer;margin:0;padding:0;border:0}
+.beta-import-workspace .beta-import-picker:focus-within .beta-import-picker-button{outline:2px solid var(--cyan);outline-offset:2px}
+.beta-import-workspace #betaFileSelection{margin:0 0 3px;font-size:.81rem;line-height:1.4;color:var(--cyan);overflow-wrap:anywhere}
+.beta-import-workspace .beta-import-source-controls{display:grid;gap:9px;border-top:1px solid var(--edge);padding-top:15px}
+.beta-import-workspace .beta-import-source-controls>h3{margin:0;font-size:.95rem;line-height:1.35}
+.beta-import-workspace .beta-import-source-creation{display:grid;gap:9px;margin:3px 0 0;padding:10px;border:1px solid var(--edge);border-radius:var(--tight);background:var(--surface)}
+.beta-import-workspace .beta-import-source-creation label{font-size:.79rem!important;color:var(--sub)!important}
+.beta-import-workspace .beta-import-source-creation input{width:100%;min-width:0;min-height:44px}
+.beta-import-workspace .beta-import-source-creation button{min-height:44px;width:100%;border:1px solid var(--mint);color:var(--mint);background:var(--raised);font-size:.83rem;font-weight:700}
+.beta-import-workspace #betaImportFilesPanel{border:1px solid var(--edge);border-radius:var(--tight);padding:9px 11px;min-width:0;margin:0 0 8px;background:var(--surface)}
+.beta-import-workspace #betaImportFilesPanel[hidden]{display:none!important}
+.beta-import-workspace #betaImportFilesPanel>h3{margin:0 0 6px;font-size:.84rem;line-height:1.3;color:var(--ink)}
+.beta-import-workspace #betaBatchFiles{max-height:190px;overflow-y:auto;overscroll-behavior:contain;padding-left:19px;margin:0 0 6px}
+.beta-import-workspace .beta-import-privacy-note{font-size:.73rem;line-height:1.42;color:var(--sub);margin:0}
 `;
 await writeFile(`${output}/styles.css`,
-  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaImportCss);
+  (await readFile('styles.css', 'utf8')) + '\n' + betaCss + '\n' + betaPolishCss + '\n' + betaV2Theme + '\n' + betaCompactV3 + '\n' + betaInfoV4 + '\n' + precisionTokens + '\n' + betaBlackV5 + '\n' + betaSalaryComparisonCss + '\n' + betaImportCss);
 // Theme the isolated same-origin annual-planner iframe without modifying its source or calculations.
 const plannerPath = `${output}/experiments/year-planner/index.html`;
 const plannerHtml = await readFile(plannerPath, 'utf8');
-if (!plannerHtml.includes('html.beta-integrated body') ||
-    plannerHtml.split('</style>').length !== 2) {
+if (!plannerHtml.includes('html.beta-integrated body')) {
   throw new Error('Embedded Beta planner CSS anchor changed; inspect before applying theme.');
 }
 const plannerV2Theme = await readFile('beta-planner-theme-v2.css', 'utf8');
 const plannerBlackV5 = await readFile('beta-planner-black-v5.css', 'utf8');
-if (plannerHtml.split('</body>').length !== 2) throw new Error('Beta planner closing body changed; review net preview mounting.');
-const plannerWithTheme = plannerHtml.replace('</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + '\n</style>');
-await writeFile(plannerPath, plannerWithTheme.replace('</body>',
-  '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>'));
-html = html.replace('<div id="history"></div>', `<div class="ledger-switch" role="group" aria-label="Historian näkymä">
+// Move the original year field before the history suggestions without remounting inputs.
+const yearField = plannerHtml.match(/<div class="field"><label for="planYear">[^<]+<\/label><input [^>]+><\/div>/)?.[0];
+if (!yearField) throw new Error('Missing planning year field');
+const plannerLayout = replaceUnique(plannerHtml.replace(yearField, ''), '<section class="card" aria-labelledby="history-title">', `<section class="card" aria-labelledby="history-title">
+    ${yearField}
+    <p><a href="#betaABHeading">Siirry tuloksiin</a></p>`, 'planning history and year')
+  .replace('<h2 id="tax-title">3. Vertaile kahta verokorttia</h2>', '<h2 id="tax-title">3. Vertaile kahta verokorttia</h2><a href="#betaABHeading">Siirry tuloksiin</a>');
+const plannerNavigationCss = `
+  html.beta-integrated a[href^="#"] { display:inline-flex;align-items:center;min-height:44px;color:var(--cyan) }
+`;
+const plannerWithTheme = replaceUnique(plannerLayout, '</style>', '\n' + plannerV2Theme + '\n' + precisionTokens + '\n' + plannerBlackV5 + plannerNavigationCss + '\n</style>', 'planner style');
+await writeFile(plannerPath, replaceUnique(plannerWithTheme, '</body>',
+  '<script type="module" src="./net-reference-2026.mjs"></script>\n<script type="module" src="./ab-summary-v6.mjs"></script>\n</body>', 'planner scripts'));
+html = replaceUnique(html, '<div id="history"></div>', `<div class="ledger-switch" role="group" aria-label="Historian näkymä">
   <button data-ledger-mode="list">Lista</button><button data-ledger-mode="calendar">Kalenteri</button>
-</div><section id="ledgerCalendar" hidden></section><div id="history"></div>`);
-html = html.replace('<section data-view="tracking">', '<section data-view="tracking"><div id="ledgerOpening"></div>');
+</div><section id="ledgerCalendar" hidden></section><div id="history"></div>`, 'history ledger');
+html = replaceUnique(html, '<section data-view="tracking">', '<section data-view="tracking"><div id="ledgerOpening"></div>', 'tracking ledger');
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/beta-entry.mjs`, `const expectedOrigin = ${JSON.stringify(rawOrigin)};
 if (location.origin !== expectedOrigin) {
@@ -430,12 +426,12 @@ let sw = await readFile('sw.js', 'utf8');
 if (!sw.includes('const CACHE_PREFIX = "palkka-pwa-v";') || !sw.includes('const CACHE = `${CACHE_PREFIX}19`;')) {
   throw new Error('Service worker changed; inspect staging cache transformation.');
 }
-sw = sw.replace('const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";')
-  .replace('const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-beta-v' + revision}';`)
-  .replace('"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs",')
-  .replace('"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",')
-  .replace('"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs"')
-  .replace('"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",');
+sw = replaceUnique(sw, 'const CACHE_PREFIX = "palkka-pwa-v";', 'const CACHE_PREFIX = "palkka-beta-v";', 'service worker dependency');
+sw = replaceUnique(sw, 'const CACHE = `${CACHE_PREFIX}19`;', `const CACHE = '${'palkka-beta-v' + revision}';`, 'service worker dependency');
+sw = replaceUnique(sw, '"./", "./index.html",', '"./", "./index.html", "./beta-entry.mjs", "./beta-ledger.mjs", "./beta-compact.mjs", "./beta-salary-comparison.mjs", "./beta-weekend-tracker.mjs",', 'service worker dependency');
+sw = replaceUnique(sw, '"./app.js", "./parser.js",', '"./app.js", "./taxcard-forecast.js", "./parser.js",', 'service worker dependency');
+sw = replaceUnique(sw, '"./icon-192.png", "./icon-512.png"', '"./icon-192.png", "./icon-512.png", "./experiments/year-planner/index.html", "./experiments/year-planner/net-reference-2026.mjs", "./experiments/year-planner/ab-summary-v6.mjs", "./experiments/year-planner/ab-summary-model.mjs"', 'service worker dependency');
+sw = replaceUnique(sw, '"./model.js", "./analytics.js",', '"./model.js", "./analytics.js", "./insights.js", "./insights-ui.js", "./scenario-model.js", "./scenario-ui.js",', 'service worker dependency');
 // Enforce the same origin before any worker event handlers can register.
 sw = `if (self.location.origin !== ${JSON.stringify(rawOrigin)}) throw new Error('Beta origin mismatch');\n` + sw;
 await writeFile(`${output}/sw.js`, sw);

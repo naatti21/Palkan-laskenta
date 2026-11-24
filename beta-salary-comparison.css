@@ -1,0 +1,78 @@
+.salary-comparison-card [hidden] { display:none !important; }
+.salary-comparison-switch {
+  display:flex; align-items:center; gap:9px; min-height:44px;
+  margin:0 0 8px; padding:0 5px !important; border:0 !important;
+  background:transparent !important; color:var(--ink) !important;
+  font-size:.85rem; cursor:pointer;
+}
+.salary-comparison-switch-track {
+  position:relative; width:36px; height:20px; border:1px solid var(--sub);
+  border-radius:12px; background:var(--well);
+}
+.salary-comparison-switch-track::after {
+  content:""; position:absolute; top:3px; left:3px; width:12px; height:12px;
+  background:var(--sub); border-radius:50%;
+}
+.salary-comparison-switch[aria-checked="true"] .salary-comparison-switch-track {
+  background:var(--cyan); border-color:var(--cyan);
+}
+.salary-comparison-switch[aria-checked="true"] .salary-comparison-switch-track::after {
+  left:19px; background:var(--well);
+}
+.salary-comparison-chart { display:flow-root; min-width:0; }
+.salary-comparison-caption,.salary-comparison-legend {
+  margin:0 0 5px; color:var(--sub); font-size:.75rem;
+}
+.salary-comparison-legend::before {
+  content:""; display:inline-block; width:8px; height:8px;
+  background:#4ade80; margin-right:6px;
+}
+.salary-comparison-keys {
+  display:grid; grid-template-columns:repeat(var(--plan-count),minmax(0,1fr)); gap:5px;
+}
+.salary-plan-A { --salary-plan-color:#87b8ff; }
+.salary-plan-B { --salary-plan-color:#cca4ff; }
+.salary-plan-C { --salary-plan-color:#ffe047; }
+.salary-plan-shared { --salary-plan-color:#d7c9f4; }
+.salary-comparison-marker {
+  display:grid; justify-items:start; align-content:center; gap:2px;
+  min-height:44px; min-width:0; padding:4px 5px !important;
+  background:var(--well) !important; border-radius:var(--tight) !important;
+  border:1px solid var(--edge) !important; color:var(--ink) !important;
+  font-size:clamp(.68rem, 3.45vw, .82rem); font-variant-numeric:tabular-nums;
+}
+.salary-comparison-marker strong { color:var(--salary-plan-color); }
+.salary-comparison-marker strong::before {
+  content:""; display:inline-block; width:12px; border-top:1px solid currentColor;
+  margin-right:4px; vertical-align:middle;
+}
+.salary-comparison-marker[aria-pressed="true"] { border-color:var(--salary-plan-color) !important; }
+.salary-comparison-plot {
+  position:relative; height:164px; margin:16px 4px 29px clamp(53px, 20%, 82px); min-width:0;
+}
+.salary-comparison-tick {
+  position:absolute; right:calc(100% + 4px); transform:translateY(-50%);
+  white-space:nowrap; font-size:.64rem; color:var(--sub); font-variant-numeric:tabular-nums;
+}
+.salary-comparison-zero,.salary-comparison-line {
+  position:absolute; width:100%; border-top:1px solid var(--edge); pointer-events:none;
+}
+.salary-comparison-line { border-color:var(--salary-plan-color); }
+.salary-comparison-bars { position:absolute; inset:0; display:grid; }
+.salary-comparison-month {
+  position:relative; min-width:0; padding:0 !important;
+  background:transparent !important; border:0 !important; border-radius:0 !important;
+}
+.salary-comparison-month .chart-bar {
+  position:absolute; left:50%; transform:translateX(-50%);
+  width:72%; max-width:26px; border-radius:1px;
+}
+.salary-comparison-month[aria-pressed="true"] .chart-bar { box-shadow:0 0 0 1px var(--ink); }
+.salary-comparison-month-label {
+  position:absolute; top:100%; left:0; right:0; padding:5px 0 9px;
+  text-align:center; font-size:.68rem; color:var(--sub); white-space:nowrap;
+}
+.salary-comparison-month[aria-pressed="true"] .salary-comparison-month-label { color:var(--ink); }
+.salary-comparison-card button:focus-visible { outline:2px solid var(--cyan); outline-offset:1px; }
+.salary-comparison-detail,.salary-comparison-notice { margin:6px 0; }
+.salary-comparison-link { min-height:44px; margin-bottom:4px; }

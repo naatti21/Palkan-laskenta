@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {referenceNet2026,REFERENCE_YEAR} from '../beta-net-reference-2026.mjs';
+import {ACTIVE_TAX_REFERENCE, referenceNet2026, REFERENCE_YEAR} from '../beta-net-reference-2026.mjs';
 
 test('2026 benchmark returns documented 52k gross / net and effective total deductions',()=>{
   assert.equal(REFERENCE_YEAR,2026);
@@ -27,4 +27,14 @@ test('never extrapolates an unverified 2026 tax rate outside reference interval'
   }
   assert.equal(referenceNet2026(20000).net,17987);
   assert.equal(referenceNet2026(140000).net,78569);
+});
+
+test('active benchmark keeps the 2026 net and marginal rows together',()=>{
+  const { year, netAt, netAnchors, marginalAnchors } = ACTIVE_TAX_REFERENCE;
+  assert.equal(year,2026);
+  assert.deepEqual(netAnchors.map(([gross])=>gross),marginalAnchors.map(([gross])=>gross));
+  assert.deepEqual(marginalAnchors.find(([gross])=>gross===52000),[52000,48.4]);
+  for(const [gross,net] of netAnchors){
+    assert.equal(netAt(gross).net,net);
+  }
 });

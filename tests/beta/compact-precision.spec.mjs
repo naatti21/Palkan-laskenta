@@ -1,6 +1,6 @@
 import {test,expect} from "@playwright/test";
 
-test("month totals use realized payments only and survive long source names on narrow screens",async({page})=>{
+test("home latest payment and annual sums use realized payroll only and fit narrow screens",async({page})=>{
   await page.setViewportSize({width:320,height:800});
   await page.goto("/");
   await page.evaluate(async()=>{
@@ -14,8 +14,10 @@ test("month totals use realized payments only and survive long source names on n
   await page.reload();
   await page.locator("#dashboardYear").selectOption("2025");
   await expect(page.locator(".compact-amount")).toContainText(/12\s280/);
-  await page.getByRole("combobox",{name:"Seurannan maksukuukausi"}).selectOption("2025-09");
-  await expect(page.locator(".compact-amount")).toContainText("850");
+  await expect(page.locator(".compact-lead").first()).toContainText("30.10.2025");
+  await expect(page.locator(".compact-lead").nth(1)).toContainText(/13\s130/);
+  await expect(page.locator(".compact-lead").nth(1)).toContainText("Brutto");
+  await expect(page.getByRole("combobox",{name:"Seurannan maksukuukausi"})).toHaveCount(0);
   await page.addStyleTag({content:"html{font-size:125%}"});
   for(const name of ["Seuranta","Historia","Analyysi","Laskuri","Asetukset"]){
     await page.getByRole("button",{name,exact:true}).click();
@@ -31,7 +33,7 @@ test("settings stay usable with empty history, reordered sections and enlarged t
   });
   await page.setViewportSize({width:320,height:840});
   await page.goto("/index.html");
-  await expect(page.locator(".compact-lead")).toContainText("Ei toteutuneita");
+  await expect(page.locator(".compact-lead").first()).toContainText("Ei vielä toteutuneita");
   await page.getByRole("button",{name:"Asetukset"}).click();
   await expect(page.locator("#exportButton")).toBeVisible();
   await expect(page.locator("#importButton")).toBeVisible();
@@ -49,7 +51,7 @@ test("settings stay usable with empty history, reordered sections and enlarged t
   });
   await page.reload();
   await page.locator("#dashboardYear").selectOption("2025");
-  await expect(page.locator(".compact-lead")).toContainText("Tulolähteitä 5");
+  await expect(page.locator(".compact-lead").first()).toContainText("5 maksua");
   for (const scale of [125,200]) {
     await page.evaluate(scale=>document.documentElement.style.fontSize=scale+"%",scale);
     for(const tab of ["Seuranta","Historia","Analyysi","Laskuri","Asetukset"]){
