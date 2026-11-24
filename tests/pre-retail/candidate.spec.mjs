@@ -99,6 +99,73 @@ test("all five views fit six widths and navigation exposes the current view", as
   expect(checks).toEqual([]);
 });
 
+test("planner layout stays separated across the full iframe and expanded comparison", async ({page}) => {
+  await open(page);
+  const frame = await planner(page);
+  const compare = frame.locator("#allComparisonsToggle");
+  for (const width of [320, 360, 390, 430]) {
+    await page.setViewportSize({width,height:860});
+    for (const expanded of [false, true]) {
+      if ((await compare.getAttribute("aria-expanded") === "true") !== expanded) await compare.click();
+      await expect.poll(() => frame.locator(".shell").evaluate(shell => {
+        const year = shell.querySelector("#planYear");
+        const elements = [...shell.querySelectorAll("h1,h2,h3,h4,label,input,select,button,summary")]
+          .map(el => ({el, rect:el.getBoundingClientRect()}))
+          .filter(({el,rect}) => rect.width > 1 && rect.height > 1 && rect.right > 0 &&
+            getComputedStyle(el).visibility !== "hidden" && getComputedStyle(el).opacity !== "0");
+        const errors = [];
+        const name = el => el.id || el.textContent.trim().slice(0,38) || el.tagName;
+        for (const [index, a] of elements.entries()) {
+          if (a.rect.right > document.documentElement.clientWidth + 1) errors.push(name(a.el) + " exceeds viewport");
+          for (const b of elements.slice(index+1)) {
+            // Labels intentionally wrap their inputs, and some buttons contain text elements.
+            if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+            const overlapX = Math.min(a.rect.right,b.rect.right) - Math.max(a.rect.left,b.rect.left);
+            const overlapY = Math.min(a.rect.bottom,b.rect.bottom) - Math.max(a.rect.top,b.rect.top);
+            if (overlapX > 0.5 && overlapY > 0.5) errors.push(name(a.el) + " overlaps " + name(b.el));
+          }
+        }
+        const heading = shell.querySelector("#history-title").getBoundingClientRect();
+        if (year.getBoundingClientRect().top - heading.bottom < 4) errors.push("Year is too close to history heading");
+        if (shell.getBoundingClientRect().bottom + window.scrollY > innerHeight + 1) errors.push("Iframe clips its scrollable content");
+        return errors;
+      }), {message:`${width} px, comparison expanded=${expanded}`}).toEqual([]);
+    }
+  }
+  await page.evaluate(() => {
+    document.getElementById("plannerFrame").contentWindow.postMessage({
+      type:"palkka:planner:prefill", backup:{app:"Palkka PWA",records:null}
+    }, location.origin);
+  });
+  await expect(frame.locator("#historyStatus")).toContainText("Palkkahistoriasta ei saatu luotettavia ehdotuksia");
+  await expect(frame.locator("body")).not.toContainText(/\bBeta(?:n|ssa)?\b/i);
+});
+
+test("retired history remains inspectable and PDF selection stays first", async ({page}) => {
+  await page.setViewportSize({width:360,height:860});
+  await open(page);
+  await page.locator("#betaImportOpen").click();
+  const picker = page.locator("#betaBatchInput");
+  await expect(picker).toBeFocused();
+  await expect(picker).toBeInViewport({ratio:1});
+  await expect(page.locator("#incomeSourceName")).toBeHidden();
+  await page.locator(".retail-source-disclosure > summary").click();
+  await expect(page.locator("#incomeSourceName")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await restore(page,await backup(page));
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+  await tab(page,"Historia").click();
+  const old = page.locator(".retail-payslip-superseded");
+  const latest = page.locator(".history-row:not(.retail-payslip-superseded)").first();
+  await expect(old).toHaveCount(1);
+  await expect(old.locator(".retail-version-badge")).toHaveText("Korvattu versio – ei laskennassa");
+  await expect(old.locator(".payslip-net")).toHaveCSS("text-decoration-line","line-through");
+  await expect(latest.locator(".payslip-net")).toHaveCSS("text-decoration-line","none");
+  await old.locator("summary.payslip-summary").click();
+  await expect(old.locator(".payslip-detail")).toBeVisible();
+  await expect(old.locator(".payslip-detail")).toContainText(/3\s*810,15/);
+});
+
 test("versioned backup, malformed restore, duplicate PDF and unfamiliar PDF", async ({ page }) => {
   await open(page);
   const payload = await backup(page);
@@ -202,24 +269,39 @@ for (const width of [360, 390]) {
     async function capture(name) {
       await page.evaluate(() => scrollTo(0, 0));
       const path = join(directory, `retail-${width}-${name}.png`);
-      await page.screenshot({path, animations:"disabled"});
+      await page.screenshot({
+        path, fullPage:true, animations:"disabled",
+        // Move the dock to the end for a continuous image without obscured rows.
+        style:"body{position:relative}.tabs{position:absolute!important;top:auto!important;bottom:0!important}"
+      });
       await info.attach(name, {path,contentType:"image/png"});
     }
     await capture("01-seuranta-tyhja");
     await page.locator("#betaImportOpen").click();
     await expect(page.getByRole("dialog", {name:"Palkkalaskelmien tuonti"})).toBeVisible();
-    await capture("02-tuonti");
+    const importPath = join(directory, `retail-${width}-02-tuonti.png`);
+    await page.getByRole("dialog", {name:"Palkkalaskelmien tuonti"}).screenshot({
+      path:importPath, animations:"disabled",
+      style:"#betaImportWorkspace{position:absolute;inset:0 0 auto;max-height:none;height:auto;overflow:visible}"
+    });
+    await info.attach("Tuonti kokonaan", {path:importPath,contentType:"image/png"});
     await page.keyboard.press("Escape");
     await expect(page.locator("#betaImportOpen")).toBeFocused();
     await restore(page, await backup(page));
     await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
     await tab(page, "Seuranta").click();
     await capture("03-seuranta-historia");
-    await planner(page);
+    const frame = await planner(page);
+    await expect.poll(() => frame.locator(".shell").evaluate(el => el.scrollHeight <= innerHeight)).toBe(true);
     await capture("04-laskuri");
+    await frame.locator("#betaProgressChart").scrollIntoViewIfNeeded();
+    const lower = join(directory,`retail-${width}-04-laskuri-kuvaajat.png`);
+    await page.screenshot({path:lower,animations:"disabled"});
+    await info.attach("Laskurin kuvaajat", {path:lower,contentType:"image/png"});
     await tab(page, "Analyysi").click();
     await page.getByRole("switch", {name:"Näytä A/B/C"}).click();
     await expect(page.locator("#salaryComparisonChart .salary-comparison-line")).toHaveCount(3);
+    await capture("05-analyysi-koko");
     await page.locator(".salary-comparison-card").evaluate(node => window.scrollBy(0,node.getBoundingClientRect().top - 80));
     const path = join(directory, `retail-${width}-05-analyysi.png`);
     await page.screenshot({path,animations:"disabled"});

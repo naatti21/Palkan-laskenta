@@ -17,10 +17,17 @@ function preparePlanner() {
     doc.documentElement.dataset.parentProduct = "Palkka";
     const history = doc.getElementById("history-title").closest("section");
     const year = doc.getElementById("planYear").closest(".field");
-    history.prepend(year);
-    history.querySelector("p.muted").textContent = "Palkkahistoria antaa ehdotuksia. Tarkista luvut ennen käyttämistä.";
+    const heading = doc.getElementById("history-title").closest(".subtitle");
+    const explanation = history.querySelector("p.muted");
+    const intro = doc.createElement("div");
+    intro.className = "retail-planner-intro";
+    heading.before(intro);
+    intro.append(heading, year, explanation);
+    explanation.textContent = "Palkkahistoria antaa ehdotuksia. Tarkista luvut ennen käyttämistä.";
     history.querySelector("label[for='historyInput']").hidden = true;
-    history.querySelector(".subtitle .tag").hidden = true;
+    heading.querySelector(".tag").hidden = true;
+    doc.querySelector(".shell > footer").textContent =
+      "Laskurin arviot lasketaan laitteellasi. Tarkista vero- ja palkkatiedot alkuperäisistä lähteistä.";
     const style = doc.createElement("link");
     style.rel = "stylesheet";
     style.href = "./pre-retail-planner.css";

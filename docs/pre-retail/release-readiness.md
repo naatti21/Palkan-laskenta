@@ -4,7 +4,7 @@
 
 ## Varmennus
 
-Paikallinen Node-suite läpäisi 284 testiä. Pre-retailin seitsemän Playwright-testiä läpäisivät. Ne kattavat 320, 360, 390, 430, 768 ja 1280 px, viisi näkymää, näppäimistöohituksen, tuonnin Esc-paluun, kuusi valittua axe-sääntöä, vanhan varmuuskopion palautuksen, vioittuneen JSON:n, varmuuskopion lataamisen, puutteellisen PDF:n, duplikaatin, jonon sulkemisen ja offline-päivityksen. Historiasta verrataan myös ennen ja jälkeen otetun kuvan tiivistettä samassa selaimessa. Testi vaihtaa service workerin revisiota, odottaa uuden workerin valmiiksi ja sulkee vanhan asiakkaan ennen aktivointia. Se osoittaa saman alkuperän historian säilymisen, ei koko kauppajakelun päivitysketjua.
+Paikallinen Node-suite läpäisi 284 testiä. Pre-retailin yhdeksän Playwright-testiä läpäisivät katselmointikorjausten jälkeen. Ne kattavat 320, 360, 390, 430, 768 ja 1280 px, viisi näkymää, näppäimistöohituksen, tuonnin Esc-paluun, kuusi valittua axe-sääntöä, vanhan varmuuskopion palautuksen, vioittuneen JSON:n, varmuuskopion lataamisen, puutteellisen PDF:n, duplikaatin, jonon sulkemisen ja offline-päivityksen. Historiasta verrataan myös ennen ja jälkeen otetun kuvan tiivistettä samassa selaimessa. Testi vaihtaa service workerin revisiota, odottaa uuden workerin valmiiksi ja sulkee vanhan asiakkaan ennen aktivointia. Se osoittaa saman alkuperän historian säilymisen, ei koko kauppajakelun päivitysketjua.
 
 Synteettisessä aineistossa on tavallisia palkkoja, ylityötä, lomaraha, korvattu laskelma, kaksi tulolähdettä samana maksupäivänä, vuodenvaihde ja muuttuva verokortti. Senttitestissä vuoden 2026 tarkistussumma on 1 200,30 € brutto ja 959,95 € netto negatiivisen oikaisun jälkeen. Joulukuun 2025 netto 2 000,10 € säilyy omalla vuodellaan. Testi ei todista henkilökohtaista verotusta. Levytilavirhe simuloidaan IndexedDB-kirjoituksessa ja aiempi historia tarkistetaan sen jälkeen.
 
@@ -22,6 +22,8 @@ Yksi paikallinen Chromium-ajo, 390 px, 4× CPU-hidastus, 150 synteettistä palkk
 Mittaus on suuntaa antava, eikä 150 tietuetta osoita tuhansien maksujen käsittelyä. Ennen optimointia 150 tietueen koe ylitti 5 sekunnin odotuksen tässä simulaatiossa. Projektiossa on edelleen parivertailu.
 
 ### Kuvallinen tarkistus
+
+[PR #89:n katselmointikorjaukset ja täyspitkät kuvat](review-fixes.md) · [Erillinen refaktorointisuunnitelma](refactoring-plan.md)
 
 [Beta ja vedos rinnakkain, 360 px](screenshots/beta-pre-retail-360.png). Uusi ensikäyttö näyttää ensimmäisen PDF-toiminnon heti. Täytetyssä Seurannassa viimeisin netto, vuoden koonti ja verokortin tila ovat selvästi nimettyjä. 360 ja 390 px kuvissa A/B/C-tasojen rahamäärät mahtuvat rinnakkain, Historia näyttää bruton ja neton, ja alavalikko pysyy ruudulla. Laskurin KTA-polku ja tuontilomake ovat edelleen pitkiä. Asetusten alempi osuus sisältää vielä teknisiä toimintoja, jotka vaativat vieritystä.
 

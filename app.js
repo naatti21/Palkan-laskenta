@@ -1224,7 +1224,8 @@ function renderHistory(records) {
     heading.append(date, period, source);
     const versionState = document.createElement("span");
     const unresolved = projection.unresolved.includes(record);
-    versionState.textContent = !projection.visible.includes(record) ? "Korvattu versio – ei laskennassa" : unresolved ? "Ratkaisematon – ei laskennassa" : "Huomioidaan laskennassa";
+    const superseded = !projection.visible.includes(record);
+    versionState.textContent = superseded ? "Korvattu versio – ei laskennassa" : unresolved ? "Ratkaisematon – ei laskennassa" : "Huomioidaan laskennassa";
     heading.append(versionState);
     if (unresolved) {
       const resolve = document.createElement("button");
@@ -1262,6 +1263,10 @@ function renderHistory(records) {
     arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = "⌄";
     if (el("retailVersion")) {
+      if (superseded) {
+        row.classList.add("retail-payslip-superseded");
+        versionState.classList.add("retail-version-badge");
+      }
       const amounts = document.createElement("span");
       amounts.className = "retail-history-amounts";
       const gross = document.createElement("small");
@@ -1628,8 +1633,17 @@ function installPdfBatchQueue() {
   if (sourceNameLabel && sourceCreateButton && sourceDisclosure && upload.contains(sourceDisclosure)) {
     sourceNameLabel.firstChild.textContent = "Uusi tulolähde (tarvittaessa)";
     sourceCreation.append(sourceNameLabel,sourceCreateButton);
-    sourceControls.append(sourceCreation);
-    sourceDisclosure.remove();
+    if (el("retailVersion")) {
+      const summary = sourceDisclosure.querySelector("summary");
+      summary.textContent = "Luo uusi tulolähde";
+      sourceDisclosure.classList.add("retail-source-disclosure");
+      sourceDisclosure.open = false;
+      sourceDisclosure.append(sourceCreation);
+      sourceControls.append(sourceDisclosure);
+    } else {
+      sourceControls.append(sourceCreation);
+      sourceDisclosure.remove();
+    }
   }
   const note = document.createElement("p");
   note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Epäselvät tiedot pysäyttävät jonon.";

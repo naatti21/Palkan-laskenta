@@ -69,3 +69,16 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .beta-import-entry { margin-block:var(--retail-space-3); }
 .retail-history-amounts { display:grid; text-align:right; min-width:0; }
 .retail-history-amounts small { color:var(--retail-muted); font-size:var(--retail-caption); }
+.retail-payslip-superseded .payslip-summary :is(.payslip-net,.payslip-heading strong) {
+  color:var(--retail-muted);
+  font-weight:600;
+}
+.retail-payslip-superseded .payslip-net { text-decoration:line-through; }
+.retail-version-badge {
+  width:fit-content; padding:var(--retail-space-1); border:1px solid var(--retail-edge);
+  border-radius:var(--retail-radius);
+}
+.retail-source-disclosure > summary {
+  display:list-item; min-height:var(--retail-control); align-content:center;
+  color:var(--retail-accent); cursor:pointer;
+}
