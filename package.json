@@ -11,13 +11,16 @@
     "build:staging": "npm run prepare:pdfjs && node scripts/build-staging.mjs",
     "test:staging": "STAGING_ORIGIN=http://127.0.0.1:4175 npm run build:staging && playwright test --config playwright.staging.config.mjs",
     "build:beta": "npm run prepare:pdfjs && node scripts/build-beta.mjs",
-    "test:beta": "BETA_ORIGIN=http://127.0.0.1:4177 npm run build:beta && playwright test --config playwright.beta.config.mjs"
+    "test:beta": "BETA_ORIGIN=http://127.0.0.1:4177 npm run build:beta && playwright test --config playwright.beta.config.mjs",
+    "build:pre-retail": "npm run prepare:pdfjs && node scripts/build-pre-retail.mjs",
+    "test:pre-retail": "PRE_RETAIL_ORIGIN=http://127.0.0.1:4190 npm run build:pre-retail && playwright test --config playwright.pre-retail.config.mjs"
   },
   "dependencies": {
     "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",
+    "axe-core": "4.11.1",
     "fake-indexeddb": "6.2.7"
   },
   "type": "module"

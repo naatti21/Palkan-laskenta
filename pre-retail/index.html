@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="Paikallinen ja yksityinen palkkalaskelmien seuranta" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./pre-retail.css" />
+  <title>Palkka Pre-retail v0.1</title>
+</head>
+<body>
+  <main class="shell" id="mainContent">
+    <a class="retail-skip" href="#activeView">Siirry sisältöön</a>
+    <header class="hero">
+      <div>
+
+        <h1 class="beta-heading">Palkka <small class="retail-edition">PRE-RETAIL 0.1</small></h1>
+
+      </div>
+      <div id="overallLight" class="light neutral" aria-hidden="true">–</div>
+    </header>
+
+    <nav class="tabs" aria-label="Päänavigaatio">
+      <button class="tab active" data-view-target="tracking">Seuranta</button>
+      <button class="tab" data-view-target="analysis">Analyysi</button>
+      <button class="tab" data-view-target="history">Historia</button>
+      <button class="tab" data-view-target="planning">Laskuri</button>
+      <button class="tab" data-view-target="data">Asetukset</button>
+    </nav>
+
+    <section data-view="tracking">
+      <section class="retail-welcome" id="retailWelcome" hidden aria-labelledby="retailWelcomeTitle">
+        <h2 id="retailWelcomeTitle">Aloita ensimmäisestä palkasta</h2>
+        <p>Lisää palkkalaskelma PDF:nä. Palkkatiedot tallentuvat tähän selaimeen.</p>
+        <details><summary>Tuonti ja varmuuskopiointi</summary>
+          <p>Jos tunnistus ei riitä, tarkista kentät ennen tallennusta. Kuvapohjaiset PDF:t vaativat manuaalisen syötön.</p>
+          <p>Vie varmuuskopio Asetuksista ennen laitteen vaihtoa.</p>
+        </details>
+      </section>
+      <section class="card upload-card beta-pdf-slot">
+        <label>Tämän PDF:n tulolähde
+          <select id="incomeSourceSelect"><option value="">Lähde määrittämättä</option></select>
+        </label>
+        <details><summary>Luo tulolähde</summary>
+          <label>Oma nimi (vapaaehtoinen) <input id="incomeSourceName" maxlength="80" placeholder="Esim. Keikkatyö"></label>
+          <button type="button" id="createIncomeSource">Luo ja valitse</button>
+        </details>
+        <label class="file-button">
+          <input id="pdfInput" type="file" accept="application/pdf" />
+          <span>Lisää palkkalaskelma PDF</span>
+        </label>
+        <p id="status" class="status" role="status">Ei ladattua dokumenttia.</p><p class="beta-pdf-note">PDF luetaan paikallisesti · epäselvät tiedot tarkistetaan</p>
+        <p class="privacy">PDF luetaan selaimessasi. Alkuperäistä PDF:ää tai siitä poimittua raakatekstiä ei tallenneta palkkahistoriaan.</p>
+      </section>
+
+      <div id="ledgerOpening" class="card ledger-opening">
+        <h2>Seuranta</h2>
+        <div id="dashboard" class="metrics beta-primary-metrics"></div>
+        <p id="dashboardNote" class="muted" role="status"></p>
+      </div>
+
+      <section id="resultSection" class="card hidden">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TUNNISTETTU</p>
+            <h2 id="resultTitle">Palkkalaskelma tallennettu</h2>
+          </div>
+          <span id="resultBadge" class="badge good">Tallennettu</span>
+        </div>
+        <p id="resultSubtitle" class="muted">Tunnistus onnistui varmasti.</p>
+        <div id="resultSummary" class="summary-list"></div>
+        <div>
+          <p class="mini-label">Tunnistetut osat</p>
+          <div id="detectedTags" class="tag-list"></div>
+        </div>
+        <div id="resultNotices" class="notice-box hidden"></div>
+        <div class="actions compact-actions">
+          <button id="editParsedButton" class="secondary">Muokkaa</button>
+        </div>
+      </section>
+
+      <section id="unknownSection" class="card error-card hidden">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">EI TUNNISTETTU</p>
+            <h2>Tämä ei vaikuta palkkalaskelmalta</h2>
+          </div>
+          <span class="badge bad">Ei tallennettu</span>
+        </div>
+        <p class="muted">Palkkapäivää, bruttoa, nettoa ja vuoden kertymää ei löytynyt riittävän varmasti. En tallenna dokumenttia enkä arvaa puuttuvia tietoja.</p>
+        <p class="learning-note">Jos tämä on palkkalaskelma, voit vahvistaa sen kerran. Sovellus muistaa vain rakenteen tunnisteet paikallisesti ja yrittää tunnistaa samanlaisen pohjan jatkossa.</p>
+        <div class="actions">
+          <button id="chooseAnotherButton">Valitse toinen PDF</button>
+          <button id="manualEntryButton" class="secondary">Tämä on palkkalaskelma – täytä käsin</button>
+        </div>
+      </section>
+
+      <section id="reviewSection" class="card hidden">
+        <div class="section-heading">
+          <div>
+            <p id="reviewEyebrow" class="eyebrow">TARVITSEN TARKISTUKSEN</p>
+            <h2 id="reviewTitle">Tarkista epäselvä tieto</h2>
+          </div>
+          <span class="badge warn">Tarkistus</span>
+        </div>
+        <p id="reviewIntro" class="muted">Näytän vain kohdat, joita en pystynyt tulkitsemaan riittävän varmasti.</p>
+        <div id="reviewGrid" class="review-grid"></div>
+        <div class="actions">
+          <button id="saveButton">Tallenna</button>
+          <button id="showAllButton" class="secondary">Näytä kaikki kentät</button>
+          <button id="rawToggle" class="secondary">Näytä poimittu teksti</button>
+        </div>
+        <pre id="rawText" class="raw hidden"></pre>
+      </section>
+
+      <section id="conflictSection" class="card hidden">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MAKSUJEN TARKISTUS</p>
+            <h2>Tarkista kaksi palkkalaskelmaa</h2>
+          </div>
+          <span class="badge warn">Tarkista</span>
+        </div>
+        <p class="muted">Samaksi merkitty palkkakausi ei välttämättä tarkoita samaa maksua. Tarkista, onko kyse erillisistä tilille maksetuista palkoista vai aiemman laskelman korjauksesta.</p>
+        <div id="conflictSummary" class="summary-list"></div>
+        <div class="actions">
+          <button id="replaceConflictButton">Korjauslaskelma – korvaa aiempi</button>
+          <button id="keepBothConflictButton" class="secondary">Molemmat maksettu – säilytä erillisinä ja huomioi laskennassa</button>
+          <button id="cancelConflictButton" class="secondary">En ole varma – jätä odottamaan</button>
+        </div>
+      </section>
+
+      <section class="card beta-compact-dashboard">
+        <div class="section-heading">
+          <div>
+            <h2>Vuoden seuranta</h2>
+          </div>
+          <select id="dashboardYear" class="year-select" aria-label="Seurantavuosi"></select>
+        </div>
+        <section id="taxCardProgress" class="beta-taxcard-progress" aria-labelledby="taxCardProgressTitle">
+          <div class="beta-taxcard-heading">
+            <strong id="taxCardProgressTitle">Verokortin tuloraja</strong>
+            <span id="taxCardPercent">–</span>
+          </div>
+          <div id="taxCardTrack" class="beta-taxcard-track" role="progressbar" aria-label="Verokortin tulorajan käyttö" aria-valuemin="0" aria-valuemax="100">
+            <div id="taxCardFill"></div>
+          </div>
+          <div id="taxCardRemaining" class="beta-taxcard-remaining">Ei luotettavaa kertymää</div>
+          <p id="taxCardEstimate" class="beta-taxcard-estimate" role="status" aria-live="polite">Ei vielä ennustetta.</p>
+          <details class="beta-taxcard-provenance">
+            <summary>Ennusteen tarkkuus ja tietolähde</summary>
+            <p id="taxCardEstimateNote" class="beta-taxcard-note"></p>
+            <p id="taxCardContext" class="muted beta-taxcard-context" role="status"></p>
+          </details>
+        </section>
+        <details id="dashboardMore" class="beta-dashboard-more" hidden>
+          <summary>Lisää palkkatietoja</summary>
+          <div id="dashboardDetails" class="metrics beta-secondary-metrics"></div>
+        </details>
+        <section id="dashboardMiniChartWrap" class="beta-mini-chart" hidden aria-label="Viimeisimpien maksukuukausien nettoansiot">
+          <div class="beta-mini-chart-heading"><strong>Netto / maksukuukausi</strong><span id="dashboardMiniChartScope">Viimeiset kuukaudet</span></div>
+          <div id="dashboardMiniChart"></div>
+          <p id="dashboardMiniChartCaution" class="beta-mini-chart-caution" hidden></p>
+        </section>
+
+
+      </section>
+    </section>
+
+    <section data-view="analysis" class="hidden">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">JO TALLENNETUISTA PALKKALASKELMISTA</p>
+            <h2>Ansiot ja työaika</h2>
+          </div>
+          <select id="analysisYear" class="year-select" aria-label="Analyysin vuosi"></select>
+        </div>
+        <p id="analysisNote" class="muted">Lasketaan vain vahvistetuista palkkalaskelmista.</p>
+        <div id="analysisMetrics" class="metrics"></div>
+      </section>
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MAKSUPÄIVÄN MUKAAN</p>
+            <h2>Kuukausittainen palkkakehitys</h2>
+          </div>
+        </div>
+        <div class="chart-legend"><span class="legend-gross">Brutto</span><span class="legend-net">Netto</span></div>
+        <div id="monthlyChart" class="monthly-chart" role="img" aria-label="Maksettujen brutto- ja nettopalkkojen kuukausivertailu"></div>
+        <p class="muted">Tyhjät kuukaudet eivät tarkoita 0 € tuloja. Kuukausi määräytyy todellisen maksupäivän mukaan.</p>
+      </section>
+      <section class="card">
+        <p class="eyebrow">TODELLINEN MAKSU · ERILLINEN TYÖAJASTA</p>
+        <h2>Mihin brutto ja netto eroavat?</h2>
+        <div id="incomeBreakdown" class="metrics"></div>
+        <p class="muted">Bruton ja neton erotus ei ole sama asia kuin lopullinen vero. Muiden vähennysten ja oikaisujen osuus näytetään vain erotuksena, ei oleteta sen olevan tietynlainen maksu.</p>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">PALKANLISÄT · VAIN TUNNISTETTU EVIDENSSI</p>
+        <h2>Ylityöstä maksetut korotusosat</h2>
+        <div id="overtimeBreakdown" class="metrics"></div>
+        <div id="overtimeTiers" class="insight-rows"></div>
+        <p id="overtimeCaution" class="muted"></p>
+      </section>
+
+      <section class="card hidden beta-replaced">
+        <p class="eyebrow">PALKKAKAUSI EI OLE MAKSUKUUKAUSI</p>
+        <h2>Työn ja palkan aikajana</h2>
+        <div id="periodSummary" class="insight-rows"></div>
+        <p class="muted">Työaikaa ei jaeta eri vuosille tai kuukausille palkkakauden päivien suhteessa. Tarvitsemme tätä varten päivittäiset työaikakirjaukset.</p>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">PAIKALLISET HAVAINNOT</p>
+        <h2>Työaikapankin kirjaukset</h2>
+        <div id="bankSummary" class="metrics"></div>
+        <p class="muted">Nämä ovat palkkalaskelmille kirjatut yksiköt, eivät vahvistettu työaikapankin saldo. Alkusaldo, siirtosäännöt ja mahdolliset muuntokertoimet tarkistetaan myöhemmin.</p>
+      </section>
+
+      <section class="card beta-compact-months">
+        <h3>Kuukausien erittely</h3>
+        <div id="monthlyDetails" class="insight-rows"></div>
+      </section>
+
+      <section class="card hidden beta-replaced">
+        <p class="eyebrow">OMAT VALINNAT · EI VEROLASKURI</p>
+        <h2>Mitä lisätyöstä jää?</h2>
+        <p class="muted">Skenaario perustuu havaittuihin ylityön korotusosiin ja itse antamaasi arvioon siitä, paljonko lisäansiosta jää käteen. Se ei laske peruspalkkaa, kaikkia työkorvauksia eikä lopullista veroa.</p>
+        <div class="input-grid">
+          <label class="insight-label">Lisäansioista käteen jäävä osuus, arvio (%)
+            <input id="retainedRate" type="number" inputmode="decimal" min="1" max="100" step="1" placeholder="esim. 55" />
+          </label>
+          <label class="insight-label">Työajanseurannan vahvistamat lisätyötunnit (valinnainen)
+            <input id="confirmedOvertime" type="number" inputmode="decimal" min="0" step="0.25" placeholder="ei vielä tiedossa" />
+          </label>
+        </div>
+        <div id="overtimeScenario" class="metrics"></div>
+        <p class="muted">50 % / 100 % vertailu näyttää vain korotusosuuden esimerkin viimeisimmän tallennetun KTA:n mukaan. TES ja paikalliset käytännöt voivat poiketa.</p>
+        <div id="premiumComparison" class="insight-rows"></div>
+      </section>
+
+      <section class="card hidden beta-replaced">
+        <p class="eyebrow">KOKEILE ITSE · VEROKORTTIENNAKOINTI</p>
+        <h2>Milloin seuraavasta eurosta jää vähemmän?</h2>
+        <p class="muted">Kokeile, miten verokortin tuloraja vaikuttaa <strong>arvioituun lisänettoon</strong>. Tämä ei ole todellinen veroennuste eikä muuta palkkatietojasi.</p>
+        <details class="scenario-explain">
+          <summary>Mitä tarkoittavat tuloraja, lisäprosentti ja taitos?</summary>
+          <p><strong>Tuloraja:</strong> tähän asti palkasta pidätetään veroa perusprosentin mukaan. <strong>Lisäprosentti:</strong> suurempi pidätys tulorajan ylittävästä osasta. <strong>Taitos:</strong> kohta, jossa kuvion suunta muuttuu, koska seuraavasta eurosta jää vähemmän käteen. Jo ansaittu netto ei katoa.</p>
+        </details>
+        <p id="taxCardSource" class="muted"></p>
+        <div class="input-grid">
+          <label class="insight-label">Perusprosentti (%)
+            <input id="scenarioBaseRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="verokortilta" />
+          </label>
+          <label class="insight-label">Lisäprosentti (%)
+            <input id="scenarioExtraRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="verokortilta" />
+          </label>
+          <label class="insight-label">Tulorajaa jäljellä (€)
+            <input id="scenarioRemaining" type="number" inputmode="decimal" min="0" max="1000000" step="1" placeholder="täydennä tarvittaessa" />
+          </label>
+          <label class="insight-label">Muut vähennykset lisäpalkasta, oletus (%)
+            <input id="scenarioOtherRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="0" />
+          </label>
+        </div>
+        <p class="muted">Jos muut maksut ovat 0 %, niitä <strong>ei ole huomioitu</strong>. Perus- ja lisäprosentti voivat muuttua muutosverokortilla. Työajan ja palkan vuosi määräytyvät eri tavoin.</p>
+        <div id="scenarioTaxStatus" class="scenario-note" role="status"></div>
+        <div id="scenarioHundred" class="metrics"></div>
+        <div class="scenario-legend">
+          <span class="scenario-legend-main">Arvioitu lisänetto</span>
+          <span class="scenario-legend-compare">Vertailu ilman prosentinvaihtoa</span>
+        </div>
+        <div id="scenarioTaxChart" class="scenario-chart"></div>
+        <p id="scenarioTaxExplanation" class="muted"></p>
+        <details class="scenario-explain">
+          <summary>Mitä tämä kuva oikeasti kertoo?</summary>
+          <p>Vaaka-akseli näyttää lisää maksettua bruttopalkkaa. Pystyakseli näyttää, paljonko siitä jäisi näillä prosenttioletuksilla käteen. Toinen viiva on pelkkä vertailu: mitä jos perusprosentti jatkuisi. Jos viivat erkanevat, suurempi pidätys hidastaa nettotulojen kasvua. <strong>Tulorajan ylittäminen ei vie aiemmin ansaittua rahaa.</strong> Tämä kuva ei laske lopullista verotusta, verokortin muutoksia eikä muita tuloja.</p>
+        </details>
+      </section>
+
+      <section class="card hidden beta-replaced">
+        <p class="eyebrow">TYÖVIIKONLOPPU KOKONAISUUTENA · KOKEILU</p>
+        <h2>Mitä seuraavat viikonloput tuottaisivat?</h2>
+        <p class="muted">Emme vertaa lauantaita ja sunnuntaita erillisinä vaihtoehtoina. Anna <strong>koko työviikonlopun</strong> arvioitu lisäbrutto, jossa on mukana kaikki siihen kuuluvat korvaukset. Esimerkkiluvut voi muuttaa.</p>
+        <div class="input-grid">
+          <label class="insight-label">Koko viikonlopun lisäbrutto (€) · esimerkki
+            <input id="scenarioWeekendGross" type="number" inputmode="decimal" min="1" max="10000" step="10" value="500" />
+          </label>
+          <label class="insight-label">Viikonlopun työ- ja matka-aika yhteensä (h) · arvio
+            <input id="scenarioWeekendHours" type="number" inputmode="decimal" min="1" max="80" step="0.5" value="16" />
+          </label>
+          <label class="insight-label">Montako viikonloppua vertaillaan?
+            <select id="scenarioWeekendCount" class="year-select">
+              <option value="2">2</option><option value="4" selected>4</option><option value="6">6</option><option value="8">8</option>
+            </select>
+          </label>
+          <label class="insight-label">Oman vapaa-ajan arvo (€/h) · oma arvio
+            <input id="scenarioFreeValue" type="number" inputmode="decimal" min="0" max="200" step="1" value="15" />
+          </label>
+        </div>
+        <details class="scenario-explain">
+          <summary>Mitä tarkoittaa vapaa-ajan arvo?</summary>
+          <p>Tämä on <strong>sinun oma vertailulukusi</strong>, ei rahasumma jonka saisit vapaapäivästä. Jos vapaa-ajalla on esimerkiksi 15 €/h arvo ja työviikonloppu vie 16 tuntia, vertailuarvo on 240 €. Pidätys muuttuu oletuksessa, jos verokortin tuloraja ylittyy.</p>
+        </details>
+        <div id="scenarioWeekendStatus" class="scenario-note" role="status"></div>
+        <div id="scenarioWeekendMetrics" class="metrics"></div>
+        <div class="scenario-legend">
+          <span class="scenario-legend-main">Lisänetto / viikonloppu</span>
+          <span class="scenario-legend-free">Oma vapaa-ajan vertailuarvo</span>
+        </div>
+        <div id="scenarioWeekendChart" class="scenario-chart"></div>
+        <p id="scenarioWeekendExplanation" class="muted"></p>
+        <details class="scenario-explain">
+          <summary>Mitä tarkoittaa leikkauspiste?</summary>
+          <p>Tässä se tarkoittaa ensimmäistä työviikonloppua, jonka arvioitu lisänetto jää oman vapaa-ajan vertailuarvon alle. Jos sellaista ei ole, rajaa ei löydy näillä oletuksilla. Vapaa-ajan arvo ei ole vero tai lasku, vaan itse valitsemasi vertailukohta. Palkkarivien tuntiyksiköt eivät todista todellisia tehtyjä tunteja.</p>
+        </details>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">50 / 30 / 20 · SUUNNITTELUTYÖKALU</p>
+        <h2>Mitä nettopalkasta voisi tehdä?</h2>
+        <label class="insight-label">Nettotulon lähde
+          <select id="budgetSource" class="year-select">
+            <option value="typical" selected>Tyypillinen kuukausi · viimeiset palkkanauhat</option>
+            <option value="latest">Viimeisin palkkalaskelma</option>
+            <option value="month">Valittu toteutunut kuukausi</option>
+          </select>
+        </label>
+        <label class="insight-label">Valitse maksettu kuukausi
+          <select id="budgetMonth" class="year-select"></select>
+        </label>
+        <div id="budgetSummary" class="metrics"></div>
+        <p class="muted">Tämä on vapaaehtoinen esimerkkijako, ei oikea kulutusseurantasi eikä ohje siitä, kuinka paljon pitäisi säästää. Lomarahat ja bonukset voivat nostaa yksittäistä kuukautta.</p>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">TAVOITTEESTA TAKAISIN</p>
+        <h2>Nettoansiotavoitteen arvio</h2>
+        <label class="insight-label">Kuukauden tavoitenetto (€)
+          <input id="netGoal" type="number" inputmode="decimal" min="0" step="10" placeholder="esim. 3000" />
+        </label>
+        <div id="netGoalResult" class="insight-rows"></div>
+        <p class="muted">Lasketaan vain aiemmin itse antamallasi käteen jäävällä prosentilla. Tämä ei ennusta henkilökohtaista tuloveroa tai palkkalaskelmaa.</p>
+      </section>
+
+      <section class="card">
+        <h2>Mitä ei ole vielä vahvistettu?</h2>
+        <p class="muted">Tehdyt ylityötunnit ja niiden todellinen lisänetto suhteessa menetettyyn vapaa-aikaan, työaikapankin vahvistettu saldo, TES-rajojen vaikutus sekä pyhäpäivä- ja vuoronvaihtosäännöt vaativat työaikajärjestelmän ja sopimuksen tiedot. Niitä ei arvata.</p>
+      </section>
+    </section>
+
+    <section data-view="planning" class="hidden beta-planning-view" aria-labelledby="plannerHeading">
+      <header class="beta-planning-header">
+
+        <h2 id="plannerHeading">Laskuri</h2>
+        <p class="muted">Vertaa työviikonloppuja ja arvioitua nettopalkkaa.</p>
+      </header>
+      <section class="card beta-planning-card">
+        <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
+        <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html"
+          title="Vuosisuunnittelun laskuri" referrerpolicy="same-origin"></iframe>
+        <p class="muted beta-planning-disclaimer">Verokorttien A/B-prosentit ovat kokeiluarvoja, kunnes tarkistat ne OmaVerosta. Vuoden 2026 nettoviitettä ei pidä tulkita vuoden 2027 vahvistetuksi verotukseksi.</p>
+      </section>
+    </section>
+
+    <section data-view="history" class="hidden">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">HISTORIA</p>
+            <h2>Tallennetut laskelmat</h2>
+          </div>
+          <select id="historyYear" class="year-select" aria-label="Historiavuosi"></select>
+        </div>
+        <p class="muted">Vanhoja palkkalaskelmia voi lisätä normaalisti. Ne järjestetään maksupäivän perusteella oikealle vuodelle.</p>
+        <div class="ledger-switch" role="group" aria-label="Historian näkymä">
+  <button data-ledger-mode="list">Lista</button><button data-ledger-mode="calendar">Kalenteri</button>
+</div><section id="ledgerCalendar" hidden></section><div id="history"></div>
+      </section>
+    </section>
+
+    <section data-view="data" class="hidden">
+      <p class="retail-version" id="retailVersion">Palkka Pre-retail v0.1</p>
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">VARMUUSKOPIO</p>
+            <h2>Puhelimen vaihto ja palautus</h2>
+          </div>
+        </div>
+        <p>Tietosi ovat ensisijaisesti tällä laitteella. Tee varmuuskopio ennen puhelimen vaihtoa ja säilytä tiedosto paikassa, johon pääset myös uudella laitteella.</p>
+        <div class="actions">
+          <button id="exportButton">Vie varmuuskopio</button>
+          <button id="importButton" class="secondary">Palauta varmuuskopio</button>
+          <input id="backupInput" class="hidden" type="file" accept="application/json,.json" />
+        </div>
+        <p id="backupStatus" class="muted" role="status">Valitse JSON-tiedosto palauttaaksesi palkkahistorian.</p>
+      </section>
+
+      <section data-settings-disclosure class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TIETOSUOJA</p>
+            <h2>Vain seurannan tarvitsema data</h2>
+          </div>
+        </div>
+        <p>Sovellus ei tarvitse eikä tallenna palkansaajan nimeä, henkilötunnusta, osoitetta, pankkitiliä tai työnantajan nimeä. Palkkalaskelmasta säilytetään vain seurannan kannalta tarpeelliset palkka-, aika-, verokortti- ja palkkarivitiedot.</p>
+        <p class="muted">Alkuperäistä PDF-tiedostoa eikä PDF:stä poimittua raakatekstiä tallenneta historiaan tai varmuuskopioon. Jos korjaat uudenlaista palkkalaskelmaa, sovellus voi tallentaa neutraaleja rakennetunnisteita sekä vahvistetun kentän ympäristön yksisuuntaisia tiivisteitä. Tiivisteeseen ei tallenneta palkka-arvoa tai alkuperäistä tekstiä. Pidämme rakenteen tarkoituksella kevyenä ja paikallisena, jotta yksityisyys säilyy hyvänä ja tuotteen kustannukset voidaan pitää matalina.</p>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">PAIKALLINEN DATA</p>
+            <h2>Tämän laitteen tallennus</h2>
+          </div>
+        </div>
+        <div class="summary-list">
+          <div class="summary-row"><span>Sisältö</span><strong id="recordCount">0 palkkalaskelmaa paikallisesti</strong></div>
+          <div class="summary-row"><span>Historia</span><strong id="recordYears">Ei vielä historiaa</strong></div>
+          <div class="summary-row"><span>Tallennus</span><strong>IndexedDB</strong></div>
+          <div class="summary-row"><span>Tunnistetut rakenteet</span><strong id="learnedProfileCount">Ei vielä tunnistettuja rakenteita</strong></div>
+        </div>
+        <div class="actions">
+          <button id="installButton" class="secondary hidden">Asenna sovellus</button>
+          <button id="clearLearnedButton" class="secondary">Nollaa tunnistetut rakenteet</button>
+          <button id="clearButton" class="danger">Poista palkkahistoria ja tunnistetut rakenteet</button>
+        </div>
+        <p class="muted">Asennus puhelimeen: jos Asenna sovellus -painike ei näy, avaa selaimen valikko ja valitse Asenna sovellus tai Lisää aloitusnäyttöön. iPhonen Safarissa: Jaa → Lisää Koti-valikkoon.</p>
+      </section>
+
+      <section data-settings-disclosure class="card quiet-card">
+        <h2>Laskennan ja PDF-tuonnin rajaukset</h2>
+        <p>A/B ovat ennakonpidätysarvioita. C käyttää vuoden 2026 yleistä veroviitettä. Tarkista henkilökohtainen verokortti OmaVerosta.</p>
+        <p class="muted">Tekstikerroksen sisältävät PDF:t ensin. Skannattuja kuvapohjaisia PDF:iä ei vielä OCR-lueta. Tuntemattomat palkkarivit säilytetään rakenteisina, jotta niitä voidaan luokitella myöhemmin ilman alkuperäisen PDF:n säilyttämistä.</p>
+      </section>
+    </section>
+    <p class="retail-system-error" id="retailSystemError" role="alert" hidden></p>
+  </main>
+
+  <script type="module" src="./pre-retail-entry.mjs"></script>
+</body>
+</html>
