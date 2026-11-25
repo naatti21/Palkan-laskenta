@@ -318,7 +318,7 @@ for (const width of [360, 390]) {
     if (width === 360) {
       for (const [name,selector] of [
         ["alku",null], ["historia","#historyPreview"], ["abc","#betaAnnualABSummary"],
-        ["alimmat","#netDifferenceChart"]
+        ["alimmat","#betaProgressTitle"]
       ]) {
         if (selector) {
           await frame.locator(selector).evaluate(node => {
@@ -422,7 +422,13 @@ test.describe("Android calculator", () => {
   const {userAgent,deviceScaleFactor,isMobile,hasTouch} = devices["Pixel 7"];
   test.use({userAgent,deviceScaleFactor,isMobile,hasTouch,viewport:{width:360,height:800}});
   test("cold start, controlled navigation, rotation and repeated visits retain one working planner", async ({page,context}, info) => {
-    const errors = [], navigations = [];
+    const errors = [], navigations = [], modules = [];
+    page.on("request", request => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/experiments/year-planner/") && url.pathname.endsWith(".mjs")) {
+        modules.push(url.pathname.split("/").pop());
+      }
+    });
     page.on("crash", () => errors.push("renderer crash"));
     page.on("pageerror", error => errors.push(error.message));
     page.on("requestfailed", request => errors.push(request.url() + " " + request.failure()?.errorText));
@@ -437,13 +443,15 @@ test.describe("Android calculator", () => {
       }).observe({type:"longtask",buffered:true});
     });
     const start = performance.now();
-    await open(page);
+    await page.goto("/");
+    await ready(page);
     await tab(page,"Laskuri").tap();
     const frame = page.frameLocator("#plannerFrame");
     await expect(frame.locator("#historyStatus")).toContainText("ei sisällä vielä vahvistettua palkkahistoriaa");
     await expect(frame.locator("#betaAnnualABSummary")).toBeVisible();
     const coldMs = Math.round(performance.now()-start);
     await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+    modules.length = 0;
     await page.reload();
     await tab(page,"Laskuri").tap();
     await frame.locator("#baseGross").fill("52000");
@@ -484,9 +492,7 @@ test.describe("Android calculator", () => {
     expect(after.nodes).toBe(before.nodes);
     expect(Math.abs(after.height-before.height)).toBeLessThan(8);
     expect(navigations).toEqual(Array(2).fill("http://127.0.0.1:4190/experiments/year-planner/"));
-    const scripts = await frame.locator(".shell").evaluate(() =>
-      performance.getEntriesByType("resource").map(r => r.name.split("/").pop()).filter(n => n.endsWith(".mjs")));
-    expect(scripts.sort()).toEqual(["ab-summary-model.mjs","ab-summary-v6.mjs","net-reference-2026.mjs","pre-retail-planner.mjs"]);
+    expect(modules.sort()).toEqual(["ab-summary-model.mjs","ab-summary-v6.mjs","net-reference-2026.mjs","pre-retail-planner.mjs"]);
     const longTasks = await frame.locator(".shell").evaluate(() => window.longTasks);
     const report = {coldMs,cpuSlowdown:4,heapBefore,heapAfter:(await cdp.send("Runtime.getHeapUsage")).usedSize,
       maxLongTaskMs:Math.max(0,...longTasks),longTaskCount:longTasks.length,before,after,visits};

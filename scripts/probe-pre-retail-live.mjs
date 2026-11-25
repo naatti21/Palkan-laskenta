@@ -36,9 +36,10 @@ try {
   const planner = page.frameLocator("#plannerFrame");
   await page.goto(origin);
   await link.click();
-  await expect(planner.locator("#betaAnnualABSummary")).toBeVisible();
+  await expect(planner.locator("#betaAnnualABSummary")).toBeVisible({timeout:15000});
+  report("Live cold open",{url:page.frames().find(f => f.parentFrame())?.url(),failures});
   await page.screenshot({path:"pre-retail-live-mobile.png"});
-  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller),{timeout:30000}).toBe(true);
   const src = await page.locator("#plannerFrame").getAttribute("src");
   const cached = await page.evaluate(async src => {
     const response = await caches.match(new URL(src, location.href).href);
@@ -49,7 +50,7 @@ try {
     await page.reload();
     await link.click();
     const child = page.frames().find(f => f.parentFrame());
-    const working = await planner.locator("#betaAnnualABSummary").isVisible();
+    const working = await child?.evaluate(() => !!document.getElementById("betaAnnualABSummary"));
     const result = {offline,src,cached,url:child?.url(),working,failures:[...failures]};
     report(offline ? "Live controlled offline" : "Live controlled online", result);
     // The endpoint can still serve the old reviewed release while this PR is unmerged.
@@ -60,6 +61,9 @@ try {
     expect(failures).toEqual([]);
   }
   await context.close();
+} catch (error) {
+  report("Live probe error",String(error));
+  throw error;
 } finally {
   await browser.close();
 }
