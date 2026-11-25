@@ -7,8 +7,17 @@ class PagesHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory="_pre-retail", **kwargs)
 
+    def end_headers(self):
+        if urlsplit(self.path).path == "/sw.js":
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def send_head(self):
         url = urlsplit(self.path)
+        if url.path == "/sw.js":
+            # The upgrade fixture replaces this file in place. A whole-second
+            # filesystem timestamp cannot validate distinct worker revisions.
+            del self.headers["If-Modified-Since"]
         if url.path.endswith("/index.html"):
             self.send_response(308)
             self.send_header("Location", urlunsplit(("", "", url.path.removesuffix("index.html"), url.query, "")))

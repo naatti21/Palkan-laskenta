@@ -179,6 +179,7 @@ test("versioned backup, malformed restore, duplicate PDF and unfamiliar PDF", as
   await page.locator("#exportButton").click();
   expect((await download).suggestedFilename()).toMatch(/^palkka-backup/);
   await page.reload();
+  await ready(page);
   await expect(page.locator("#retailWelcome")).toBeHidden();
   const valid = makeTextPdf([
     "PALKKALASKELMA", "Palkkakausi 1.9.2026 - 15.9.2026", "Maksupäivä 28.9.2026",
