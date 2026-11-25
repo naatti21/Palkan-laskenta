@@ -9,65 +9,6 @@ function showError(message) {
   error.hidden = false;
 }
 
-function preparePlanner() {
-  const frame = document.getElementById("plannerFrame");
-  const status = document.getElementById("plannerSyncStatus");
-  const view = document.querySelector('[data-view="planning"]');
-  let checkTimer;
-  function readable() {
-    try { return !!frame.contentDocument?.getElementById("planYear"); }
-    catch { return false; }
-  }
-  function checkWhenVisible() {
-    clearTimeout(checkTimer);
-    if (view.classList.contains("hidden")) return;
-    checkTimer = setTimeout(() => {
-      if (!readable()) status.textContent =
-        "Laskuri ei latautunut tähän näkymään. Avaa se erilliselle sivulle yllä olevasta linkistä.";
-    }, 9000);
-  }
-  new MutationObserver(checkWhenVisible).observe(view, {attributes:true,attributeFilter:["class"]});
-  frame.addEventListener("error", () => {
-    status.textContent = "Laskurin lataus epäonnistui. Avaa Laskuri erilliselle sivulle.";
-  });
-  function mount() {
-    let doc;
-    try { doc = frame.contentDocument; }
-    catch { checkWhenVisible(); return; }
-    if (!doc?.documentElement.classList.contains("beta-integrated")) return;
-    if (doc.documentElement.dataset.retailPlanner === "ready") return;
-    doc.documentElement.dataset.retailPlanner = "ready";
-    doc.documentElement.dataset.parentProduct = "Palkka";
-    const history = doc.getElementById("history-title").closest("section");
-    const year = doc.getElementById("planYear").closest(".field");
-    const heading = doc.getElementById("history-title").closest(".subtitle");
-    const explanation = history.querySelector("p.muted");
-    const intro = doc.createElement("div");
-    intro.className = "retail-planner-intro";
-    heading.before(intro);
-    intro.append(heading, year, explanation);
-    explanation.textContent = "Palkkahistoria antaa ehdotuksia. Tarkista luvut ennen käyttämistä.";
-    history.querySelector("label[for='historyInput']").hidden = true;
-    heading.querySelector(".tag").hidden = true;
-    doc.querySelector(".shell > footer").textContent =
-      "Laskurin arviot lasketaan laitteellasi. Tarkista vero- ja palkkatiedot alkuperäisistä lähteistä.";
-    const style = doc.createElement("link");
-    style.rel = "stylesheet";
-    style.href = "./pre-retail-planner.css";
-    doc.head.append(style);
-    for (const path of ["net-reference-2026.mjs", "ab-summary-v6.mjs"]) {
-      const script = doc.createElement("script");
-      script.type = "module";
-      script.src = path;
-      script.dataset.retailPlanner = "";
-      script.addEventListener("error", () => showError("Laskurin lisäosia ei voitu ladata. Avaa sovellus uudelleen."));
-      doc.body.append(script);
-    }
-  }
-  frame.addEventListener("load", mount);
-  if (frame.contentDocument?.readyState === "complete") mount();
-}
-
 async function start() {
   if (location.origin !== origin) {
     document.querySelector(".shell").replaceChildren(error);
@@ -75,7 +16,6 @@ async function start() {
     return;
   }
   document.getElementById("retailVersion").textContent = `${version} · ${revision}`;
-  preparePlanner();
   document.getElementById("ledgerCalendar").addEventListener("ledger-render", event => renderCalendar(event.detail));
   installCompact();
   installNavigation();

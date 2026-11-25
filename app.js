@@ -557,12 +557,11 @@ function syncYearSelectors(records) {
 // Planner runs as a same-origin, non-persistent experiment inside the Beta.
 // Source records stay in the browser; only the Palkka backup's structured fields
 // are passed in memory. Never write the planner suggestions into payroll records.
-let plannerRecords = [];
+let plannerRecords = null;
 let plannerReady = false;
-let plannerObserver = null;
 function syncPlannerHistory() {
   const frame = el('plannerFrame');
-  if (!frame || !plannerReady || !frame.contentWindow) return;
+  if (!frame || !plannerRecords || !plannerReady || !frame.contentWindow) return;
   frame.contentWindow.postMessage({ type: 'palkka:planner:prefill', backup: makeBackup(plannerRecords, {incomeSources}) }, location.origin);
   const note = el('plannerSyncStatus');
   if (note) note.textContent = plannerRecords.length
@@ -572,18 +571,26 @@ function syncPlannerHistory() {
 function initPlannerBridge() {
   const frame = el('plannerFrame');
   if (!frame) return;
+  let boundDocument, plannerObserver;
   const loaded = () => {
-    // Intentionally refuse a cross-origin embedded planner.
-    let doc;
-    try { doc = frame.contentDocument; if (!doc || frame.contentWindow.location.origin !== location.origin) return; }
-    catch { el('plannerSyncStatus').textContent = 'Suunnittelijan alkuperä ei täsmää. Historiatietoja ei välitetä.'; return; }
-    plannerReady = true;
+    const doc = frame.contentDocument;
+    if (doc && doc === boundDocument) return;
+    boundDocument = null;
     plannerObserver?.disconnect();
+    plannerReady = false;
+    if (doc?.URL === "about:blank") return;
+    const content = doc?.querySelector(".shell");
+    if (!content || doc.location.origin !== location.origin ||
+        (frame.hasAttribute("data-retail-planner") && doc.documentElement.dataset.retailPlanner !== "ready")) {
+      el("plannerSyncStatus").textContent = "Laskurin lataus epäonnistui.";
+      return;
+    }
+    boundDocument = doc;
+    plannerReady = true;
     // The documentElement scrollHeight includes the iframe viewport itself.
     // Resizing from that value creates a +12px feedback loop on some mobiles,
     // potentially growing the frame until the Android renderer crashes.
     // Measure the planner's actual content box, independent of viewport height.
-    const content = doc.querySelector(".shell") || doc.body;
     const resize = () => {
       if (!content?.isConnected) return;
       const next = Math.ceil(content.getBoundingClientRect().bottom + (doc.defaultView?.scrollY || 0) + 12);
