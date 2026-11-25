@@ -42,6 +42,9 @@ async function start() {
     }
   });
   await import("./app.js");
+  // The shared module has now attached the tab handlers. IndexedDB and planner
+  // history may finish later without delaying the first usable tab selection.
+  for (const tab of document.querySelectorAll(".tabs [data-view-target]")) tab.disabled = false;
 }
 
 start().catch(() => showError("Sovelluksen käynnistys epäonnistui. Lataa sivu uudelleen."));

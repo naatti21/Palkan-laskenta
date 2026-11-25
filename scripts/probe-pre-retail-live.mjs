@@ -35,6 +35,9 @@ try {
   const link = page.getByRole("button",{name:"Laskuri",exact:true});
   const planner = page.frameLocator("#plannerFrame");
   await page.goto(origin);
+  // Older deployed shells paint enabled tabs before app.js binds click handlers.
+  const appReady = page.locator("#dashboardYear option").first();
+  await expect(appReady).toBeAttached();
   await link.click();
   await expect(planner.locator("#betaAnnualABSummary")).toBeVisible({timeout:15000});
   report("Live cold open",{url:page.frames().find(f => f.parentFrame())?.url(),failures});
@@ -48,6 +51,7 @@ try {
   for (const offline of [false,true]) {
     await context.setOffline(offline);
     await page.reload();
+    await expect(appReady).toBeAttached();
     await link.click();
     const child = page.frames().find(f => f.parentFrame());
     const working = await child?.evaluate(() => !!document.getElementById("betaAnnualABSummary"));

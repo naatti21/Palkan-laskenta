@@ -443,8 +443,7 @@ test.describe("Android calculator", () => {
       }).observe({type:"longtask",buffered:true});
     });
     const start = performance.now();
-    await page.goto("/");
-    await ready(page);
+    await page.goto("/",{waitUntil:"domcontentloaded"});
     await tab(page,"Laskuri").tap();
     const frame = page.frameLocator("#plannerFrame");
     await expect(frame.locator("#historyStatus")).toContainText("ei sisällä vielä vahvistettua palkkahistoriaa");
@@ -498,6 +497,18 @@ test.describe("Android calculator", () => {
       maxLongTaskMs:Math.max(0,...longTasks),longTaskCount:longTasks.length,before,after,visits};
     console.log("PLANNER_MOBILE " + JSON.stringify(report));
     await info.attach("planner-mobile.json",{body:JSON.stringify(report,null,2),contentType:"application/json"});
+    await frame.locator("#weekendMethod").selectOption("paylines");
+    await expect(frame.locator("#validation")).toContainText("Vahvista ensin");
+    await frame.locator("#hourlyRate").fill("24.51");
+    await frame.locator("#ktaRate").fill("25.07");
+    await frame.locator("#rulesConfirmed").check();
+    await expect(frame.locator("#weekendBreakdown")).toContainText("1 094");
+    await frame.locator("#rateA").fill("105");
+    await expect(frame.locator("#betaABYearA")).toHaveText("–");
+    await frame.locator("#rateA").fill("30");
+    await frame.locator("#planYear").fill("2027");
+    await expect(frame.locator("#betaProgressSummary")).toContainText("vuoden 2026 tasoa");
+    await expect(frame.locator("#betaProgressChart svg")).toHaveCount(1);
     expect(errors).toEqual([]);
   });
 });
