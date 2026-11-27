@@ -70,15 +70,16 @@ test("automatic batch stops on corrected payslip and needs explicit user decisio
   page.once("dialog",d=>d.accept());
   await page.locator("#betaBatchNext").click();
   await expect(page.locator("#conflictSection")).toBeVisible();
-  await expect(page.locator("#betaBatchStatus")).toContainText("Käsittele avoin tarkistus");
+  await expect(page.locator("#betaBatchStatus")).toContainText("Jono jatkuu sitten automaattisesti");
   expect(await records(page)).toHaveLength(1);
   await expect(page.locator("#betaBatchNext")).toBeDisabled();
   await page.locator("#cancelConflictButton").click();
   await expect(page.locator("#betaBatchStatus")).toContainText("ohitettu 1");
-  await page.locator("#betaBatchAuto").evaluate(el => { el.checked = false; });
-  await page.locator("#betaBatchNext").click();
+  await expect(page.locator("#betaBatchFiles li").nth(2)).toContainText("Tallennettu");
   await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
-  expect(await records(page)).toHaveLength(2);
+  const stored = await records(page);
+  expect(stored.map(row => row.values.netPay).sort((a,b) => a-b)).toEqual([2450,2678.39]);
+  expect(stored.every(row => row.incomeSourceId === id)).toBe(true);
 });
 
 test("diagnostic panel exposes unknown source and overlapping periods without claiming full YTD",async({page})=>{

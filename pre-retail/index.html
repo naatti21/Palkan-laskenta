@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./pre-retail.css" />
   <title>Palkka Pre-retail v0.1</title>
+  <link rel="modulepreload" href="./app.js">
 </head>
 <body>
   <main class="shell" id="mainContent">
@@ -25,11 +26,11 @@
     </header>
 
     <nav class="tabs" aria-label="Päänavigaatio">
-      <button class="tab active" data-view-target="tracking">Seuranta</button>
-      <button class="tab" data-view-target="analysis">Analyysi</button>
-      <button class="tab" data-view-target="history">Historia</button>
-      <button class="tab" data-view-target="planning">Laskuri</button>
-      <button class="tab" data-view-target="data">Asetukset</button>
+      <button class="tab active" disabled data-view-target="tracking">Seuranta</button>
+      <button class="tab" disabled data-view-target="analysis">Analyysi</button>
+      <button class="tab" disabled data-view-target="history">Historia</button>
+      <button class="tab" disabled data-view-target="planning">Laskuri</button>
+      <button class="tab" disabled data-view-target="data">Asetukset</button>
     </nav>
 
     <section data-view="tracking">
@@ -50,7 +51,7 @@
           <button type="button" id="createIncomeSource">Luo ja valitse</button>
         </details>
         <label class="file-button">
-          <input id="pdfInput" type="file" accept="application/pdf" />
+          <input id="pdfInput" disabled type="file" accept="application/pdf" />
           <span>Lisää palkkalaskelma PDF</span>
         </label>
         <p id="status" class="status" role="status">Ei ladattua dokumenttia.</p><p class="beta-pdf-note">PDF luetaan paikallisesti · epäselvät tiedot tarkistetaan</p>
@@ -362,7 +363,7 @@
       </header>
       <section class="card beta-planning-card">
         <p id="plannerSyncStatus" class="muted" role="status">Valmistellaan palkkahistorian ehdotuksia…</p>
-        <iframe id="plannerFrame" class="planner-embed" src="./experiments/year-planner/index.html"
+        <iframe id="plannerFrame" class="planner-embed" data-retail-planner src="./experiments/year-planner/"
           title="Vuosisuunnittelun laskuri" referrerpolicy="same-origin"></iframe>
         <p class="muted beta-planning-disclaimer">Verokorttien A/B-prosentit ovat kokeiluarvoja, kunnes tarkistat ne OmaVerosta. Vuoden 2026 nettoviitettä ei pidä tulkita vuoden 2027 vahvistetuksi verotukseksi.</p>
       </section>

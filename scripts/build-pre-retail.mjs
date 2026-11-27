@@ -28,6 +28,7 @@ const inputs = {
   "pre-retail.css": "pre-retail/styles.css",
   "pre-retail-entry.mjs": "pre-retail/entry.mjs",
   "pre-retail-navigation.mjs": "pre-retail/navigation.mjs",
+  "experiments/year-planner/pre-retail-planner.mjs": "pre-retail/planner.mjs",
   "experiments/year-planner/net-reference-2026.mjs": "beta-net-reference-2026.mjs",
   "experiments/year-planner/ab-summary-model.mjs": "beta-ab-summary-model.mjs",
   "experiments/year-planner/ab-summary-v6.mjs": "beta-ab-summary-v6.mjs"
@@ -35,6 +36,15 @@ const inputs = {
 
 const files = new Map();
 for (const [target, source] of Object.entries(inputs)) files.set(target, await readFile(source));
+const plannerPath = "experiments/year-planner/index.html";
+const template = files.get(plannerPath).toString();
+const entry = "<!-- planner-product-entry -->";
+if (!template.includes(entry)) throw new Error("Planner template is missing its product entry");
+files.set(plannerPath, template.replace(entry, [
+  '<link rel="stylesheet" href="./pre-retail-planner.css">',
+  '<script type="module" src="./pre-retail-planner.mjs"></script>'
+].join("\n")));
+
 async function bundleStyles(target, order) {
   const layers = await Promise.all(order.map(path => readFile(path, "utf8")));
   files.set(target, layers.join("\n"));
@@ -63,7 +73,10 @@ for (const [path, data] of files) hash.update(path).update(data);
 const revision = hash.digest("hex").slice(0, 16);
 files.set("pre-retail-config.mjs", `export const origin=${JSON.stringify(origin)}, revision=${JSON.stringify(revision)}, version=${JSON.stringify(version)};\n`);
 files.set("build-info.json", JSON.stringify({ version, commit, revision, origin, environment: "pre-retail" }, null, 2));
-const assets = ["./", ...[...files.keys()].filter(path => path !== "_headers").map(path => "./" + path)];
+// Pages serves directory indexes at the trailing slash. A redirected response
+// cached under index.html cannot satisfy a later browser navigation.
+const assets = [...files.keys()].filter(path => path !== "_headers")
+  .map(path => "./" + path.replace(/(^|\/)index\.html$/, "$1"));
 files.set("sw.js", `const CONFIG = ${JSON.stringify({ origin, revision, assets })};\n${worker}`);
 
 await rm(output, {recursive: true, force: true});

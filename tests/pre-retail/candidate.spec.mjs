@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, devices } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -179,6 +179,7 @@ test("versioned backup, malformed restore, duplicate PDF and unfamiliar PDF", as
   await page.locator("#exportButton").click();
   expect((await download).suggestedFilename()).toMatch(/^palkka-backup/);
   await page.reload();
+  await ready(page);
   await expect(page.locator("#retailWelcome")).toBeHidden();
   const valid = makeTextPdf([
     "PALKKALASKELMA", "Palkkakausi 1.9.2026 - 15.9.2026", "Maksupäivä 28.9.2026",
@@ -217,46 +218,66 @@ test("closing the import sheet's page discards queued files but preserves commit
   await expect(next.locator("#betaBatchFiles")).not.toContainText("queued-synthetic.pdf");
 });
 
-test("offline shell and a service worker update preserve compatible history", async ({ page, context }) => {
-  await open(page);
-  await restore(page, await backup(page));
-  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
-  await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
-  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
-  await tab(page, "Historia").click();
-  await expect(page.locator("#history")).toContainText(/2\s*897,30/);
+test("a Pages index redirect in the old cache is repaired by an ordinary PWA update, including offline", async ({ page, context }) => {
+  const workerPath = "_pre-retail/sw.js", indexPath = "_pre-retail/index.html";
+  const worker = await readFile(workerPath, "utf8"), index = await readFile(indexPath, "utf8");
+  const config = JSON.parse(worker.split("\n")[0].slice("const CONFIG = ".length,-1));
+  const legacyCache = "palkka-pre-retail-v-legacy-index";
+  // Recreate the old request, cache key and fetch handler on a Pages-like server.
+  const oldWorker = `const cacheName = ${JSON.stringify(legacyCache)};
+    self.oninstall = e => e.waitUntil(caches.open(cacheName).then(c => c.addAll(
+      ${JSON.stringify([...config.assets,"./experiments/year-planner/index.html"])})));
+    self.onactivate = e => e.waitUntil(self.clients.claim());
+    self.onfetch = e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));`;
   const snapshot = async current => {
     await current.evaluate(() => scrollTo(0,0));
     const image = await current.locator("#history").screenshot({animations:"disabled"});
     return createHash("sha256").update(image).digest("hex");
   };
-  const before = await snapshot(page);
-  const path = "_pre-retail/sw.js";
-  const original = await readFile(path, "utf8");
-  const first = JSON.parse(original.split("\n")[0].slice("const CONFIG = ".length, -1));
-  const revision = first.revision + "-test";
+  const rows = current => current.evaluate(async () => (await import("/storage.js")).getAllRecords());
   try {
-    await writeFile(path, original.replace(JSON.stringify(first.revision), JSON.stringify(revision)));
+    await writeFile(workerPath,oldWorker);
+    await writeFile(indexPath,index.replace('src="./experiments/year-planner/"','src="./experiments/year-planner/index.html"'));
+    await open(page);
+    await restore(page, await backup(page));
+    await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+    await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+    const saved = await rows(page);
+    expect(saved).toHaveLength(9);
+    await page.reload();
+    await tab(page,"Laskuri").click();
+    await expect.poll(() => page.frames().some(f => f.url().startsWith("chrome-error:"))).toBe(true);
+    expect(await page.evaluate(async () => (await caches.match("/experiments/year-planner/index.html")).redirected)).toBe(true);
+    await tab(page, "Historia").click();
+    await expect(page.locator("#history")).toContainText(/2\s*897,30/);
+    const before = await snapshot(page);
+    await writeFile(indexPath,index);
+    await writeFile(workerPath,worker);
     await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
     await expect.poll(() => page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting)).toBe(true);
-    expect(await page.evaluate(key => caches.has(key), "palkka-pre-retail-v-" + first.revision)).toBe(true);
+    expect(await page.evaluate(key => caches.has(key), legacyCache)).toBe(true);
     await page.close();
     const next = await context.newPage();
     await next.clock.setFixedTime(time);
     await next.goto("/");
-    await expect.poll(() => next.evaluate(async revision => {
-      const keys = (await caches.keys()).filter(key => key.startsWith("palkka-pre-retail-v-"));
-      return keys.length === 1 && keys[0].endsWith(revision);
-    }, revision)).toBe(true);
+    await expect.poll(() => next.evaluate(async () =>
+      (await caches.keys()).filter(key => key.startsWith("palkka-pre-retail-v-"))
+    )).toEqual(["palkka-pre-retail-v-" + config.revision]);
     await context.setOffline(true);
-    await next.reload();
+    await next.goto("/index.html");
+    await expect(next).toHaveURL("http://127.0.0.1:4190/");
     await tab(next, "Historia").click();
     await expect(next.locator("#history")).toContainText(/2\s*897,30/);
     expect(await snapshot(next)).toBe(before);
-    await planner(next);
+    const frame = await planner(next);
+    await expect(frame.locator("#historyPreview")).toBeVisible();
+    expect(await rows(next)).toEqual(saved);
+    const cached = await next.evaluate(async () => (await caches.match("/experiments/year-planner/")).redirected);
+    expect(cached).toBe(false);
   } finally {
     await context.setOffline(false);
-    await writeFile(path, original);
+    await writeFile(indexPath,index);
+    await writeFile(workerPath,worker);
   }
 });
 
@@ -293,7 +314,24 @@ for (const width of [360, 390]) {
     await capture("03-seuranta-historia");
     const frame = await planner(page);
     await expect.poll(() => frame.locator(".shell").evaluate(el => el.scrollHeight <= innerHeight)).toBe(true);
+    await expect(frame.locator("#historyPreview")).toBeVisible();
     await capture("04-laskuri");
+    if (width === 360) {
+      for (const [name,selector] of [
+        ["alku",null], ["historia","#historyPreview"], ["abc","#betaAnnualABSummary"],
+        ["nettoero","h3:has(+ p + #netDifferenceChart)"], ["alimmat","#betaProgressTitle"]
+      ]) {
+        if (selector) {
+          await frame.locator(selector).evaluate(node => {
+            const top = window.frameElement.getBoundingClientRect().top + node.getBoundingClientRect().top;
+            window.parent.scrollBy(0,top - 24);
+          });
+        }
+        const path = join(directory,`retail-360-laskuri-${name}.png`);
+        await page.screenshot({path,animations:"disabled",scale:"css"});
+        await info.attach(name,{path,contentType:"image/png"});
+      }
+    }
     await frame.locator("#betaProgressChart").scrollIntoViewIfNeeded();
     const lower = join(directory,`retail-${width}-04-laskuri-kuvaajat.png`);
     await page.screenshot({path:lower,animations:"disabled"});
@@ -312,3 +350,166 @@ for (const width of [360, 390]) {
     await capture("07-asetukset");
   });
 }
+
+
+test("batch import resumes automatically after resolving an ambiguous PDF", async ({page}) => {
+  await page.setViewportSize({width:360,height:860});
+  await open(page);
+  await restore(page,await backup(page));
+  await expect(page.locator("#backupStatus")).toContainText("Palautus valmis");
+  await tab(page,"Seuranta").click();
+  await page.locator("#betaImportOpen").click();
+  await page.locator("#betaBatchSource").selectOption("paatyot");
+  const pdf = (date,period,net,ytd) => makeTextPdf([
+    "PALKKALASKELMA",
+    "Palkkakausi " + period,
+    "Maksupäivä " + date,
+    "Maksetaan " + net,
+    "KERTYMÄ PALKKAKAUDELTA",
+    "Ennakonpid. al. tul 3 000,00",
+    "Ennakonpidätys -800,00",
+    "Maksetaan " + net,
+    "KERTYMÄ VUODEN ALUSTA",
+    "Ennakonpid. al. tul " + ytd,
+    "Ennakonpidätys -6 400,00"
+  ]);
+  await page.locator("#betaBatchInput").setInputFiles([
+    {name:"01-selkea.pdf",mimeType:"application/pdf",buffer:pdf("28.9.2026","1.9.2026 - 15.9.2026","1 900,00","24 000,00")},
+    {name:"02-ristiriita.pdf",mimeType:"application/pdf",buffer:pdf("28.9.2026","1.9.2026 - 15.9.2026","1 850,00","23 950,00")},
+    {name:"03-loppujono.pdf",mimeType:"application/pdf",buffer:pdf("28.10.2026","1.10.2026 - 15.10.2026","2 050,00","27 000,00")}
+  ]);
+  page.once("dialog",dialog=>dialog.accept());
+  await page.locator("#betaBatchNext").click();
+  await expect(page.locator("#conflictSection")).toBeVisible();
+  await expect(page.locator("#betaBatchContinue")).toHaveCount(0);
+  await expect(page.locator("#betaBatchFiles li").nth(2)).toContainText("Odottaa");
+  // The existing "peru / ohita" decision resumes the rest of the queue.
+  // No extra "continue" click is permitted or necessary.
+  await page.locator("#cancelConflictButton").click();
+  await expect(page.locator("#betaBatchFiles li").nth(1)).toContainText("Ohitettu");
+  await expect(page.locator("#betaBatchFiles li").nth(2)).toContainText("Tallennettu");
+  await expect(page.locator("#betaBatchStatus")).toContainText("tallennettu 2");
+  const count = await page.evaluate(async () => (await (await import("/storage.js")).getAllRecords()).length);
+  expect(count).toBe(11);
+});
+
+
+test("planner iframe height is content-based and stable on mobile", async ({page}) => {
+  await page.setViewportSize({width:360,height:860});
+  await open(page);
+  await tab(page,"Laskuri").click();
+  const frame = page.frameLocator("#plannerFrame");
+  await expect(frame.locator("#planYear")).toBeVisible();
+  await expect(page.getByRole("link",{name:/erilliselle sivulle/i})).toHaveCount(0);
+  const measure = () => page.locator("#plannerFrame").evaluate(iframe => {
+    const content = iframe.contentDocument?.querySelector(".shell");
+    return {
+      actual: iframe.getBoundingClientRect().height,
+      natural: content ? Math.ceil(content.getBoundingClientRect().bottom + iframe.contentDocument.defaultView.scrollY + 12) : 0
+    };
+  });
+  await expect.poll(async () => {
+    const {actual,natural} = await measure();
+    return Math.abs(actual-natural);
+  }, {timeout:15000}).toBeLessThan(9);
+  const first = await measure();
+  await page.waitForTimeout(1400);
+  const last = await measure();
+  expect(Math.abs(last.actual-first.actual)).toBeLessThan(24);
+  expect(last.actual).toBeLessThan(20000);
+});
+
+test.describe("Android calculator", () => {
+  const {userAgent,deviceScaleFactor,isMobile,hasTouch} = devices["Pixel 7"];
+  test.use({userAgent,deviceScaleFactor,isMobile,hasTouch,viewport:{width:360,height:800}});
+  test("cold start, controlled navigation, rotation and repeated visits retain one working planner", async ({page,context}, info) => {
+    const errors = [], navigations = [], modules = [];
+    page.on("request", request => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/experiments/year-planner/") && url.pathname.endsWith(".mjs")) {
+        modules.push(url.pathname.split("/").pop());
+      }
+    });
+    page.on("crash", () => errors.push("renderer crash"));
+    page.on("pageerror", error => errors.push(error.message));
+    page.on("requestfailed", request => errors.push(request.url() + " " + request.failure()?.errorText));
+    page.on("response", response => { if (response.status() >= 400) errors.push(response.url()); });
+    page.on("framenavigated", f => { if (f.parentFrame()) navigations.push(f.url()); });
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Emulation.setCPUThrottlingRate",{rate:4});
+    await page.addInitScript(() => {
+      window.longTasks = [];
+      new PerformanceObserver(list => {
+        window.longTasks.push(...list.getEntries().map(entry => Math.round(entry.duration)));
+      }).observe({type:"longtask",buffered:true});
+    });
+    const start = performance.now();
+    await page.goto("/",{waitUntil:"domcontentloaded"});
+    await tab(page,"Laskuri").tap();
+    const frame = page.frameLocator("#plannerFrame");
+    await expect(frame.locator("#historyStatus")).toContainText("ei sisällä vielä vahvistettua palkkahistoriaa");
+    await expect(frame.locator("#betaAnnualABSummary")).toBeVisible();
+    const coldMs = Math.round(performance.now()-start);
+    await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+    modules.length = 0;
+    await page.reload();
+    await tab(page,"Laskuri").tap();
+    await frame.locator("#baseGross").fill("52000");
+    await frame.locator("#weekendGross").fill("1000");
+    await frame.locator("#betaWeekendsA").fill("2");
+    await frame.locator("#betaWeekendsB").fill("10");
+    // Same synthetic reference as the accepted Beta's summary-offline test.
+    await expect(frame.locator("#betaABYearA")).toHaveText("32 400 €");
+    await expect(frame.locator("#betaABYearB")).toHaveText("35 340 €");
+    await frame.locator("#baseGross").fill("35000");
+    await frame.locator("#betaCTarget").fill("3000");
+    await expect(frame.locator("#betaCCount")).toHaveText("17 viikonloppua");
+    await expect(frame.locator("#betaProgressTitle")).toContainText("2026");
+    await expect(frame.locator("#betaProgressChart circle[data-series=C]")).toHaveCount(1);
+    await expect(frame.locator("#netChart svg")).toHaveCount(1);
+
+    const metrics = () => frame.locator(".shell").evaluate(shell => ({
+      height:window.frameElement.offsetHeight, content:shell.offsetHeight,
+      nodes:document.querySelectorAll("*").length, width:innerWidth,
+      overflow:document.documentElement.scrollWidth-innerWidth
+    }));
+    await expect.poll(async () => Math.abs((await metrics()).height-(await metrics()).content)).toBeLessThan(22);
+    const before = await metrics(), visits = [];
+    const heapBefore = (await cdp.send("Runtime.getHeapUsage")).usedSize;
+    for (const [width,height] of [[320,720],[390,844],[844,390],[430,900],[360,800]]) {
+      await page.setViewportSize({width,height});
+      await tab(page,"Seuranta").tap();
+      await tab(page,"Laskuri").tap();
+      await expect(frame.locator("#betaWeekendsB")).toHaveValue("10");
+      for (const id of ["planYear","betaWeekendsA","betaCTarget","netDifferenceChart"]) {
+        await frame.locator("#"+id).scrollIntoViewIfNeeded();
+      }
+      await expect(frame.locator("#netDifferenceChart svg")).toBeInViewport();
+      await expect.poll(async () => (await metrics()).overflow).toBeLessThanOrEqual(1);
+      visits.push(await metrics());
+    }
+    const after = await metrics();
+    expect(after.nodes).toBe(before.nodes);
+    expect(Math.abs(after.height-before.height)).toBeLessThan(8);
+    expect(navigations).toEqual(Array(2).fill("http://127.0.0.1:4190/experiments/year-planner/"));
+    expect(modules.sort()).toEqual(["ab-summary-model.mjs","ab-summary-v6.mjs","net-reference-2026.mjs","pre-retail-planner.mjs"]);
+    const longTasks = await frame.locator(".shell").evaluate(() => window.longTasks);
+    const report = {coldMs,cpuSlowdown:4,heapBefore,heapAfter:(await cdp.send("Runtime.getHeapUsage")).usedSize,
+      maxLongTaskMs:Math.max(0,...longTasks),longTaskCount:longTasks.length,before,after,visits};
+    console.log("PLANNER_MOBILE " + JSON.stringify(report));
+    await info.attach("planner-mobile.json",{body:JSON.stringify(report,null,2),contentType:"application/json"});
+    await frame.locator("#weekendMethod").selectOption("paylines");
+    await expect(frame.locator("#validation")).toContainText("Vahvista ensin");
+    await frame.locator("#hourlyRate").fill("24.51");
+    await frame.locator("#ktaRate").fill("25.07");
+    await frame.locator("#rulesConfirmed").check();
+    await expect(frame.locator("#weekendBreakdown")).toContainText("1 094");
+    await frame.locator("#rateA").fill("105");
+    await expect(frame.locator("#betaABYearA")).toHaveText("–");
+    await frame.locator("#rateA").fill("30");
+    await frame.locator("#planYear").fill("2027");
+    await expect(frame.locator("#betaProgressSummary")).toContainText("vuoden 2026 tasoa");
+    await expect(frame.locator("#betaProgressChart svg")).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
+});

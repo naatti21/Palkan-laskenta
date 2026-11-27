@@ -557,12 +557,11 @@ function syncYearSelectors(records) {
 // Planner runs as a same-origin, non-persistent experiment inside the Beta.
 // Source records stay in the browser; only the Palkka backup's structured fields
 // are passed in memory. Never write the planner suggestions into payroll records.
-let plannerRecords = [];
+let plannerRecords = null;
 let plannerReady = false;
-let plannerObserver = null;
 function syncPlannerHistory() {
   const frame = el('plannerFrame');
-  if (!frame || !plannerReady || !frame.contentWindow) return;
+  if (!frame || !plannerRecords || !plannerReady || !frame.contentWindow) return;
   frame.contentWindow.postMessage({ type: 'palkka:planner:prefill', backup: makeBackup(plannerRecords, {incomeSources}) }, location.origin);
   const note = el('plannerSyncStatus');
   if (note) note.textContent = plannerRecords.length
@@ -572,21 +571,38 @@ function syncPlannerHistory() {
 function initPlannerBridge() {
   const frame = el('plannerFrame');
   if (!frame) return;
+  let boundDocument, plannerObserver;
   const loaded = () => {
-    // Intentionally refuse a cross-origin embedded planner.
-    let doc;
-    try { doc = frame.contentDocument; if (!doc || frame.contentWindow.location.origin !== location.origin) return; }
-    catch { el('plannerSyncStatus').textContent = 'Suunnittelijan alkuperä ei täsmää. Historiatietoja ei välitetä.'; return; }
-    plannerReady = true;
+    const doc = frame.contentDocument;
+    if (doc && doc === boundDocument) return;
+    boundDocument = null;
     plannerObserver?.disconnect();
+    plannerReady = false;
+    if (doc?.URL === "about:blank") return;
+    const content = doc?.querySelector(".shell");
+    if (!content || doc.location.origin !== location.origin ||
+        (frame.hasAttribute("data-retail-planner") && doc.documentElement.dataset.retailPlanner !== "ready")) {
+      el("plannerSyncStatus").textContent = "Laskurin lataus epäonnistui.";
+      return;
+    }
+    boundDocument = doc;
+    plannerReady = true;
+    // The documentElement scrollHeight includes the iframe viewport itself.
+    // Resizing from that value creates a +12px feedback loop on some mobiles,
+    // potentially growing the frame until the Android renderer crashes.
+    // Measure the planner's actual content box, independent of viewport height.
     const resize = () => {
-      const next = Math.ceil(Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0) + 12);
-      if (Number.isFinite(next) && next > 200 && next < 25000) frame.style.height = next + 'px';
+      if (!content?.isConnected) return;
+      const next = Math.ceil(content.getBoundingClientRect().bottom + (doc.defaultView?.scrollY || 0) + 12);
+      if (Number.isFinite(next) && next > 200 && next < 25000 &&
+          Math.abs(frame.getBoundingClientRect().height - next) > 6) {
+        frame.style.height = next + "px";
+      }
     };
     resize();
-    if (doc.body && 'ResizeObserver' in window) {
+    if (content && 'ResizeObserver' in window) {
       plannerObserver = new ResizeObserver(resize);
-      plannerObserver.observe(doc.body);
+      plannerObserver.observe(content);
     }
     syncPlannerHistory();
   };
@@ -1578,7 +1594,11 @@ function payrollAction(action) {
         const conflict = await conflictForRecord(error.incoming);
         if (conflict) renderConflict(error.incoming, conflict);
       }
-    } finally { payrollBusy = false; controls.forEach(control => { control.disabled = false; }); }
+    } finally {
+      payrollBusy = false;
+      controls.forEach(control => { control.disabled = false; });
+      batchQueue?.resumeAfterDecision();
+    }
   };
 }
 
@@ -1646,7 +1666,7 @@ function installPdfBatchQueue() {
     }
   }
   const note = document.createElement("p");
-  note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Epäselvät tiedot pysäyttävät jonon.";
+  note.textContent = "Valitse tulolähde tietoisesti. Jos joukossa on eri työnantajien laskelmia, vaihda lähde ennen niiden käsittelyä. Ristiriita odottaa käyttäjän päätöstä. Sen jälkeen loput PDF:t käsitellään automaattisesti.";
   const autoLabel = document.createElement("label");
   autoLabel.className = "beta-batch-auto";
   const auto = document.createElement("input");
@@ -1689,6 +1709,10 @@ function installPdfBatchQueue() {
   let cursor = 0;
   let awaiting = -1;
   let running = false;
+  // A conflict holds only the current PDF. After an explicit user decision,
+  // the remaining files resume without another button or bulk confirmation.
+  let resumeRequested = false;
+  let resumingBatch = false;
   const finished = new Set(["saved", "duplicate", "skipped", "error"]);
   const labels = {
     pending:"Odottaa", processing:"Luetaan", saved:"Tallennettu",
@@ -1717,7 +1741,7 @@ function installPdfBatchQueue() {
         " · jo olemassa " + (counts.duplicate || 0) +
         " · tarkistettava " + ((counts.review || 0)+(counts.conflict || 0)+(counts.unknown || 0)) +
         " · ohitettu " + ((counts.skipped || 0)+(counts.error || 0)) +
-        (awaiting >= 0 ? " · Käsittele avoin tarkistus ennen jatkamista." : "")
+        (awaiting >= 0 ? " · Tee päätös avoimesta tarkistuksesta. Jono jatkuu sitten automaattisesti." : "")
       : "Valitse PDF:t aloittaaksesi. Mitään ei lähetetä palvelimelle.";
     next.disabled = running || awaiting >= 0 || cursor >= entries.length || !payer.value;
     picker.disabled = running;
@@ -1745,9 +1769,18 @@ function installPdfBatchQueue() {
     if (awaiting < 0) return;
     releaseEntry(entries[awaiting],state);
     awaiting=-1;
+    resumeRequested = cursor < entries.length;
     refresh();
   }
-  function skipCurrent() {
+  function resumeAfterDecision() {
+    if (!resumeRequested || running || payrollBusy || awaiting >= 0 ||
+        cursor >= entries.length || !payer.value || workspace.hidden) return;
+    resumeRequested = false;
+    resumingBatch = true;
+    // This is the existing guarded queue runner, not a new UI action.
+    next.click();
+  }
+  function skipCurrent(resume = true) {
     if (awaiting < 0) return;
     releaseEntry(entries[awaiting],"skipped");
     awaiting=-1;
@@ -1757,7 +1790,9 @@ function installPdfBatchQueue() {
     currentRawText="";
     document.getElementById("rawText").textContent="";
     el("status").textContent="Tiedosto ohitettu. Mitään ei tallennettu.";
+    resumeRequested = resume && cursor < entries.length;
     refresh();
+    if (resume) resumeAfterDecision();
   }
   function enqueueFiles(files, fromPrimary = false) {
     if (running || awaiting >= 0) {
@@ -1778,7 +1813,7 @@ function installPdfBatchQueue() {
       return false;
     }
     entries = valid.map(file => ({file,name:file.name,state:"pending"}));
-    cursor = 0; awaiting = -1;
+    cursor = 0; awaiting = -1; resumeRequested = false; resumingBatch = false;
     if (fromPrimary && !payer.value) {
       const chosen = el("incomeSourceSelect")?.value || "";
       if (incomeSources.some(source => source.id === chosen)) payer.value = chosen;
@@ -1798,12 +1833,14 @@ function installPdfBatchQueue() {
   clear.addEventListener("click",()=>{
     if (running) return;
     if (!confirm("Tyhjennetäänkö vain käsittelemättömien PDF-tiedostojen jono? Jo tallennetut palkat säilyvät.")) return;
-    if (awaiting>=0) skipCurrent();
+    if (awaiting>=0) skipCurrent(false);
     entries=[]; cursor=0; awaiting=-1; refresh();
   });
   next.addEventListener("click",payrollAction(async()=>{
     if (running || awaiting>=0 || !payer.value || cursor>=entries.length) return;
-    if (auto.checked && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
+    const continuing = resumingBatch;
+    resumingBatch = false;
+    if (auto.checked && !continuing && entries.length - cursor > 1 && !confirm("Käsitelläänkö jäljellä olevat "+(entries.length-cursor)+" PDF:t tulolähteelle "+sourceName(payer.value)+"? Varmoja PDF:iä tallennetaan automaattisesti. Valitse manuaalinen käsittely, jos mukana on eri työnantajien laskelmia.")) return;
     const processingSource = payer.value; // Locked for this run, even if the UI changes elsewhere.
     running=true;
     try {
@@ -1820,7 +1857,7 @@ function installPdfBatchQueue() {
             showBatchOutcome();
             releaseEntry(entry,result.state);
             refresh();
-            if (!auto.checked) break;
+            if (!auto.checked && !continuing) break;
             continue;
           }
           entry.state=result?.state || "review";
@@ -1935,7 +1972,7 @@ function installPdfBatchQueue() {
 
   refreshSources();
   refresh();
-  return { refreshSources, complete, skipCurrent, enqueueFiles, openWorkspace, closeWorkspace,
+  return { refreshSources, complete, skipCurrent, resumeAfterDecision, enqueueFiles, openWorkspace, closeWorkspace,
     isAwaiting() { return awaiting >= 0; },
     hasPending() { return awaiting >= 0 || entries.some(entry => !finished.has(entry.state)); },
     chooseSource(id) {

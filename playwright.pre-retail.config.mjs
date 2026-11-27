@@ -12,7 +12,7 @@ export default defineConfig({
     screenshot: "only-on-failure"
   },
   webServer: {
-    command: "python3 -m http.server 4190 --bind 127.0.0.1 --directory _pre-retail",
+    command: "python3 tests/pre-retail/pages-server.py",
     url: "http://127.0.0.1:4190",
     reuseExistingServer: false
   }
