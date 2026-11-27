@@ -319,7 +319,7 @@ for (const width of [360, 390]) {
     if (width === 360) {
       for (const [name,selector] of [
         ["alku",null], ["historia","#historyPreview"], ["abc","#betaAnnualABSummary"],
-        ["alimmat","#betaProgressTitle"]
+        ["nettoero","h3:has(+ p + #netDifferenceChart)"], ["alimmat","#betaProgressTitle"]
       ]) {
         if (selector) {
           await frame.locator(selector).evaluate(node => {

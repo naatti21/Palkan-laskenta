@@ -54,6 +54,7 @@ test('Avattava työaikaosio pysyy 320–412 px mobiilileveydellä ja suuremmalla
   for(const width of [320,360,412]){
     await page.setViewportSize({width,height:820});
     await page.goto('/index.html');
+    await expect(page.locator('#dashboardYear option').first()).toBeAttached();
     await page.getByRole('button',{name:'Analyysi'}).click();
     await page.getByRole('button',{name:'Ylityöt',exact:true}).click();
     await page.locator('#betaWorkTimeLaw summary').click();

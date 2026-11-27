@@ -14,7 +14,8 @@ try {
   const context = await browser.newContext({...devices["Pixel 7"],serviceWorkers:"allow"});
   const info = await context.request.get(origin+"/build-info.json");
   expect(info.ok()).toBe(true);
-  report("Live build", await info.json());
+  const deployed = await info.json();
+  report("Live build", deployed);
 
   const assets = [];
   for (const path of ["/", "/sw.js", "/pre-retail-entry.mjs", folder+"index.html", folder,
@@ -59,7 +60,8 @@ try {
     report(offline ? "Live controlled offline" : "Live controlled online", result);
     // The endpoint can still serve the old reviewed release while this PR is unmerged.
     // Recognise only the demonstrated redirected-navigation failure in that build.
-    if (!working && cached?.redirected && child?.url().startsWith("chrome-error:") &&
+    if (deployed.commit === "26a18494713d09d54f45860c327663a5a854d0ac" &&
+        !working && cached?.redirected && child?.url().startsWith("chrome-error:") &&
         failures.length && failures.every(f => Array.isArray(f) && f[0] === folder+"index.html" && f[1] === "net::ERR_FAILED")) continue;
     expect(working).toBe(true);
     expect(failures).toEqual([]);

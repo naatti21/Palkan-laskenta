@@ -43,7 +43,7 @@ Päivitystestissä vanha välimuisti toisti selaimen virhesivun. Vanhan sovellus
 
 Kuvat ovat Playwrightista, ja niissä on synteettistä historiaa. Suunnitteluvuosi ja seuraava otsikko mahtuvat omille riveilleen. A/B-tulokset, C-tavoite ja alareunan navigaatio ovat näkyvissä. Veroprogression pienimmät akselitekstit ovat 360 px koossa edelleen pienet. Tarkat luvut näkyvät kuvaajan alapuolella.
 
-[360 px · alku](screenshots/pr-92/retail-360-laskuri-alku.png) · [A/B/C](screenshots/pr-92/retail-360-laskuri-abc.png) · [alin veroprogressiokuva](screenshots/pr-92/retail-360-laskuri-alimmat.png) · [ladattu historia](screenshots/pr-92/retail-360-laskuri-historia.png) · [390 px · koko Laskuri](screenshots/pr-92/retail-390-04-laskuri.png)
+[360 px · alku](screenshots/pr-92/retail-360-laskuri-alku.png) · [A/B/C](screenshots/pr-92/retail-360-laskuri-abc.png) · [kumulatiivinen nettoero](screenshots/pr-92/retail-360-laskuri-nettoero.png) · [alin veroprogressiokuva](screenshots/pr-92/retail-360-laskuri-alimmat.png) · [ladattu historia](screenshots/pr-92/retail-360-laskuri-historia.png) · [390 px · koko Laskuri](screenshots/pr-92/retail-390-04-laskuri.png)
 
 ## Fyysinen hyväksyntä Androidilla
 
